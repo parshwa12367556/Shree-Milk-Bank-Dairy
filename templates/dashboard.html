@@ -1,0 +1,123 @@
+﻿<!-- Dashboard page - rendered as page container within index.html SPA shell -->
+<div class="page-container active" id="page-dashboard" style="display:none;">
+  <div class="breadcrumb">
+    <a href="#dashboard"><i data-lucide="home" style="width:14px;height:14px;"></i></a>
+    <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+    <span class="current">Dashboard</span>
+  </div>
+  <div class="page-header">
+    <div>
+      <h2>Dashboard</h2>
+      <p class="subtitle">Welcome back, Admin! Here's what's happening today.</p>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="refreshDashboard()">
+        <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i> Refresh
+      </button>
+      <button class="btn btn-secondary" onclick="Router.navigate('collection')">
+        <i data-lucide="plus" style="width:16px;height:16px;"></i> New Collection
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Cards Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-green" id="kpi-collection"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+    <div class="kpi-card kpi-gold" id="kpi-revenue"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+    <div class="kpi-card kpi-blue" id="kpi-farmers"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+    <div class="kpi-card kpi-purple" id="kpi-fat"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+    <div class="kpi-card kpi-teal" id="kpi-snf"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+    <div class="kpi-card kpi-amber" id="kpi-pending"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+    <div class="kpi-card kpi-red" id="kpi-rejected"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+    <div class="kpi-card kpi-cyan" id="kpi-efficiency"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="card" style="padding:var(--space-5);margin-bottom:var(--space-6);">
+    <div class="section-header">
+      <h5 class="section-title">Quick Actions</h5>
+    </div>
+    <div class="quick-actions">
+      <a class="quick-action-btn" href="#collection"><div class="qa-icon"><i data-lucide="milk"></i></div><span class="qa-label">Milk Collection</span></a>
+      <a class="quick-action-btn" href="#farmer-form"><div class="qa-icon"><i data-lucide="user-plus"></i></div><span class="qa-label">Register Farmer</span></a>
+      <a class="quick-action-btn" href="#payments"><div class="qa-icon"><i data-lucide="wallet"></i></div><span class="qa-label">Process Payment</span></a>
+      <a class="quick-action-btn" href="#pricing"><div class="qa-icon"><i data-lucide="dollar-sign"></i></div><span class="qa-label">Update Rates</span></a>
+      <a class="quick-action-btn" href="#quality"><div class="qa-icon"><i data-lucide="flask-conical"></i></div><span class="qa-label">Quality Test</span></a>
+      <a class="quick-action-btn" href="#reports"><div class="qa-icon"><i data-lucide="bar-chart-3"></i></div><span class="qa-label">Generate Report</span></a>
+    </div>
+  </div>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-grid">
+    <!-- Collection Trend Chart -->
+    <div class="card">
+      <div class="card-header"><h5 class="section-title">Milk Collection Trend</h5><div class="segmented-control"><button class="segmented-btn active">14 Days</button><button class="segmented-btn">30 Days</button></div></div>
+      <div class="card-body"><div class="chart-container"><canvas id="chart-collection-trend"></canvas></div></div>
+    </div>
+
+    <!-- Collection Progress + Revenue -->
+    <div style="display:flex;flex-direction:column;gap:var(--space-5);">
+      <!-- Circular Progress Gauge -->
+      <div class="card">
+        <div class="card-header"><h5 class="section-title">Collection Progress</h5></div>
+        <div class="card-body" style="display:flex;align-items:center;gap:var(--space-6);justify-content:center;">
+          <div class="circular-progress">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="progress-bg" cx="60" cy="60" r="52"></circle>
+              <circle class="progress-fill" id="collection-progress-circle" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="326.73" style="stroke:var(--forest);"></circle>
+            </svg>
+            <div class="progress-center">
+              <div class="progress-value" id="collection-progress-pct">—</div>
+              <div class="progress-label">of target</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:var(--text-sm);color:var(--ink-muted);">Today's Target</div>
+            <div style="font-size:var(--text-xl);font-weight:700;" id="collection-progress-target">—</div>
+            <div style="font-size:var(--text-sm);color:var(--ink-muted);margin-top:var(--space-2);">Collected</div>
+            <div style="font-size:var(--text-xl);font-weight:700;color:var(--forest);" id="collection-progress-collected">—</div>
+            <div style="font-size:var(--text-xs);color:var(--ink-muted);margin-top:var(--space-1);">Remaining: <strong id="collection-progress-remaining">—</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue Chart -->
+      <div class="card">
+        <div class="card-header"><h5 class="section-title">Revenue Analytics</h5><span class="tag tag-green" id="revenue-growth-tag">—</span></div>
+        <div class="card-body"><div class="chart-container chart-container-sm"><canvas id="chart-revenue"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- Branch Performance -->
+    <div class="card">
+      <div class="card-header"><h5 class="section-title">Branch Performance</h5><button class="btn btn-sm btn-ghost" onclick="Router.navigate('branches')">View All</button></div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-responsive">
+          <table class="table-premium compact" id="branch-performance-table" style="width:100%;">
+            <thead><tr><th>Code</th><th>Branch</th><th>Farmers</th><th>Collection</th><th>Revenue</th><th>Efficiency</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div style="display:flex;flex-direction:column;gap:var(--space-5);">
+      <div class="card">
+        <div class="card-header"><h5 class="section-title">Today's Entries</h5><span class="tag tag-blue" id="today-entries-count">— entries</span></div>
+        <div class="card-body" id="today-entries"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h5 class="section-title">Pending Payments</h5><span class="tag tag-gold" id="pending-payments-total">—</span></div>
+        <div class="card-body" id="pending-payments"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Row -->
+  <div class="dashboard-grid-3">
+    <div class="card"><div class="card-header"><h5 class="section-title">New Farmers</h5><button class="btn btn-sm btn-ghost" onclick="Router.navigate('farmers')">View All</button></div><div class="card-body" id="new-farmers"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div></div></div>
+    <div class="card"><div class="card-header"><h5 class="section-title">Top Farmers</h5><span class="tag tag-gold">Top 5</span></div><div class="card-body" id="top-farmers"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div></div></div>
+    <div class="card"><div class="card-header"><h5 class="section-title">System Health</h5><span class="status-dot online"></span> All Systems</div><div class="card-body"><div class="health-grid" id="system-health"></div></div></div>
+  </div>
+</div>

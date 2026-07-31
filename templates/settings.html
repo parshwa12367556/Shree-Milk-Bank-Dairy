@@ -1,0 +1,31 @@
+﻿<!-- Settings page - SPA fragment -->
+<div class="page-container" id="page-settings" style="display:none;">
+  <div class="breadcrumb"><a href="#dashboard">Dashboard</a><span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span><span class="current">Settings</span></div>
+  <div class="page-header"><div><h2>Settings</h2><p class="subtitle">System configuration and management</p></div></div>
+  <div class="settings-layout">
+    <div class="settings-sidebar">
+      <button class="settings-nav-item active" data-section="settings-general"><i data-lucide="sliders" style="width:18px;height:18px;"></i> General</button>
+      <button class="settings-nav-item" data-section="settings-branch"><i data-lucide="building-2" style="width:18px;height:18px;"></i> Branch</button>
+      <button class="settings-nav-item" data-section="settings-users"><i data-lucide="users" style="width:18px;height:18px;"></i> Users</button>
+      <button class="settings-nav-item" data-section="settings-backup"><i data-lucide="hard-drive" style="width:18px;height:18px;"></i> Backup</button>
+      <button class="settings-nav-item" data-section="settings-api"><i data-lucide="key" style="width:18px;height:18px;"></i> API Keys</button>
+    </div>
+    <div class="settings-content">
+      <div class="settings-section active" id="settings-general">
+        <div class="settings-header"><h4>General Settings</h4><p>Configure system-wide preferences</p></div>
+        <div class="form-grid"><div class="form-group"><label class="form-label">Dairy Name</label><input type="text" class="input-premium" value="Smart Dairy ERP"></div><div class="form-group"><label class="form-label">Currency</label><select class="input-premium"><option>Indian Rupee (₹)</option></select></div><div class="form-group"><label class="form-label">Time Zone</label><select class="input-premium"><option>Asia/Kolkata (IST)</option></select></div><div class="form-group"><label class="form-label">Language</label><select class="input-premium"><option>English</option><option>मराठी</option><option>हिन्दी</option></select></div></div>
+        <div class="form-actions"><button class="btn btn-primary" onclick="saveSettings()">Save Changes</button></div>
+      </div>
+      <div class="settings-section" id="settings-branch"><div class="settings-header"><h4>Branch Configuration</h4><p>Manage branch settings</p></div><p style="color:var(--ink-muted);font-size:var(--text-sm);">Branch management is available in the Branches section.</p><button class="btn btn-secondary" onclick="Router.navigate('branches')">Go to Branches</button></div>
+      <div class="settings-section" id="settings-users">
+        <div class="settings-header"><h4>User Management</h4><p>Manage system users and roles</p></div>
+        <div class="user-list"><div class="user-item"><div class="user-avatar-sm" style="background:var(--forest);">AD</div><div class="user-info"><div class="user-fullname">Admin User</div><div class="user-email">admin@dairy.com</div></div><span class="tag tag-green">SUPER_ADMIN</span><button class="btn btn-sm btn-ghost"><i data-lucide="edit-3" style="width:14px;height:14px;"></i></button></div><div class="user-item"><div class="user-avatar-sm" style="background:var(--info);">VS</div><div class="user-info"><div class="user-fullname">Vijay Singh</div><div class="user-email">vijay@dairy.com</div></div><span class="tag tag-blue">BRANCH_MANAGER</span><button class="btn btn-sm btn-ghost"><i data-lucide="edit-3" style="width:14px;height:14px;"></i></button></div></div>
+      </div>
+      <div class="settings-section" id="settings-backup">
+        <div class="settings-header"><h4>Backup & Restore</h4><p>Manage system backups</p></div>
+        <div class="backup-card"><div class="backup-info"><span class="backup-name">Latest Backup</span><span class="backup-date">19 Jul 2026, 03:00 AM</span></div><div class="flex gap-2"><button class="btn btn-primary btn-sm" onclick="createBackup()"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Create Backup</button><button class="btn btn-secondary btn-sm" onclick="downloadBackup()"><i data-lucide="download" style="width:14px;height:14px;"></i> Download</button></div></div>
+      </div>
+      <div class="settings-section" id="settings-api"><div class="settings-header"><h4>API Keys</h4><p>Manage API access keys</p></div><div class="api-key-display"><span class="key-value">sd_api_••••••••••••••••a3f8k2</span><button class="btn btn-sm btn-ghost"><i data-lucide="copy" style="width:14px;height:14px;"></i></button></div><div class="form-actions" style="margin-top:var(--space-4);"><button class="btn btn-danger btn-sm" onclick="regenerateApiKey()">Regenerate Key</button></div></div>
+    </div>
+  </div>
+</div>

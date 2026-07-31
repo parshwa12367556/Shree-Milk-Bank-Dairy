@@ -1,0 +1,2465 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Dairy ERP</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Application Styles -->
+  <link rel="stylesheet" href="/static/css/variables.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/animations.css">
+  <link rel="stylesheet" href="/static/css/sidebar.css">
+  <link rel="stylesheet" href="/static/css/navbar.css">
+  <link rel="stylesheet" href="/static/css/forms.css">
+  <link rel="stylesheet" href="/static/css/tables.css">
+  <link rel="stylesheet" href="/static/css/login.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link rel="stylesheet" href="/static/css/farmers.css">
+  <link rel="stylesheet" href="/static/css/collection.css">
+  <link rel="stylesheet" href="/static/css/payments.css">
+  <link rel="stylesheet" href="/static/css/pricing.css">
+  <link rel="stylesheet" href="/static/css/quality.css">
+  <link rel="stylesheet" href="/static/css/reports.css">
+  <link rel="stylesheet" href="/static/css/settings.css">
+  <link rel="stylesheet" href="/static/css/responsive.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     LOGIN PAGE (shown when not authenticated)
+     ══════════════════════════════════════════════════════ -->
+<div class="login-page" id="page-login">
+  <div class="login-container anim-fade-up">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo anim-float">
+          <i data-lucide="milk"></i>
+        </div>
+        <h1>Smart Dairy ERP</h1>
+        <p>Sign in to your account to continue</p>
+      </div>
+
+      <form class="login-form" id="login-form">
+        <div class="login-error" id="login-error"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="login-branch">Branch</label>
+          <div class="input-group">
+            <span class="input-icon"><i data-lucide="building-2"></i></span>
+            <select class="input-premium input-with-icon" id="login-branch" required>
+              <option value="">Select Branch</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="login-username">Username</label>
+          <div class="input-group">
+            <span class="input-icon"><i data-lucide="user"></i></span>
+            <input type="text" class="input-premium input-with-icon input-premium-lg" id="login-username" placeholder="Enter your username" autocomplete="username" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <div class="input-group">
+            <span class="input-icon"><i data-lucide="lock"></i></span>
+            <input type="password" class="input-premium input-with-icon input-premium-lg" id="login-password" placeholder="Enter your password" autocomplete="current-password" required>
+            <span class="input-icon right" id="toggle-password"><i data-lucide="eye"></i></span>
+          </div>
+        </div>
+
+        <div class="form-options">
+          <label class="form-check">
+            <input type="checkbox" id="remember-me">
+            <span class="form-check-label">Remember me</span>
+          </label>
+          <a href="#" class="forgot-link" onclick="forgotPassword()">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-login">
+          <i data-lucide="log-in"></i>
+          Sign In
+        </button>
+      </form>
+
+      <div class="login-divider"></div>
+
+      <div class="login-footer">
+        <div class="login-language">
+          <button type="button" class="active" data-lang="en">English</button>
+          <button type="button" data-lang="mr">\u092e\u0930\u093e\u0920\u0940</button>
+          <button type="button" data-lang="hi">\u0939\u093f\u0928\u094d\u0926\u0940</button>
+        </div>
+        <p class="login-footer-text">&copy; 2026 Smart Dairy ERP. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     APP LAYOUT
+     ══════════════════════════════════════════════════════ -->
+<div class="app-layout" style="display:none;">
+
+  <!-- SIDEBAR OVERLAY (Mobile) -->
+  <div class="sidebar-overlay"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       SIDEBAR
+       ══════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i data-lucide="milk"></i>
+      </div>
+      <div class="sidebar-brand">
+        <span class="brand-name">Smart Dairy</span>
+        <span class="brand-sub">ERP System v2.0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-search">
+      <span class="search-icon"><i data-lucide="search"></i></span>
+      <input type="text" placeholder="Search menu..." onkeyup="filterSidebar(this.value)">
+    </div>
+
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- Dashboard -->
+      <a class="nav-item active" data-route="dashboard" onclick="Router.navigate('dashboard')">
+        <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+
+      <!-- Milk Collection -->
+      <a class="nav-item" data-route="collection" onclick="Router.navigate('collection')">
+        <span class="nav-icon"><i data-lucide="milk"></i></span>
+        <span class="nav-label">Milk Collection</span>
+      </a>
+
+      <!-- Farmers -->
+      <a class="nav-item has-submenu">
+        <span class="nav-icon"><i data-lucide="users"></i></span>
+        <span class="nav-label">Farmers</span>
+        <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+      </a>
+      <div class="nav-submenu">
+        <a class="nav-item" data-route="farmers" onclick="Router.navigate('farmers')">
+          <span class="nav-icon"><i data-lucide="list"></i></span>
+          <span class="nav-label">All Farmers</span>
+        </a>
+        <a class="nav-item" data-route="farmer-form" onclick="Router.navigate('farmer-form')">
+          <span class="nav-icon"><i data-lucide="user-plus"></i></span>
+          <span class="nav-label">Register Farmer</span>
+        </a>
+        <a class="nav-item" data-route="farmer-profile" onclick="Router.navigate('farmer-profile')">
+          <span class="nav-icon"><i data-lucide="user"></i></span>
+          <span class="nav-label">Farmer Profile</span>
+        </a>
+        <a class="nav-item" data-route="farmer-passbook" onclick="Router.navigate('farmer-passbook')">
+          <span class="nav-icon"><i data-lucide="book-open"></i></span>
+          <span class="nav-label">Passbook</span>
+        </a>
+      </div>
+
+      <!-- Payments -->
+      <a class="nav-item" data-route="payments" onclick="Router.navigate('payments')">
+        <span class="nav-icon"><i data-lucide="wallet"></i></span>
+        <span class="nav-label">Payments</span>
+      </a>
+
+      <!-- Pricing -->
+      <a class="nav-item" data-route="pricing" onclick="Router.navigate('pricing')">
+        <span class="nav-icon"><i data-lucide="dollar-sign"></i></span>
+        <span class="nav-label">Rate Engine</span>
+      </a>
+
+      <!-- Quality -->
+      <a class="nav-item" data-route="quality" onclick="Router.navigate('quality')">
+        <span class="nav-icon"><i data-lucide="flask-conical"></i></span>
+        <span class="nav-label">Quality Control</span>
+      </a>
+
+      <!-- Rejections -->
+      <a class="nav-item" data-route="rejections" onclick="Router.navigate('rejections')">
+        <span class="nav-icon"><i data-lucide="x-circle"></i></span>
+        <span class="nav-label">Rejections</span>
+      </a>
+
+      <!-- Branches -->
+      <a class="nav-item" data-route="branches" onclick="Router.navigate('branches')">
+        <span class="nav-icon"><i data-lucide="building-2"></i></span>
+        <span class="nav-label">Branches</span>
+      </a>
+
+      <!-- Procurement -->
+      <a class="nav-item" data-route="procurement" onclick="Router.navigate('procurement')">
+        <span class="nav-icon"><i data-lucide="truck"></i></span>
+        <span class="nav-label">Procurement</span>
+      </a>
+
+      <!-- Inventory -->
+      <a class="nav-item" data-route="inventory" onclick="Router.navigate('inventory')">
+        <span class="nav-icon"><i data-lucide="package"></i></span>
+        <span class="nav-label">Inventory</span>
+      </a>
+
+      <!-- Employees -->
+      <a class="nav-item" data-route="employees" onclick="Router.navigate('employees')">
+        <span class="nav-icon"><i data-lucide="briefcase"></i></span>
+        <span class="nav-label">Employees</span>
+      </a>
+
+      <!-- Vehicles -->
+      <a class="nav-item" data-route="vehicles" onclick="Router.navigate('vehicles')">
+        <span class="nav-icon"><i data-lucide="car"></i></span>
+        <span class="nav-label">Vehicles</span>
+      </a>
+
+      <!-- Divider -->
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+
+      <!-- Reports -->
+      <a class="nav-item" data-route="reports" onclick="Router.navigate('reports')">
+        <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
+        <span class="nav-label">Reports</span>
+      </a>
+
+      <!-- Audit -->
+      <a class="nav-item" data-route="audit" onclick="Router.navigate('audit')">
+        <span class="nav-icon"><i data-lucide="scroll-text"></i></span>
+        <span class="nav-label">Audit Logs</span>
+      </a>
+
+      <!-- Settings -->
+      <a class="nav-item" data-route="settings" onclick="Router.navigate('settings')">
+        <span class="nav-icon"><i data-lucide="settings"></i></span>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="Router.navigate('profile')">
+        <div class="user-avatar">AD</div>
+        <div class="user-info">
+          <div class="user-name">Admin User</div>
+          <div class="user-role">Super Admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════════════
+       MAIN WRAPPER
+       ══════════════════════════════════════════════════ -->
+  <div class="main-wrapper">
+
+    <!-- ════════════════════════════════════════════════
+         TOP NAVBAR
+         ════════════════════════════════════════════════ -->
+    <header class="navbar" id="navbar">
+      <div class="nav-left">
+        <button class="sidebar-toggle-mobile" onclick="App._toggleMobileSidebar()">
+          <i data-lucide="menu"></i>
+        </button>
+        <a href="#dashboard" class="nav-brand">
+          <div class="brand-logo">
+            <i data-lucide="milk" style="width:20px;height:20px;"></i>
+          </div>
+          <span class="brand-text">Smart Dairy</span>
+          <span class="brand-badge">ERP</span>
+        </a>
+      </div>
+
+      <div class="nav-center">
+        <div class="breadcrumb-nav">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator">/</span>
+          <span class="current">Home</span>
+        </div>
+        <div class="nav-datetime">
+          <span class="current-date"></span>
+          <span class="datetime-separator">|</span>
+          <span class="current-time"></span>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <div class="search-bar" style="width:240px;">
+          <span class="search-icon"><i data-lucide="search"></i></span>
+          <input type="text" placeholder="Search farmers, receipts..." id="global-search">
+        </div>
+
+        <span class="nav-divider"></span>
+
+        <button class="nav-item notif-trigger" id="notif-trigger" title="Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-count">3</span>
+
+          <!-- Notification Dropdown -->
+          <div class="notif-dropdown" id="notif-dropdown">
+            <div class="notif-header">
+              <h6>Notifications</h6>
+              <a href="#notifications">View All</a>
+            </div>
+            <div class="notif-list">
+              <!-- Dynamic content -->
+            </div>
+            <div class="notif-footer">
+              <a href="#notifications">See all notifications</a>
+            </div>
+          </div>
+        </button>
+
+        <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">
+          <i data-lucide="moon"></i>
+        </button>
+
+        <span class="nav-divider"></span>
+
+        <div class="user-dropdown">
+          <button class="user-trigger" id="user-trigger">
+            <div class="user-avatar">AD</div>
+            <div class="user-meta hide-mobile">
+              <span class="user-name">Admin User</span>
+              <span class="user-role">Super Admin</span>
+            </div>
+            <span class="user-chevron"><i data-lucide="chevron-down"></i></span>
+          </button>
+          <div class="dropdown-menu">
+            <div class="dropdown-header">User Menu</div>
+            <a class="dropdown-item" href="#profile">
+              <span class="item-icon"><i data-lucide="user-circle"></i></span>
+              My Profile
+            </a>
+            <a class="dropdown-item" href="#settings">
+              <span class="item-icon"><i data-lucide="settings"></i></span>
+              Settings
+            </a>
+            <a class="dropdown-item" href="#help">
+              <span class="item-icon"><i data-lucide="help-circle"></i></span>
+              Help Center
+            </a>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger" id="logout-btn">
+              <span class="item-icon"><i data-lucide="log-out"></i></span>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ════════════════════════════════════════════════
+         MAIN CONTENT
+         All page containers defined below
+         ════════════════════════════════════════════════ -->
+    <main class="main-content">
+
+      <!-- ── Dashboard Page ── -->
+      <div class="page-container active" id="page-dashboard">
+        <div class="breadcrumb">
+          <a href="#dashboard"><i data-lucide="home" style="width:14px;height:14px;"></i></a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Dashboard</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Dashboard</h2>
+            <p class="subtitle">Welcome back, Admin! Here's what's happening today.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="refreshDashboard()">
+              <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+              Refresh
+            </button>
+            <button class="btn btn-secondary" onclick="Router.navigate('collection')">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i>
+              New Collection
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Cards Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-green" id="kpi-collection">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-gold" id="kpi-revenue">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-blue" id="kpi-farmers">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-purple" id="kpi-fat">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-teal" id="kpi-snf">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-amber" id="kpi-pending">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-red" id="kpi-rejected">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-cyan" id="kpi-efficiency">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card" style="padding:var(--space-5);margin-bottom:var(--space-6);">
+          <div class="section-header">
+            <h5 class="section-title">Quick Actions</h5>
+          </div>
+          <div class="quick-actions">
+            <a class="quick-action-btn" href="#collection">
+              <div class="qa-icon"><i data-lucide="milk"></i></div>
+              <span class="qa-label">Milk Collection</span>
+            </a>
+            <a class="quick-action-btn" href="#farmer-form">
+              <div class="qa-icon"><i data-lucide="user-plus"></i></div>
+              <span class="qa-label">Register Farmer</span>
+            </a>
+            <a class="quick-action-btn" href="#payments">
+              <div class="qa-icon"><i data-lucide="wallet"></i></div>
+              <span class="qa-label">Process Payment</span>
+            </a>
+            <a class="quick-action-btn" href="#pricing">
+              <div class="qa-icon"><i data-lucide="dollar-sign"></i></div>
+              <span class="qa-label">Update Rates</span>
+            </a>
+            <a class="quick-action-btn" href="#quality">
+              <div class="qa-icon"><i data-lucide="flask-conical"></i></div>
+              <span class="qa-label">Quality Test</span>
+            </a>
+            <a class="quick-action-btn" href="#reports">
+              <div class="qa-icon"><i data-lucide="bar-chart-3"></i></div>
+              <span class="qa-label">Generate Report</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Charts & Tables Grid -->
+        <div class="dashboard-grid">
+          <!-- Collection Trend Chart -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Milk Collection Trend</h5>
+              <div class="segmented-control">
+                <button class="segmented-btn active">14 Days</button>
+                <button class="segmented-btn">30 Days</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="chart-collection-trend"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Revenue Chart -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Revenue Analytics</h5>
+              <span class="tag tag-green">+12.5%</span>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="chart-revenue"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Branch Performance -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Branch Performance</h5>
+              <button class="btn btn-sm btn-ghost" onclick="Router.navigate('branches')">View All</button>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div class="table-responsive">
+                <table class="table-premium compact" id="branch-performance-table" style="width:100%;">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Branch</th>
+                      <th>Farmers</th>
+                      <th>Collection</th>
+                      <th>Revenue</th>
+                      <th>Efficiency</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Activity & Lists -->
+          <div style="display:flex;flex-direction:column;gap:var(--space-5);">
+
+            <!-- Today's Entries -->
+            <div class="card">
+              <div class="card-header">
+                <h5 class="section-title">Today's Entries</h5>
+                <span class="tag tag-blue">124 entries</span>
+              </div>
+              <div class="card-body" id="today-entries">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+              </div>
+            </div>
+
+            <!-- Pending Payments -->
+            <div class="card">
+              <div class="card-header">
+                <h5 class="section-title">Pending Payments</h5>
+                <span class="tag tag-gold">₹1,24,500</span>
+              </div>
+              <div class="card-body" id="pending-payments">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="dashboard-grid-3">
+          <!-- New Farmers -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">New Farmers</h5>
+              <button class="btn btn-sm btn-ghost" onclick="Router.navigate('farmers')">View All</button>
+            </div>
+            <div class="card-body" id="new-farmers">
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text"></div>
+            </div>
+          </div>
+
+          <!-- Top Farmers -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Top Farmers (This Month)</h5>
+              <span class="tag tag-gold">Top 5</span>
+            </div>
+            <div class="card-body" id="top-farmers">
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text"></div>
+            </div>
+          </div>
+
+          <!-- System Health -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">System Health</h5>
+              <span class="status-dot online"></span> All Systems
+            </div>
+            <div class="card-body">
+              <div class="health-grid" id="system-health"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Collection Page ── -->
+      <div class="page-container" id="page-collection" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Milk Collection</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Milk Collection Desk</h2>
+            <p class="subtitle">Record and manage daily milk collections</p>
+          </div>
+          <div class="page-actions">
+            <span class="auto-save-indicator" id="auto-save">
+              <span class="save-dot saved"></span>
+              <span>Auto-save enabled</span>
+            </span>
+            <button class="btn btn-sm btn-ghost" onclick="undoLastCollection()">
+              <i data-lucide="undo-2" style="width:16px;height:16px;"></i>
+              Undo
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Panel Layout -->
+        <div class="collection-panels">
+          <!-- Left Panel: Farmer Identification -->
+          <div class="collection-panel">
+            <div class="panel-header">
+              <h5><i data-lucide="user-search" style="width:16px;height:16px;"></i> Find Farmer</h5>
+            </div>
+            <div class="panel-body">
+              <div class="farmer-search-tabs">
+                <button class="tab-btn active">QR</button>
+                <button class="tab-btn">Code</button>
+                <button class="tab-btn">Phone</button>
+                <button class="tab-btn">Name</button>
+              </div>
+              <div class="input-group" style="margin-bottom:var(--space-3);">
+                <span class="input-icon"><i data-lucide="search"></i></span>
+                <input type="text" class="input-premium input-with-icon" id="farmer-search-input" placeholder="Scan QR or enter code...">
+              </div>
+              <div id="farmer-suggestions"></div>
+
+              <div id="current-farmer" style="margin-bottom:var(--space-3);">
+                <div class="card" style="padding:var(--space-4);">
+                  <div class="flex items-center gap-3">
+                    <div class="farmer-avatar-lg" style="width:48px;height:48px;border-radius:var(--radius-full);background:linear-gradient(135deg,var(--forest-light),var(--forest));display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:white;font-weight:700;flex-shrink:0;">?</div>
+                    <div>
+                      <div style="font-weight:600;">Select a Farmer</div>
+                      <div style="font-size:var(--text-xs);color:var(--ink-muted);">Search or scan QR above</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h6 style="font-size:var(--text-xs);color:var(--ink-muted);margin-bottom:var(--space-2);">LIVE QUEUE</h6>
+                <div class="live-queue" id="collection-queue"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center Panel: Collection Form -->
+          <div class="collection-panel">
+            <div class="panel-header">
+              <h5><i data-lucide="clipboard-list" style="width:16px;height:16px;"></i> Collection Details</h5>
+              <span class="tag tag-blue">Shift: Morning</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Quantity (Liters)</label>
+                <input type="number" class="input-premium input-premium-lg" id="collection-qty" placeholder="Enter quantity" step="0.5" min="0" oninput="calculateCollectionAmount()">
+                <div class="collection-quick-pills">
+                  <button class="qty-pill active" data-value="10">10 L</button>
+                  <button class="qty-pill" data-value="15">15 L</button>
+                  <button class="qty-pill" data-value="20">20 L</button>
+                  <button class="qty-pill" data-value="25">25 L</button>
+                  <button class="qty-pill" data-value="30">30 L</button>
+                </div>
+              </div>
+
+              <div class="analyzer-grid">
+                <div class="analyzer-field">
+                  <label>Fat %</label>
+                  <input type="number" class="input-premium" id="collection-fat" placeholder="0.0" step="0.1" oninput="calculateCollectionAmount()">
+                </div>
+                <div class="analyzer-field">
+                  <label>SNF %</label>
+                  <input type="number" class="input-premium" id="collection-snf" placeholder="0.0" step="0.1" oninput="calculateCollectionAmount()">
+                </div>
+                <div class="analyzer-field">
+                  <label>CLR</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.5">
+                </div>
+                <div class="analyzer-field">
+                  <label>Temperature °C</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                </div>
+                <div class="analyzer-field">
+                  <label>Density</label>
+                  <input type="number" class="input-premium" placeholder="0.000">
+                </div>
+                <div class="analyzer-field">
+                  <label>Water %</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                </div>
+                <div class="analyzer-field">
+                  <label>Protein %</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                </div>
+                <div class="analyzer-field">
+                  <label>Lactose %</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Remarks</label>
+                <textarea class="input-premium" rows="2" placeholder="Any remarks..."></textarea>
+              </div>
+
+              <button class="btn btn-primary btn-lg w-full" id="save-collection">
+                <i data-lucide="save"></i>
+                Save Collection
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Panel: Pricing Engine -->
+          <div class="collection-panel">
+            <div class="panel-header">
+              <h5><i data-lucide="calculator" style="width:16px;height:16px;"></i> Live Pricing</h5>
+            </div>
+            <div class="panel-body pricing-engine">
+              <div class="rate-display">
+                <div class="rate-item">
+                  <div class="rate-label">Fat Rate</div>
+                  <div class="rate-value" style="font-size:var(--text-sm);">₹5.00 / %</div>
+                </div>
+                <div class="rate-item">
+                  <div class="rate-label">SNF Rate</div>
+                  <div class="rate-value" style="font-size:var(--text-sm);">₹2.50 / %</div>
+                </div>
+              </div>
+
+              <div class="price-breakdown">
+                <div class="flex justify-between"><span>Fat (4.2% × 25L)</span><span id="calc-fat">0.0%</span></div>
+                <div class="flex justify-between"><span>SNF (8.6% × 25L)</span><span id="calc-snf">0.0%</span></div>
+                <div class="flex justify-between"><span>Total Quantity</span><span id="calc-qty">0.0 L</span></div>
+              </div>
+
+              <div class="price-total">
+                <span class="total-label">Rate / Liter</span>
+                <span class="total-amount" id="rate-per-liter" style="font-size:var(--text-lg);">₹0.00</span>
+              </div>
+              <div class="price-total" style="border-top:2px solid var(--gold);">
+                <span class="total-label">Total Amount</span>
+                <span class="total-amount" id="total-amount" style="color:var(--gold);">₹0.00</span>
+              </div>
+
+              <div id="today-summary"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Collections Table -->
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Today's Collections</div>
+            <div class="table-toolbar">
+              <div class="segmented-control">
+                <button class="segmented-btn active">All</button>
+                <button class="segmented-btn">Morning</button>
+                <button class="segmented-btn">Evening</button>
+              </div>
+              <button class="btn btn-sm btn-ghost" title="Export CSV" onclick="Table.exportCSV('collections-table', 'collections.csv')"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
+              <button class="btn btn-sm btn-ghost" title="Print" onclick="Table.printTable('collections-table')"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="collections-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Receipt</th>
+                  <th>Farmer</th>
+                  <th>Quantity</th>
+                  <th>Fat</th>
+                  <th>SNF</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  <th>Shift</th>
+                  <th>Status</th>
+                  <th style="width:80px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <div class="table-info">Showing 4 of 124 entries</div>
+            <div class="pagination">
+              <button class="page-btn prev-btn" disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <span class="page-ellipsis">...</span>
+              <button class="page-btn">12</button>
+              <button class="page-btn next-btn"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Farmers Page ── -->
+      <div class="page-container" id="page-farmers" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Farmers</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Farmers</h2>
+            <p class="subtitle">Manage all registered farmers</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" data-action="register" onclick="Router.navigate('farmer-form')">
+              <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
+              Register Farmer
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="farmer-stats-grid" id="farmer-stats"></div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-mode-selector">
+              <button class="mode-btn active">General</button>
+              <button class="mode-btn">Code</button>
+              <button class="mode-btn">Name</button>
+              <button class="mode-btn">Phone</button>
+            </div>
+            <div class="search-bar" style="width:280px;">
+              <span class="search-icon"><i data-lucide="search"></i></span>
+              <input type="text" placeholder="Search farmers...">
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <select id="farmer-type-filter" style="padding:var(--space-1) var(--space-6) var(--space-1) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
+              <option value="all">All Types</option>
+              <option value="COW">Cow</option>
+              <option value="BUFFALO">Buffalo</option>
+              <option value="MIXED">Mixed</option>
+            </select>
+            <select id="farmer-status-filter" style="padding:var(--space-1) var(--space-6) var(--space-1) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
+              <option value="all">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Blocked">Blocked</option>
+            </select>
+            <button class="btn btn-sm btn-ghost" title="Export CSV" onclick="Table.exportCSV('farmers-table', 'farmers.csv')"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
+            <button class="btn btn-sm btn-ghost" title="Print" onclick="Table.printTable('farmers-table')"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+            <button class="btn btn-sm btn-ghost" title="Refresh" onclick="loadFarmers()"><i data-lucide="refresh-cw" style="width:16px;height:16px;"></i></button>
+          </div>
+        </div>
+
+        <!-- Bulk Action Bar -->
+        <div class="bulk-action-bar" style="display:none;">
+          <span class="bulk-count">0 selected</span>
+          <button class="btn btn-sm btn-primary">SMS</button>
+          <button class="btn btn-sm btn-secondary">Payment</button>
+          <button class="btn btn-sm btn-danger">Delete</button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrapper">
+          <div class="table-responsive">
+            <table class="table-premium" id="farmers-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th class="checkbox-cell"><input type="checkbox"></th>
+                  <th data-sortable="code">Code</th>
+                  <th data-sortable="name">Farmer Name</th>
+                  <th data-sortable="mobile">Mobile</th>
+                  <th data-sortable="village">Village</th>
+                  <th data-sortable="type">Type</th>
+                  <th data-sortable="animals">Animals</th>
+                  <th data-sortable="qty">Quantity</th>
+                  <th data-sortable="amount">Amount</th>
+                  <th data-sortable="status">Status</th>
+                  <th data-sortable="joined">Joined</th>
+                  <th style="width:120px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <div class="table-info">Showing 1-10 of 1,247 farmers</div>
+            <div class="pagination">
+              <button class="page-btn prev-btn" disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <span class="page-ellipsis">...</span>
+              <button class="page-btn">125</button>
+              <button class="page-btn next-btn"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Farmer Form Page ── -->
+      <div class="page-container" id="page-farmer-form" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <a href="#farmers">Farmers</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Register Farmer</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Register New Farmer</h2>
+            <p class="subtitle">Add a new farmer to the system</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" onclick="Router.navigate('farmers')">
+              <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+              Back to List
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <form id="farmer-form">
+              <!-- Personal Information -->
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">1</span>
+                  Personal Information
+                </h5>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Farmer Name <span class="required">*</span></label>
+                    <input type="text" class="input-premium" name="farmer_name" placeholder="Enter full name">
+                    <div class="form-error"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Father's Name <span class="required">*</span></label>
+                    <input type="text" class="input-premium" name="father_name" placeholder="Enter father's name">
+                    <div class="form-error"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Mobile Number <span class="required">*</span></label>
+                    <input type="tel" class="input-premium" name="mobile" placeholder="10-digit mobile number" maxlength="10">
+                    <div class="form-error"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Alternate Mobile</label>
+                    <input type="tel" class="input-premium" name="alt_mobile" placeholder="Alternate mobile number" maxlength="10">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="input-premium" name="email" placeholder="email@example.com">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Aadhaar Number <span class="required">*</span></label>
+                    <input type="text" class="input-premium" name="aadhaar" placeholder="12-digit Aadhaar" maxlength="12">
+                    <div class="form-error"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">PAN Number</label>
+                    <input type="text" class="input-premium" name="pan" placeholder="PAN number" maxlength="10">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" class="input-premium" name="date_of_birth">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Address -->
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">2</span>
+                  Address Details
+                </h5>
+                <div class="form-grid">
+                  <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">Address</label>
+                    <textarea class="input-premium" name="address" placeholder="Full address" rows="2"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Village <span class="required">*</span></label>
+                    <input type="text" class="input-premium" name="village" placeholder="Village name">
+                    <div class="form-error"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Taluka</label>
+                    <input type="text" class="input-premium" name="taluka" placeholder="Taluka">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">District</label>
+                    <input type="text" class="input-premium" name="district" placeholder="District">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">State</label>
+                    <input type="text" class="input-premium" name="state" placeholder="State">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Pincode</label>
+                    <input type="text" class="input-premium" name="pincode" placeholder="Pincode" maxlength="6">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Landmark</label>
+                    <input type="text" class="input-premium" name="landmark" placeholder="Nearby landmark">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Livestock Info -->
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">3</span>
+                  Livestock Information
+                </h5>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Milk Type <span class="required">*</span></label>
+                    <select class="input-premium" name="milk_type">
+                      <option value="">Select Type</option>
+                      <option value="COW">Cow Milk</option>
+                      <option value="BUFFALO">Buffalo Milk</option>
+                      <option value="MIXED">Mixed Milk</option>
+                    </select>
+                    <div class="form-error"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Number of Cows</label>
+                    <input type="number" class="input-premium" name="cow_count" placeholder="0" min="0">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Number of Buffaloes</label>
+                    <input type="number" class="input-premium" name="buffalo_count" placeholder="0" min="0">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Breed</label>
+                    <input type="text" class="input-premium" name="breed" placeholder="Breed (optional)">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Preferred Shift</label>
+                    <select class="input-premium" name="preferred_shift">
+                      <option value="">Any</option>
+                      <option value="MORNING">Morning</option>
+                      <option value="EVENING">Evening</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bank Details -->
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">4</span>
+                  Bank Details
+                </h5>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Account Holder Name</label>
+                    <input type="text" class="input-premium" name="account_holder" placeholder="As per bank records">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Bank Name</label>
+                    <input type="text" class="input-premium" name="bank_name" placeholder="Bank name">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Branch Name</label>
+                    <input type="text" class="input-premium" name="branch_name" placeholder="Branch">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Account Number</label>
+                    <input type="text" class="input-premium" name="account_number" placeholder="Account number">
+                    <div class="form-error"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">IFSC Code</label>
+                    <input type="text" class="input-premium" name="ifsc" placeholder="IFSC code" maxlength="11">
+                    <div class="form-error"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">UPI ID</label>
+                    <input type="text" class="input-premium" name="upi" placeholder="upi@bank">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Branch Selection -->
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">5</span>
+                  Assignment
+                </h5>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Branch</label>
+                    <select class="input-premium" name="branch_id">
+                      <option value="">Select Branch</option>
+                      <option value="1">Agar Malwa Main</option>
+                      <option value="2">Susner Sub</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">QR Code</label>
+                    <div class="flex items-center gap-2">
+                      <input type="text" class="input-premium" name="qr_code" placeholder="Auto-generated" readonly>
+                      <button type="button" class="btn btn-secondary" onclick='generateFarmerQR()'>
+                        <i data-lucide="qr-code" style="width:16px;height:16px;"></i>
+                        Generate
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notifications -->
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">6</span>
+                  Notification Preferences
+                </h5>
+                <div class="flex gap-4">
+                  <label class="form-check">
+                    <input type="checkbox" name="notification_sms" checked>
+                    <span class="form-check-label">SMS</span>
+                  </label>
+                  <label class="form-check">
+                    <input type="checkbox" name="notification_whatsapp">
+                    <span class="form-check-label">WhatsApp</span>
+                  </label>
+                  <label class="form-check">
+                    <input type="checkbox" name="notification_email">
+                    <span class="form-check-label">Email</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="Router.navigate('farmers')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i data-lucide="user-plus" style="width:18px;height:18px;"></i>
+                  Register Farmer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Farmer Profile Page ── -->
+      <div class="page-container" id="page-farmer-profile" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <a href="#farmers">Farmers</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Farmer Profile</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Farmer Profile</h2>
+            <p class="subtitle">Detailed view of farmer information</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" data-action="edit-farmer"><i data-lucide="edit-3" style="width:16px;height:16px;"></i> Edit</button>
+            <button class="btn btn-secondary" data-action="print-profile"><i data-lucide="printer" style="width:16px;height:16px;"></i> Print</button>
+          </div>
+        </div>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+          <div class="profile-avatar" id="profile-avatar-text">RK</div>
+          <div class="profile-info">
+            <h3 id="profile-name">Farmer Name</h3>
+            <p id="profile-subtitle" style="color:var(--ink-muted);font-size:var(--text-sm);">Code · Father</p>
+            <div class="profile-meta" id="profile-meta">
+              <span id="profile-phone"><i data-lucide="phone" style="width:14px;height:14px;"></i> -</span>
+              <span id="profile-location"><i data-lucide="map-pin" style="width:14px;height:14px;"></i> -</span>
+              <span id="profile-milk-type"><i data-lucide="milk" style="width:14px;height:14px;"></i> -</span>
+              <span id="profile-joined"><i data-lucide="calendar" style="width:14px;height:14px;"></i> Joined: -</span>
+              <span id="profile-status-tag"><span class="tag tag-green">-</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="farmer-stats-grid" id="farmer-profile-stats">
+          <div class="kpi-card kpi-green" id="profile-stat-1"></div>
+          <div class="kpi-card kpi-gold" id="profile-stat-2"></div>
+          <div class="kpi-card kpi-purple" id="profile-stat-3"></div>
+          <div class="kpi-card kpi-teal" id="profile-stat-4"></div>
+          <div class="kpi-card kpi-blue" id="profile-stat-5"></div>
+          <div class="kpi-card kpi-green" id="profile-stat-6"></div>
+        </div>
+
+        <!-- Charts -->
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Quality Trend</h5>
+            </div>
+            <div class="card-body">
+              <div class="chart-container chart-container-sm">
+                <canvas id="farmer-quality-chart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Weekly Earnings</h5>
+            </div>
+            <div class="card-body">
+              <div class="chart-container chart-container-sm">
+                <canvas id="farmer-earnings-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Passbook -->
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Collection Passbook</div>
+            <div class="table-toolbar">
+              <button class="btn btn-sm btn-ghost" onclick="Table.exportCSV('passbook-table', 'passbook.csv')"><i data-lucide="download" style="width:16px;height:16px;"></i> Export</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="passbook-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Receipt</th>
+                  <th>Shift</th>
+                  <th>Qty</th>
+                  <th>Fat</th>
+                  <th>SNF</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Farmer Passbook Page ── -->
+      <div class="page-container" id="page-farmer-passbook" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <a href="#farmers">Farmers</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Passbook</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Farmer Passbook</h2>
+            <p class="subtitle">Complete transaction history</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" data-action="print-passbook"><i data-lucide="printer" style="width:16px;height:16px;"></i> Print</button>
+            <button class="btn btn-secondary" data-action="export-pdf"><i data-lucide="download" style="width:16px;height:16px;"></i> PDF</button>
+          </div>
+        </div>
+        <div class="card" style="padding:var(--space-6);text-align:center;margin-bottom:var(--space-4);">
+          <p id="passbook-header-text" style="color:var(--ink-muted);">Passbook for <strong>Farmer Name (Code)</strong></p>
+        </div>
+      </div>
+
+      <!-- ── Branches Page ── -->
+      <div class="page-container" id="page-branches" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Branches</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Branches</h2>
+            <p class="subtitle">Manage all branches</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openBranchModal()">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i>
+              Add Branch
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-responsive">
+            <table class="table-premium" id="branches-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Branch Name</th>
+                  <th>Manager</th>
+                  <th>Phone</th>
+                  <th>Address</th>
+                  <th>Farmers</th>
+                  <th>Collection</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Branch Modal -->
+      <div class="modal" id="branch-modal">
+        <div class="modal-backdrop" onclick="closeBranchModal()"></div>
+        <div class="modal-content" style="max-width:560px;">
+          <div class="modal-header">
+            <h5 id="branch-modal-title">Add New Branch</h5>
+            <button class="modal-close" onclick="closeBranchModal()"><i data-lucide="x"></i></button>
+          </div>
+          <form id="branch-form" onsubmit="saveBranch(event)">
+            <div class="modal-body">
+              <input type="hidden" id="branch-id">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Branch Code <span class="required">*</span></label>
+                  <input type="text" class="input-premium" id="branch-code" placeholder="e.g. BR-005" required maxlength="20">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Branch Name <span class="required">*</span></label>
+                  <input type="text" class="input-premium" id="branch-name" placeholder="e.g. New Branch Name" required maxlength="200">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Manager Name</label>
+                  <input type="text" class="input-premium" id="branch-manager" placeholder="Manager name" maxlength="120">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Phone</label>
+                  <input type="tel" class="input-premium" id="branch-phone" placeholder="Phone number" maxlength="15">
+                </div>
+                <div class="form-group" style="grid-column:span 2;">
+                  <label class="form-label">Address</label>
+                  <textarea class="input-premium" id="branch-address" placeholder="Full address" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Village</label>
+                  <input type="text" class="input-premium" id="branch-village" placeholder="Village" maxlength="100">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">District</label>
+                  <input type="text" class="input-premium" id="branch-district" placeholder="District" maxlength="100">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">State</label>
+                  <input type="text" class="input-premium" id="branch-state" placeholder="State" maxlength="100">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Status</label>
+                  <select class="input-premium" id="branch-status">
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="closeBranchModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="branch-submit-btn">
+                <i data-lucide="plus" style="width:16px;height:16px;"></i>
+                Create Branch
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ── Payments Page ── -->
+      <div class="page-container" id="page-payments" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Payments</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Payments</h2>
+            <p class="subtitle">Manage farmer payments and payouts</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" id="generate-payment">
+              <i data-lucide="wallet" style="width:16px;height:16px;"></i>
+              Generate Payment Sheet
+            </button>
+          </div>
+        </div>
+        <div class="payment-summary">
+          <div class="summary-card">
+            <div class="summary-value">₹15,82,500</div>
+            <div class="summary-label">Total Paid (This Month)</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value" style="color:var(--warning-dark);">₹2,45,800</div>
+            <div class="summary-label">Pending Payouts</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value" style="color:var(--success);">86%</div>
+            <div class="summary-label">Payment Rate</div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Payment Records</div>
+            <div class="table-toolbar">
+              <select style="padding:var(--space-1) var(--space-6) var(--space-1) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
+                <option>All Status</option>
+                <option>Pending</option>
+                <option>Approved</option>
+                <option>Paid</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="payments-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Pay Code</th>
+                  <th>Farmer</th>
+                  <th>Period</th>
+                  <th>Quantity</th>
+                  <th>Amount</th>
+                  <th>Collections</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Pricing Page ── -->
+      <div class="page-container" id="page-pricing" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Rate Engine</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Rate Engine</h2>
+            <p class="subtitle">Manage milk pricing and rate versions</p>
+          </div>
+        </div>
+
+        <!-- Current Rates -->
+        <div class="rate-cards">
+          <div class="rate-card cow">
+            <div class="rate-type">
+              <div class="type-icon"><i data-lucide="milk"></i></div>
+              <div>
+                <div class="type-name">Cow Milk</div>
+                <div style="font-size:var(--text-xs);color:var(--ink-muted);">Active Rate v2.1</div>
+              </div>
+              <span class="tag tag-green" style="margin-left:auto;">Active</span>
+            </div>
+            <div class="rate-values">
+              <div class="rate-field">
+                <div class="field-label">Fat Rate</div>
+                <div class="field-value" style="color:var(--forest);">₹5.00</div>
+              </div>
+              <div class="rate-field">
+                <div class="field-label">SNF Rate</div>
+                <div class="field-value" style="color:var(--info);">₹2.50</div>
+              </div>
+            </div>
+          </div>
+          <div class="rate-card buffalo">
+            <div class="rate-type">
+              <div class="type-icon"><i data-lucide="milk"></i></div>
+              <div>
+                <div class="type-name">Buffalo Milk</div>
+                <div style="font-size:var(--text-xs);color:var(--ink-muted);">Active Rate v2.1</div>
+              </div>
+              <span class="tag tag-green" style="margin-left:auto;">Active</span>
+            </div>
+            <div class="rate-values">
+              <div class="rate-field">
+                <div class="field-label">Fat Rate</div>
+                <div class="field-value" style="color:var(--purple);">₹6.50</div>
+              </div>
+              <div class="rate-field">
+                <div class="field-label">SNF Rate</div>
+                <div class="field-value" style="color:var(--teal);">₹3.00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Rate Form -->
+        <div class="card" style="margin-bottom:var(--space-5);">
+          <div class="card-header">
+            <h5 class="section-title">Create New Rate Version</h5>
+          </div>
+          <div class="card-body">
+            <form id="rate-form">
+              <div class="form-grid-4">
+                <div class="form-group">
+                  <label class="form-label">Milk Type</label>
+                  <select class="input-premium" required>
+                    <option value="">Select</option>
+                    <option>COW</option>
+                    <option>BUFFALO</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fat Rate (₹)</label>
+                  <input type="number" class="input-premium" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">SNF Rate (₹)</label>
+                  <input type="number" class="input-premium" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Effective From</label>
+                  <input type="date" class="input-premium" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
+                Create Rate
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Rate Comparison Chart -->
+        <div class="card" style="margin-bottom:var(--space-5);">
+          <div class="card-header">
+            <h5 class="section-title">Rate Trend</h5>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="rate-comparison-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rate History -->
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Rate Version History</div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="rate-history-table" style="width:100%;">
+              <thead>
+                <tr><th>Version</th><th>Milk Type</th><th>Fat Rate</th><th>SNF Rate</th><th>Effective From</th><th>Status</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Quality Page ── -->
+      <div class="page-container" id="page-quality" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Quality Control</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Quality Control</h2>
+            <p class="subtitle">Milk quality testing and analysis</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openQualityModal()">
+              <i data-lucide="flask-conical" style="width:16px;height:16px;"></i>
+              New Test
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-responsive">
+            <table class="table-premium" id="quality-table" style="width:100%;">
+              <thead>
+                <tr><th>Receipt</th><th>Farmer</th><th>Fat</th><th>SNF</th><th>CLR</th><th>Water</th><th>Temp</th><th>Result</th><th>Date</th><th>Actions</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Rejections Page ── -->
+      <div class="page-container" id="page-rejections" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Rejections</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Milk Rejections</h2>
+            <p class="subtitle">Track rejected milk and quality issues</p>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-responsive">
+            <table class="table-premium" id="rejections-table" style="width:100%;">
+              <thead>
+                <tr><th>Date</th><th>Receipt</th><th>Farmer</th><th>Qty</th><th>Reason</th><th>Water</th><th>Fat</th><th>Rejected By</th><th>Remark</th><th>Actions</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Procurement Page ── -->
+      <div class="page-container" id="page-procurement" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Procurement</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Procurement Management</h2>
+            <p class="subtitle">Collection centers, routes, and chilling plants</p>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:var(--space-4);">
+          <div class="card-body">
+            <div class="segmented-control">
+              <button class="segmented-btn procurement-tab active" data-tab="centers">Collection Centers</button>
+              <button class="segmented-btn procurement-tab" data-tab="routes">Routes</button>
+              <button class="segmented-btn procurement-tab" data-tab="chilling">Chilling Centers</button>
+            </div>
+          </div>
+        </div>
+        <div class="procurement-tab-content active" id="centers">
+          <div class="table-wrapper">
+            <div class="table-responsive">
+              <table class="table-premium" id="centers-table" style="width:100%;">
+                <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Manager</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="procurement-tab-content" id="routes" style="display:none;">
+          <div class="table-wrapper">
+            <div class="table-responsive">
+              <table class="table-premium" id="routes-table" style="width:100%;">
+                <thead><tr><th>Code</th><th>Name</th><th>Center</th><th>Driver</th><th>Vehicle</th><th>Distance</th><th>Farmers</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="procurement-tab-content" id="chilling" style="display:none;">
+          <div class="table-wrapper">
+            <div class="table-responsive">
+              <table class="table-premium" id="chilling-table" style="width:100%;">
+                <thead><tr><th>Code</th><th>Name</th><th>Tanks</th><th>Capacity</th><th>Current</th><th>Temp</th><th>Generator</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Inventory Page ── -->
+      <div class="page-container" id="page-inventory" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Inventory</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Inventory Management</h2>
+            <p class="subtitle">Track stock levels and movements</p>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-responsive">
+            <table class="table-premium" id="inventory-table" style="width:100%;">
+              <thead><tr><th>Code</th><th>Item</th><th>Category</th><th>Stock</th><th>Unit</th><th>Min Stock</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Employees Page ── -->
+      <div class="page-container" id="page-employees" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Employees</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Employees</h2>
+            <p class="subtitle">Manage all employees</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openAddEmployeeModal()">
+              <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
+              Add Employee
+            </button>
+          </div>
+        </div>
+
+        <!-- Employee Stats -->
+        <div class="farmer-stats-grid" id="employee-stats"></div>
+
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">All Employees</div>
+            <div class="table-toolbar">
+              <button class="btn btn-sm btn-ghost" title="Export CSV" onclick="Table.exportCSV('employees-table', 'employees.csv')"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
+              <button class="btn btn-sm btn-ghost" title="Print" onclick="Table.printTable('employees-table')"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="employees-table" style="width:100%;">
+              <thead><tr><th>Code</th><th>Name</th><th>Role</th><th>Branch</th><th>Mobile</th><th>Status</th><th>Joined</th><th style="width:100px;">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add Employee Modal -->
+        <div class="modal" id="employee-modal">
+          <div class="modal-backdrop" onclick="Modal.close('employee-modal')"></div>
+          <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+              <h5 id="employee-modal-title">Add Employee</h5>
+              <button class="modal-close" onclick="Modal.close('employee-modal')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+              <form id="employee-form" onsubmit="event.preventDefault(); saveEmployee();">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Employee Code</label>
+                    <input type="text" class="input-premium" id="emp-code" placeholder="EMP-006" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Full Name <span class="required">*</span></label>
+                    <input type="text" class="input-premium" id="emp-name" placeholder="Enter full name" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Role <span class="required">*</span></label>
+                    <select class="input-premium" id="emp-role" required>
+                      <option value="">Select Role</option>
+                      <option value="Operator">Operator</option>
+                      <option value="Accountant">Accountant</option>
+                      <option value="Branch Manager">Branch Manager</option>
+                      <option value="Driver">Driver</option>
+                      <option value="Supervisor">Supervisor</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Branch</label>
+                    <input type="text" class="input-premium" id="emp-branch" placeholder="Branch name">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Mobile <span class="required">*</span></label>
+                    <input type="tel" class="input-premium" id="emp-mobile" placeholder="10-digit mobile" maxlength="10" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="input-premium" id="emp-email" placeholder="email@dairy.com">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Salary (₹)</label>
+                    <input type="number" class="input-premium" id="emp-salary" placeholder="Monthly salary">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="input-premium" id="emp-status">
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top:var(--space-4);">
+                  <label class="form-label">Address</label>
+                  <textarea class="input-premium" id="emp-address" rows="2" placeholder="Full address"></textarea>
+                </div>
+                <div class="form-actions" style="border:none;padding:0;margin-top:var(--space-4);">
+                  <button type="button" class="btn btn-secondary" onclick="Modal.close('employee-modal')">Cancel</button>
+                  <button type="submit" class="btn btn-primary" id="emp-save-btn">
+                    <i data-lucide="save" style="width:16px;height:16px;"></i>
+                    Save Employee
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Vehicles Page ── -->
+      <div class="page-container" id="page-vehicles" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Vehicles</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Vehicles</h2>
+            <p class="subtitle">Vehicle registry and maintenance</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openVehicleModal()">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i>
+              Add Vehicle
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-responsive">
+            <table class="table-premium" id="vehicles-table" style="width:100%;">
+              <thead><tr><th>Number</th><th>Type</th><th>Driver</th><th>Capacity</th><th>Branch</th><th>Last Service</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Vehicle Modal -->
+        <div class="modal" id="vehicle-modal">
+          <div class="modal-backdrop" onclick="closeVehicleModal()"></div>
+          <div class="modal-content anim-scale-in">
+            <div class="modal-header">
+              <h5 id="vehicle-modal-title">Add Vehicle</h5>
+              <button class="modal-close" onclick="closeVehicleModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <form id="vehicle-form">
+                <input type="hidden" id="vehicle-id">
+                <div class="form-group">
+                  <label class="form-label">Vehicle Number <span class="required">*</span></label>
+                  <input type="text" class="input-premium" id="vehicle-number" placeholder="e.g. MP-09-AB-1234" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Type <span class="required">*</span></label>
+                  <select class="input-premium" id="vehicle-type" required>
+                    <option value="">Select Type</option>
+                    <option value="TANKER">Tanker</option>
+                    <option value="PICKUP">Pickup</option>
+                    <option value="MINI_VAN">Mini Van</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Driver Name</label>
+                  <input type="text" class="input-premium" id="vehicle-driver" placeholder="Driver name">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Capacity (Liters)</label>
+                  <input type="number" class="input-premium" id="vehicle-capacity" placeholder="Capacity in liters" min="0">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Branch</label>
+                  <select class="input-premium" id="vehicle-branch">
+                    <option value="">Select Branch</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Status</label>
+                  <select class="input-premium" id="vehicle-status">
+                    <option value="ACTIVE">Active</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="INACTIVE">Inactive</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" onclick="closeVehicleModal()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveVehicle()">
+                <i data-lucide="save" style="width:16px;height:16px;"></i>
+                Save Vehicle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Reports Page ── -->
+      <div class="page-container" id="page-reports" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Reports</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Reports</h2>
+            <p class="subtitle">Generate and export reports</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" data-action="export-report"><i data-lucide="download" style="width:16px;height:16px;"></i> Export PDF</button>
+            <button class="btn btn-secondary" data-action="print-report"><i data-lucide="printer" style="width:16px;height:16px;"></i> Print</button>
+          </div>
+        </div>
+
+        <!-- Report Type Selector -->
+        <div class="report-type-grid">
+          <div class="report-type-card active" data-report="collection">
+            <div class="report-icon" style="background:var(--info-light);color:var(--info);"><i data-lucide="milk"></i></div>
+            <div class="report-info">
+              <div class="report-name">Collection Summary</div>
+              <div class="report-desc">Daily milk collection report</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="payment">
+            <div class="report-icon" style="background:var(--success-light);color:var(--success);"><i data-lucide="wallet"></i></div>
+            <div class="report-info">
+              <div class="report-name">Payment Summary</div>
+              <div class="report-desc">Farmer payment report</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="farmer">
+            <div class="report-icon" style="background:var(--teal-light);color:var(--teal);"><i data-lucide="users"></i></div>
+            <div class="report-info">
+              <div class="report-name">Farmer Ledger</div>
+              <div class="report-desc">Individual farmer statement</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="quality">
+            <div class="report-icon" style="background:var(--purple-light);color:var(--purple);"><i data-lucide="flask-conical"></i></div>
+            <div class="report-info">
+              <div class="report-name">Quality Report</div>
+              <div class="report-desc">Quality analysis report</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="rejection">
+            <div class="report-icon" style="background:var(--danger-light);color:var(--danger);"><i data-lucide="x-circle"></i></div>
+            <div class="report-info">
+              <div class="report-name">Rejection Report</div>
+              <div class="report-desc">Milk rejection analysis</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="branch">
+            <div class="report-icon" style="background:var(--orange-light);color:var(--orange);"><i data-lucide="building-2"></i></div>
+            <div class="report-info">
+              <div class="report-name">Branch Report</div>
+              <div class="report-desc">Branch-wise performance</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom:var(--space-4);">
+          <div class="card-body">
+            <div class="flex items-center gap-4">
+              <div class="date-range-picker">
+                <input type="date" value="2026-07-01">
+                <span class="date-separator">to</span>
+                <input type="date" value="2026-07-19">
+              </div>
+              <select style="padding:var(--space-2) var(--space-6) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
+                <option>All Branches</option>
+                <option>Agar Malwa Main</option>
+                <option>Susner Sub</option>
+              </select>            <button class="btn btn-primary" onclick="generateReport()"><i data-lucide="search" style="width:16px;height:16px;"></i> Generate</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Content -->
+        <div id="report-content"></div>
+      </div>
+
+      <!-- ── Audit Page ── -->
+      <div class="page-container" id="page-audit" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Audit Logs</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Audit Logs</h2>
+            <p class="subtitle">Complete system activity trail</p>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:var(--space-4);">
+          <div class="card-body">
+            <div class="flex items-center gap-3 flex-wrap">
+              <input type="date" class="input-premium" style="width:auto;" value="2026-07-01">
+              <span class="date-separator">to</span>
+              <input type="date" class="input-premium" style="width:auto;" value="2026-07-19">
+              <select style="padding:var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
+                <option>All Actions</option>
+                <option>Collection</option>
+                <option>Payment</option>
+                <option>Farmer</option>
+                <option>Rate</option>
+                <option>Login</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="filterAuditLogs()"><i data-lucide="search" style="width:16px;height:16px;"></i> Filter</button>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-responsive">
+            <table class="table-premium" id="audit-table" style="width:100%;">
+              <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Entity</th><th>Entity ID</th><th>Details</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Settings Page ── -->
+      <div class="page-container" id="page-settings" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Settings</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Settings</h2>
+            <p class="subtitle">System configuration and management</p>
+          </div>
+        </div>
+        <div class="settings-layout">
+          <div class="settings-sidebar">
+            <button class="settings-nav-item active" data-section="settings-general">
+              <i data-lucide="sliders" style="width:18px;height:18px;"></i>
+              General
+            </button>
+            <button class="settings-nav-item" data-section="settings-branch">
+              <i data-lucide="building-2" style="width:18px;height:18px;"></i>
+              Branch
+            </button>
+            <button class="settings-nav-item" data-section="settings-users">
+              <i data-lucide="users" style="width:18px;height:18px;"></i>
+              Users
+            </button>
+            <button class="settings-nav-item" data-section="settings-backup">
+              <i data-lucide="hard-drive" style="width:18px;height:18px;"></i>
+              Backup
+            </button>
+            <button class="settings-nav-item" data-section="settings-api">
+              <i data-lucide="key" style="width:18px;height:18px;"></i>
+              API Keys
+            </button>
+          </div>
+          <div class="settings-content">
+            <!-- General -->
+            <div class="settings-section active" id="settings-general">
+              <div class="settings-header">
+                <h4>General Settings</h4>
+                <p>Configure system-wide preferences</p>
+              </div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Dairy Name</label>
+                  <input type="text" class="input-premium" value="Smart Dairy ERP" placeholder="Dairy name">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Currency</label>
+                  <select class="input-premium"><option>Indian Rupee (₹)</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Time Zone</label>
+                  <select class="input-premium"><option>Asia/Kolkata (IST)</option></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Language</label>
+                  <select class="input-premium"><option>English</option><option>मराठी</option><option>हिन्दी</option></select>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+              </div>
+            </div>
+            <!-- Branch Settings -->
+            <div class="settings-section" id="settings-branch">
+              <div class="settings-header">
+                <h4>Branch Configuration</h4>
+                <p>Manage branch settings</p>
+              </div>
+              <p style="color:var(--ink-muted);font-size:var(--text-sm);">Branch management is available in the Branches section.</p>
+              <button class="btn btn-secondary" onclick="Router.navigate('branches')">Go to Branches</button>
+            </div>
+            <!-- Users -->
+            <div class="settings-section" id="settings-users">
+              <div class="settings-header">
+                <h4>User Management</h4>
+                <p>Manage system users and roles</p>
+              </div>
+              <div class="user-list">
+                <div class="user-item">
+                  <div class="user-avatar-sm" style="background:var(--forest);">AD</div>
+                  <div class="user-info"><div class="user-fullname">Admin User</div><div class="user-email">admin@dairy.com</div></div>
+                  <span class="tag tag-green">SUPER_ADMIN</span>
+                  <button class="btn btn-sm btn-ghost"><i data-lucide="edit-3" style="width:14px;height:14px;"></i></button>
+                </div>
+                <div class="user-item">
+                  <div class="user-avatar-sm" style="background:var(--info);">VS</div>
+                  <div class="user-info"><div class="user-fullname">Vijay Singh</div><div class="user-email">vijay@dairy.com</div></div>
+                  <span class="tag tag-blue">BRANCH_MANAGER</span>
+                  <button class="btn btn-sm btn-ghost"><i data-lucide="edit-3" style="width:14px;height:14px;"></i></button>
+                </div>
+              </div>
+            </div>
+            <!-- Backup -->
+            <div class="settings-section" id="settings-backup">
+              <div class="settings-header">
+                <h4>Backup & Restore</h4>
+                <p>Manage system backups</p>
+              </div>
+              <div class="backup-card">
+                <div class="backup-info">
+                  <span class="backup-name">Latest Backup</span>
+                  <span class="backup-date">19 Jul 2026, 03:00 AM</span>
+                </div>
+                <div class="flex gap-2">
+                  <button class="btn btn-primary btn-sm" onclick="createBackup()"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Create Backup</button>
+                  <button class="btn btn-secondary btn-sm" onclick="downloadBackup()"><i data-lucide="download" style="width:14px;height:14px;"></i> Download</button>
+                </div>
+              </div>
+            </div>
+            <!-- API Keys -->
+            <div class="settings-section" id="settings-api">
+              <div class="settings-header">
+                <h4>API Keys</h4>
+                <p>Manage API access keys</p>
+              </div>
+              <div class="api-key-display">
+                <span class="key-value">sd_api_••••••••••••••••a3f8k2</span>
+                <button class="btn btn-sm btn-ghost" onclick="copyApiKey()"><i data-lucide="copy" style="width:14px;height:14px;"></i></button>················a3f8k2').then(() => Modal.toast({title:'Copied',message:'API key copied to clipboard',type:'success'}))"><i data-lucide="copy" style="width:14px;height:14px;"></i></button>
+              </div>
+              <div class="form-actions" style="margin-top:var(--space-4);">
+                <button class="btn btn-danger btn-sm" onclick="regenerateApiKey()">Regenerate Key</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Notifications Page ── -->
+      <div class="page-container" id="page-notifications" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Notifications</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Notifications</h2>
+            <p class="subtitle">All system notifications and alerts</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-sm btn-ghost" onclick="markAllRead()">Mark All Read</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="segmented-control" style="margin-bottom:var(--space-4);">
+              <button class="segmented-btn active">All</button>
+              <button class="segmented-btn">Unread</button>
+              <button class="segmented-btn">Collections</button>
+              <button class="segmented-btn">Payments</button>
+              <button class="segmented-btn">System</button>
+            </div>
+            <div id="notifications-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Profile Page ── -->
+      <div class="page-container" id="page-profile" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">My Profile</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>My Profile</h2>
+            <p class="subtitle">Manage your account settings</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="profile-header" style="border:none;padding:0;margin-bottom:var(--space-6);">
+              <div class="profile-avatar" style="width:80px;height:80px;font-size:1.75rem;">AD</div>
+              <div class="profile-info">
+                <h3>Admin User</h3>
+                <p style="color:var(--ink-muted);font-size:var(--text-sm);">admin@dairy.com</p>
+                <div class="profile-meta">
+                  <span><span class="tag tag-green">SUPER_ADMIN</span></span>
+                  <span style="font-size:var(--text-sm);color:var(--ink-muted);">Last login: 19 Jul 2026, 08:00 AM</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="input-premium" value="Admin User"></div>
+              <div class="form-group"><label class="form-label">Email</label><input type="email" class="input-premium" value="admin@dairy.com"></div>
+              <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="input-premium" value="9876543000"></div>
+              <div class="form-group"><label class="form-label">Username</label><input type="text" class="input-premium" value="admin" disabled></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="updateProfile()">Update Profile</button>
+              <button class="btn btn-secondary" onclick="changePassword()">Change Password</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Help Page ── -->
+      <div class="page-container" id="page-help" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Help Center</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Help Center</h2>
+            <p class="subtitle">Documentation and support</p>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="card card-premium" style="cursor:pointer;" onclick="openHelpGuide('getting-started')">
+            <div class="card-body" style="text-align:center;">
+              <div style="font-size:2.5rem;color:var(--forest);margin-bottom:var(--space-3);"><i data-lucide="book-open"></i></div>
+              <h5>Getting Started</h5>
+              <p style="font-size:var(--text-sm);color:var(--ink-muted);">Learn the basics of Smart Dairy ERP</p>
+            </div>
+          </div>
+          <div class="card card-premium" style="cursor:pointer;" onclick="openHelpGuide('video-tutorials')">
+            <div class="card-body" style="text-align:center;">
+              <div style="font-size:2.5rem;color:var(--gold);margin-bottom:var(--space-3);"><i data-lucide="video"></i></div>
+              <h5>Video Tutorials</h5>
+              <p style="font-size:var(--text-sm);color:var(--ink-muted);">Watch step-by-step guides</p>
+            </div>
+          </div>
+          <div class="card card-premium" style="cursor:pointer;" onclick="openHelpGuide('contact-support')">
+            <div class="card-body" style="text-align:center;">
+              <div style="font-size:2.5rem;color:var(--info);margin-bottom:var(--space-3);"><i data-lucide="headphones"></i></div>
+              <h5>Contact Support</h5>
+              <p style="font-size:var(--text-sm);color:var(--ink-muted);">Get help from our team</p>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:var(--space-5);">
+          <div class="card-header">
+            <h5 class="section-title">Frequently Asked Questions</h5>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label" style="font-weight:600;">How do I record a milk collection?</label>
+              <p style="font-size:var(--text-sm);color:var(--ink-secondary);">Navigate to Milk Collection from the sidebar, search for the farmer, enter quantity and quality parameters, and click Save Collection.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight:600;">How are payments calculated?</label>
+              <p style="font-size:var(--text-sm);color:var(--ink-secondary);">Payments are calculated based on fat and SNF content. Amount = (Fat × Fat Rate + SNF × SNF Rate) × Quantity.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight:600;">How do I generate reports?</label>
+              <p style="font-size:var(--text-sm);color:var(--ink-secondary);">Go to Reports, select the report type, choose date range and filters, then click Generate.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 404 Page ── -->
+      <div class="page-container" id="page-404" style="display:none;">
+        <div class="empty-state" style="padding:var(--space-16) var(--space-6);">
+          <div class="empty-icon" style="font-size:6rem;color:var(--gray-400);">
+            <i data-lucide="file-question" style="width:96px;height:96px;"></i>
+          </div>
+          <h2 style="font-family:var(--font-display);font-size:var(--text-4xl);margin-bottom:var(--space-2);">404</h2>
+          <h3 style="font-size:var(--text-xl);margin-bottom:var(--space-3);">Page Not Found</h3>
+          <p style="max-width:500px;margin:0 auto var(--space-6);">The page you're looking for doesn't exist or has been moved.</p>
+          <button class="btn btn-primary btn-lg" onclick="Router.navigate('dashboard')">
+            <i data-lucide="arrow-left" style="width:18px;height:18px;"></i>
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ════════════════════════════════════════════════
+         FOOTER
+         ════════════════════════════════════════════════ -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span>© 2026 Smart Dairy ERP. All rights reserved.</span>
+        <span class="divider-vertical"></span>
+        <span>Version 2.0</span>
+      </div>
+      <div class="footer-right">
+        <div class="status-indicator">
+          <span class="status-dot online"></span>
+          <span>All Systems Operational</span>
+        </div>
+        <span class="divider-vertical"></span>
+        <span>Last backup: 03:00 AM</span>
+      </div>
+    </footer>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     APPLICATION SCRIPTS
+     ══════════════════════════════════════════════════════ -->
+
+      <!-- Quality Test Modal -->
+      <div class="modal" id="quality-modal">
+        <div class="modal-backdrop" onclick="closeQualityModal()"></div>
+        <div class="modal-content" style="max-width:560px;">
+          <div class="modal-header">
+            <h5 id="quality-modal-title">New Quality Test</h5>
+            <button class="modal-close" onclick="closeQualityModal()"><i data-lucide="x"></i></button>
+          </div>
+          <form id="quality-form" onsubmit="saveQualityTest();return false">
+            <div class="modal-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Collection ID</label>
+                  <input type="number" class="input-premium" id="q-test-collection" placeholder="Collection receipt #">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Farmer ID <span class="required">*</span></label>
+                  <input type="number" class="input-premium" id="q-test-farmer" placeholder="Farmer ID" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fat %</label>
+                  <input type="number" class="input-premium" id="q-test-fat" placeholder="0.0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">SNF %</label>
+                  <input type="number" class="input-premium" id="q-test-snf" placeholder="0.0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CLR</label>
+                  <input type="number" class="input-premium" id="q-test-clr" placeholder="0.0" step="0.5">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Temperature °C</label>
+                  <input type="number" class="input-premium" id="q-test-temp" placeholder="0.0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Water %</label>
+                  <input type="number" class="input-premium" id="q-test-water" placeholder="0.0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Result</label>
+                  <select class="input-premium" id="q-test-result">
+                    <option value="PASS">PASS</option>
+                    <option value="BORDERLINE">BORDERLINE</option>
+                    <option value="FAIL">FAIL</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="closeQualityModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i data-lucide="flask-conical" style="width:16px;height:16px;"></i> Save Test</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Payment Modal -->
+      <div class="modal" id="payment-modal">
+        <div class="modal-backdrop" onclick="closePaymentModal()"></div>
+        <div class="modal-content" style="max-width:500px;">
+          <div class="modal-header">
+            <h5 id="payment-modal-title">Generate Payment Sheet</h5>
+            <button class="modal-close" onclick="closePaymentModal()"><i data-lucide="x"></i></button>
+          </div>
+          <form id="payment-form" onsubmit="generatePaymentSheet();return false">
+            <div class="modal-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Farmer ID <span class="required">*</span></label>
+                  <input type="number" class="input-premium" id="payment-farmer-id" placeholder="Enter farmer ID" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Period Start <span class="required">*</span></label>
+                  <input type="date" class="input-premium" id="payment-period-start" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Period End <span class="required">*</span></label>
+                  <input type="date" class="input-premium" id="payment-period-end" required>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i data-lucide="wallet" style="width:16px;height:16px;"></i> Generate</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/storage.js"></script>
+<script src="/static/js/router.js"></script>
+<script src="/static/js/modal.js"></script>
+<script src="/static/js/table.js"></script>
+<script src="/static/js/form-validation.js"></script>
+<script src="/static/js/chart.js"></script>
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/collection.js"></script>
+<script src="/static/js/farmers.js"></script>
+<script src="/static/js/farmer-form.js"></script>
+<script src="/static/js/farmer-profile.js"></script>
+<script src="/static/js/branches.js"></script>
+<script src="/static/js/payments.js"></script>
+<script src="/static/js/pricing.js"></script>
+<script src="/static/js/quality.js"></script>
+<script src="/static/js/rejections.js"></script>
+<script src="/static/js/procurement.js"></script>
+<script src="/static/js/inventory.js"></script>
+<script src="/static/js/employees.js"></script>
+<script src="/static/js/vehicles.js"></script>
+<script src="/static/js/reports.js"></script>
+<script src="/static/js/audit.js"></script>
+<script src="/static/js/settings.js"></script>
+<script src="/static/js/notification.js"></script>
+<script src="/static/js/app.js"></script>
+
+<script>
+/**
+ * Sidebar search filter
+ */
+function filterSidebar(query) {
+  const items = document.querySelectorAll('.sidebar-nav .nav-item');
+  const q = query.toLowerCase().trim();
+  
+  items.forEach(item => {
+    const label = item.querySelector('.nav-label');
+    if (!label) return;
+    const text = label.textContent.toLowerCase();
+    item.style.display = !q || text.includes(q) ? 'flex' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
