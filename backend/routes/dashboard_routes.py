@@ -38,6 +38,9 @@ def get_dashboard():
     today_colls = _scoped_query(Collection, Collection.date == today).all()
     today_qty = round(sum(c.quantity or 0 for c in today_colls), 2)
     today_amount = round(sum(c.amount or 0 for c in today_colls), 2)
+    today_cow = round(sum(c.quantity or 0 for c in today_colls if c.milk_type == 'COW'), 2)
+    today_buffalo = round(sum(c.quantity or 0 for c in today_colls if c.milk_type == 'BUFFALO'), 2)
+    today_mixed = round(sum(c.quantity or 0 for c in today_colls if c.milk_type == 'MIXED'), 2)
 
     fats = [c.fat for c in today_colls if c.fat]
     snfs = [c.snf for c in today_colls if c.snf]
@@ -99,10 +102,13 @@ def get_dashboard():
     revenue_growth = round((recent_amount - prev_amount) / prev_amount * 100, 1) \
         if prev_amount else None
 
-    # ── Branch performance (last 30 days) ──
+    # ── Branch performance (last 30 days) — scoped for branch managers ──
     month_start = today - timedelta(days=30)
     branch_data = []
-    for b in Branch.query.filter_by(status='ACTIVE').order_by(Branch.name).all():
+    branch_query = Branch.query.filter_by(status='ACTIVE').order_by(Branch.name)
+    if scoped:
+        branch_query = branch_query.filter_by(id=user_branch_id)
+    for b in branch_query.all():
         b_colls = Collection.query.filter(
             Collection.branch_id == b.id,
             Collection.date >= month_start,
@@ -185,6 +191,9 @@ def get_dashboard():
     return jsonify({
         'kpis': {
             'todayCollection': today_qty,
+            'todayCow': today_cow,
+            'todayBuffalo': today_buffalo,
+            'todayMixed': today_mixed,
             'revenue': today_amount,
             'activeFarmers': active_farmers,
             'avgFat': avg_fat,

@@ -9,11 +9,16 @@ POST /api/auth/change-password   — Change password
 POST /api/auth/forgot-password   — Request password reset
 """
 import json
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required
 from backend.app import db
-from backend.models import User
+from backend.models import User, Branch
 from backend.auth import check_password, hash_password, get_identity
+
+# TEMPORARY DEV: permanent credentials (admin / admin123) — see DEV_LOGIN_ENABLED
+# in config.py. Remove this bypass before any production release.
+PERMANENT_ADMIN_USERNAME = 'admin'
+PERMANENT_ADMIN_PASSWORD = 'admin123'
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -33,18 +38,49 @@ def login():
         return jsonify({'error': 'Username and password are required'}), 400
 
     user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({'error': 'Invalid username or password'}), 401
 
-    if not check_password(password, user.password_hash):
-        return jsonify({'error': 'Invalid username or password'}), 401
+    # TEMPORARY DEV BYPASS (see DEV_LOGIN_ENABLED in config.py) — while enabled,
+    # the permanent credentials (admin / admin123) always work, regardless of
+    # the stored password hash or DB state. The admin user is created on the
+    # fly if missing, and force-set to an ACTIVE SUPER_ADMIN.
+    dev_login = current_app.config.get('DEV_LOGIN_ENABLED', False)
+    if dev_login and username == PERMANENT_ADMIN_USERNAME and password == PERMANENT_ADMIN_PASSWORD:
+        if not user:
+            user = User(
+                username=PERMANENT_ADMIN_USERNAME,
+                password_hash=hash_password(PERMANENT_ADMIN_PASSWORD),
+                name='Admin User',
+                role='SUPER_ADMIN',
+                email='admin@dairy.com',
+                status='ACTIVE',
+            )
+            db.session.add(user)
+        if user.role != 'SUPER_ADMIN':
+            user.role = 'SUPER_ADMIN'
+        if user.status != 'ACTIVE':
+            user.status = 'ACTIVE'
+        db.session.commit()
+    else:
+        if not user:
+            return jsonify({'error': 'Invalid username or password'}), 401
 
-    if user.status != 'ACTIVE':
-        return jsonify({'error': 'Account is inactive. Contact administrator.'}), 403
+        if not check_password(password, user.password_hash):
+            return jsonify({'error': 'Invalid username or password'}), 401
+
+        if user.status != 'ACTIVE':
+            return jsonify({'error': 'Account is inactive. Contact administrator.'}), 403
 
     from datetime import datetime
     user.last_login_at = datetime.utcnow()
     db.session.commit()
+
+    # Branch display resolution:
+    # - Branch-scoped users (operator/manager) always use their assigned branch.
+    # - Global roles (super admin / head office / accountant) may pick a branch
+    #   on the login screen; use it so the branch name is visible in the UI.
+    #   (branchId stays as the user's assigned branch so data scoping is unchanged.)
+    selected_branch = Branch.query.get(branch_id) if branch_id else None
+    branch_name = user.branch.name if user.branch else (selected_branch.name if selected_branch else None)
 
     identity = {
         'uid': user.id,
@@ -52,7 +88,8 @@ def login():
         'name': user.name,
         'role': user.role,
         'branchId': user.branch_id,
-        'branchName': user.branch.name if user.branch else None,
+        'branchName': branch_name,
+        'branchCode': user.branch.code if user.branch else None,
     }
 
     token = create_access_token(identity=json.dumps(identity))

@@ -506,6 +506,12 @@ function filterPassbook() {
  * @param {string} section - Guide section name
  */
 function openHelpGuide(section) {
+  // "Getting Started" opens the full in-app User Guide (guidance book)
+  if (section === 'getting-started' && window.Guide) {
+    Router.navigate('guide');
+    window.Guide.open('getting-started');
+    return;
+  }
   const guides = {
     'getting-started': {
       title: 'Getting Started Guide',

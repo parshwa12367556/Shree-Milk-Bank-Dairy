@@ -17,7 +17,25 @@ window.initFarmerForm = function() {
   
   if (isEditing) {
     populateFormFields(editFarmer);
+  } else {
+    // Only Branch Managers can register new farmers (architecture spec)
+    const user = Auth.getUser();
+    if (!user || user.role !== 'BRANCH_MANAGER') {
+      const card = document.getElementById('farmer-form-card');
+      const notice = document.getElementById('farmer-form-access-notice');
+      if (card) card.style.display = 'none';
+      if (notice) {
+        notice.style.display = 'block';
+      } else {
+        Modal.toast({ title: 'Access Denied', message: 'Only Branch Managers can register farmers.', type: 'error' });
+        setTimeout(() => Router.navigate('farmers'), 1200);
+        return;
+      }
+    }
   }
+  
+  initBranchLock();
+  initFarmerFormHeader();
   
   FormValidator.init('farmer-form', {
     farmer_name: { required: true, minLength: 2, requiredMessage: 'Farmer name is required' },
@@ -69,6 +87,9 @@ window.initFarmerForm = function() {
 };
 
 function buildFarmerPayload(data) {
+  const user = Auth.getUser();
+  // Farmers always belong to the logged-in Branch Manager's own branch
+  const branchId = user && user.branchId ? parseInt(user.branchId) : (parseInt(data.branch_id) || null);
   return {
     farmer_name: data.farmer_name,
     father_name: data.father_name,
@@ -90,11 +111,60 @@ function buildFarmerPayload(data) {
     buffalo_count: parseInt(data.buffalo_count) || 0,
     breed: data.breed || null,
     preferred_shift: data.preferred_shift || null,
-    branch_id: parseInt(data.branch_id) || 1,
+    branch_id: branchId,
     notification_sms: data.notification_sms === 'on',
     notification_whatsapp: data.notification_whatsapp === 'on',
     notification_email: data.notification_email === 'on',
   };
+}
+
+/**
+ * Lock the Branch select to the logged-in user's branch.
+ * Branch Managers can only register farmers under their own branch.
+ */
+function initBranchLock() {
+  const select = document.querySelector('#farmer-form [name="branch_id"]');
+  if (!select) return;
+
+  const user = Auth.getUser();
+  if (user && user.branchId) {
+    // Branch Manager: branch is locked to the manager's own branch
+    select.innerHTML = '';
+    const opt = document.createElement('option');
+    opt.value = user.branchId;
+    opt.textContent = user.branchName ? `${user.branchName} (${user.branchCode || ''})` : `Branch ${user.branchId}`;
+    select.appendChild(opt);
+    select.disabled = true;
+  } else {
+    // Head Office viewing the form (edit mode): clear the stale hardcoded
+    // options — registration is manager-only, edits keep the farmer's branch.
+    select.innerHTML = '';
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = "Assigned to Branch Manager's branch";
+    select.appendChild(opt);
+    select.disabled = true;
+  }
+}
+
+/**
+ * Fill the Company / Branch / Farmer-ID strip at the top of the form.
+ */
+function initFarmerFormHeader() {
+  const branchEl = document.getElementById('farmer-form-branch');
+  const idEl = document.getElementById('farmer-form-farmer-id');
+  const user = Auth.getUser();
+
+  if (branchEl) {
+    branchEl.textContent = (user && user.branchCode)
+      ? `${user.branchCode} · ${user.branchName || 'Branch'}`
+      : '—';
+  }
+  if (idEl) {
+    idEl.textContent = (user && user.branchCode)
+      ? `Auto-generated (${user.branchCode}001)`
+      : 'Auto-generated (BR01001)';
+  }
 }
 
 function updateFormForEdit(isEditing, farmer) {

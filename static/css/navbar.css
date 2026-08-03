@@ -73,6 +73,27 @@
   gap: var(--space-6);
 }
 
+/* ── Current Branch Chip ── */
+.navbar .nav-center .current-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-hover);
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.navbar .nav-center .current-branch .current-branch-name {
+  font-weight: var(--weight-semibold);
+  color: var(--accent-dark);
+}
+
 .navbar .nav-center .breadcrumb-nav {
   display: flex;
   align-items: center;

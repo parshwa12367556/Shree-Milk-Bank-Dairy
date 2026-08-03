@@ -11,6 +11,42 @@ const Router = {
   guards: {},
 
   /**
+   * Role-based access map — restricts pages to specific roles.
+   * Branch Managers are limited to their own branch modules; head-office
+   * modules (branches, procurement, vehicles, rates, audit, settings) and
+   * farmer registration are role-gated per the architecture spec.
+   */
+  roleAccess: {
+    branches: ['SUPER_ADMIN', 'HEAD_OFFICE'],
+    procurement: ['SUPER_ADMIN', 'HEAD_OFFICE'],
+    vehicles: ['SUPER_ADMIN', 'HEAD_OFFICE'],
+    pricing: ['SUPER_ADMIN', 'HEAD_OFFICE'],
+    audit: ['SUPER_ADMIN'],
+    settings: ['SUPER_ADMIN', 'HEAD_OFFICE'],
+    'farmer-form': ['BRANCH_MANAGER'],
+  },
+
+  /**
+   * Check whether the current user may open a page
+   * @param {string} page - Route name
+   * @returns {boolean}
+   */
+  canAccess(page) {
+    // Farmer form: only Branch Managers may REGISTER new farmers, but any
+    // authenticated user may open it to EDIT an existing farmer.
+    if (page === 'farmer-form') {
+      const user = window.Auth ? Auth.getUser() : null;
+      if (!user) return false;
+      if (user.role === 'BRANCH_MANAGER') return true;
+      return !!(window.App && window.App.editFarmer);
+    }
+    const allowed = this.roleAccess[page];
+    if (!allowed) return true;
+    const user = window.Auth ? Auth.getUser() : null;
+    return !!(user && allowed.includes(user.role));
+  },
+
+  /**
    * Register a route
    * @param {string} name - Route name (without #)
    * @param {object} config - Route configuration
@@ -80,6 +116,15 @@ const Router = {
     // Store previous page
     this.previousPage = this.currentPage;
     this.currentPage = page;
+
+    // Role-based route guard — redirect forbidden pages to dashboard
+    if (!this.canAccess(page)) {
+      if (window.Modal) {
+        Modal.toast({ title: 'Access Denied', message: 'You do not have permission to view this page.', type: 'error' });
+      }
+      window.location.replace('#dashboard');
+      return;
+    }
 
     // Check if route exists
     const route = this.routes[page];
@@ -189,5 +234,6 @@ Router.register('settings', { title: 'Settings', icon: 'settings', init: 'initSe
 Router.register('notifications', { title: 'Notifications', icon: 'bell', init: 'initNotifications' });
 Router.register('profile', { title: 'My Profile', icon: 'user-circle', init: 'initProfile' });
 Router.register('help', { title: 'Help Center', icon: 'help-circle', init: 'initHelp' });
+Router.register('guide', { title: 'User Guide', icon: 'book-open', init: 'initGuide' });
 
 window.Router = Router;

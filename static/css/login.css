@@ -210,6 +210,31 @@
   transform: translateY(0);
 }
 
+/* ── Dev Credentials Hint ── */
+.login-dev-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: var(--accent-light);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--accent-dark);
+  margin-top: var(--space-5);
+}
+
+.login-dev-hint strong {
+  font-weight: var(--weight-semibold);
+}
+
+[data-theme="dark"] .login-dev-hint {
+  background: var(--bg-selected);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Divider between form and footer ── */
 .login-divider {
   height: 1px;

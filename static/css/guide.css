@@ -1,0 +1,646 @@
+/* ============================================================
+   SMART DAIRY ERP — User Guide (Guidance Book) Styles
+   ============================================================ */
+
+/* ── Book Layout ── */
+.guide-book {
+  display: grid;
+  grid-template-columns: 272px 1fr;
+  gap: var(--space-5);
+  align-items: start;
+  margin-top: var(--space-4);
+}
+
+/* ── Guide Rail (Chapter Navigator) ── */
+.guide-rail {
+  position: sticky;
+  top: calc(var(--navbar-height) + var(--space-4));
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.guide-rail-header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--line-light);
+  background: linear-gradient(135deg, var(--forest-subtle), var(--bg-surface));
+}
+
+.guide-rail-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+
+.guide-rail-title i {
+  color: var(--forest);
+}
+
+.guide-progress-track {
+  height: 6px;
+  background: var(--gray-200);
+  border-radius: var(--radius-full);
+  margin-top: var(--space-3);
+  overflow: hidden;
+}
+
+.guide-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--forest-light), var(--forest));
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+}
+
+.guide-progress-label {
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-top: var(--space-2);
+  display: block;
+}
+
+.guide-rail-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+}
+
+.guide-rail-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink-secondary);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.guide-rail-item:hover {
+  background: var(--bg-hover);
+  color: var(--ink);
+}
+
+.guide-rail-item.active {
+  background: var(--bg-selected);
+  color: var(--forest);
+  font-weight: var(--weight-semibold);
+}
+
+.guide-rail-item.dim {
+  opacity: 0.35;
+}
+
+.guide-rail-num {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--gray-100);
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+
+.guide-rail-item.active .guide-rail-num {
+  background: var(--forest);
+  color: #fff;
+}
+
+.guide-rail-item.done .guide-rail-num {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.guide-rail-label {
+  flex: 1;
+  line-height: 1.3;
+}
+
+.guide-rail-check {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--gray-400);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  transition: all var(--transition-fast);
+}
+
+.guide-rail-check:hover {
+  border-color: var(--forest);
+}
+
+.guide-rail-check.checked {
+  background: var(--forest);
+  border-color: var(--forest);
+}
+
+.guide-rail-check.checked::after {
+  content: '\2713';
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+
+/* ── Guide Content ── */
+.guide-content {
+  min-width: 0;
+}
+
+.guide-chapter-hero {
+  position: relative;
+  padding: var(--space-6) var(--space-6);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--forest-deep), var(--forest));
+  color: #fff;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: var(--space-5);
+  overflow: hidden;
+}
+
+.guide-chapter-hero::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.guide-chapter-hero::before {
+  content: '';
+  position: absolute;
+  right: 40px;
+  bottom: -60px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.guide-chapter-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.15);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-3);
+}
+
+.guide-chapter-eyebrow i {
+  width: 14px;
+  height: 14px;
+}
+
+.guide-chapter-title {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+}
+
+.guide-chapter-desc {
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 640px;
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+.guide-toc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-xs);
+}
+
+.guide-toc-label {
+  color: var(--ink-muted);
+  font-weight: var(--weight-semibold);
+  margin-right: var(--space-1);
+}
+
+.guide-toc a {
+  color: var(--forest);
+  text-decoration: none;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+}
+
+.guide-toc a:hover {
+  background: var(--bg-selected);
+  border-color: var(--forest);
+}
+
+/* ── Guide Sections (accordion cards) ── */
+.guide-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+  scroll-margin-top: calc(var(--navbar-height) + var(--space-4));
+  transition: box-shadow var(--transition-base);
+}
+
+.guide-section:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.guide-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+
+.guide-section-head:hover {
+  background: var(--bg-hover);
+}
+
+.guide-sec-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--forest-subtle);
+  color: var(--forest);
+}
+
+.guide-sec-title {
+  flex: 1;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+}
+
+.guide-chevron {
+  color: var(--ink-muted);
+  transition: transform var(--transition-base);
+}
+
+.guide-section.open .guide-chevron {
+  transform: rotate(180deg);
+}
+
+.guide-section-body {
+  display: none;
+  padding: 0 var(--space-5) var(--space-5) calc(var(--space-5) + 46px);
+  border-top: 1px dashed var(--line-light);
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.guide-section.open .guide-section-body {
+  display: block;
+}
+
+.guide-section-body p {
+  margin: 0 0 var(--space-3);
+}
+
+.guide-section-body strong {
+  color: var(--ink);
+}
+
+.guide-section-body ul,
+.guide-section-body ol {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}
+
+.guide-section-body li {
+  margin-bottom: var(--space-1);
+}
+
+/* ── Steps ── */
+.guide-steps {
+  list-style: none;
+  counter-reset: gstep;
+  padding: 0 !important;
+  margin: var(--space-3) 0 var(--space-4) !important;
+}
+
+.guide-steps > li {
+  counter-increment: gstep;
+  position: relative;
+  padding: var(--space-3) var(--space-4) var(--space-3) 52px;
+  background: var(--gray-50);
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+}
+
+.guide-steps > li::before {
+  content: counter(gstep);
+  position: absolute;
+  left: var(--space-3);
+  top: var(--space-3);
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--forest);
+  color: #fff;
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+}
+
+.guide-steps > li > b {
+  display: block;
+  color: var(--ink);
+  margin-bottom: 2px;
+  font-size: var(--text-sm);
+}
+
+.guide-steps > li > span {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+}
+
+/* ── Callouts ── */
+.guide-callout {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  margin: var(--space-3) 0 var(--space-4);
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+}
+
+.guide-callout > i {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.guide-callout b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--text-xs);
+}
+
+.guide-callout.info {
+  background: var(--info-light);
+  border-color: rgba(21, 101, 192, 0.25);
+  color: var(--info-dark);
+}
+
+.guide-callout.info > i { color: var(--info); }
+
+.guide-callout.success {
+  background: var(--success-light);
+  border-color: rgba(46, 125, 50, 0.25);
+  color: var(--success-dark);
+}
+
+.guide-callout.success > i { color: var(--success); }
+
+.guide-callout.warn {
+  background: var(--warning-light);
+  border-color: rgba(249, 168, 37, 0.35);
+  color: var(--warning-dark);
+}
+
+.guide-callout.warn > i { color: var(--warning); }
+
+.guide-callout.danger {
+  background: var(--danger-light);
+  border-color: rgba(211, 47, 47, 0.25);
+  color: var(--danger-dark);
+}
+
+.guide-callout.danger > i { color: var(--danger); }
+
+/* ── Tables ── */
+.guide-table-wrap {
+  overflow-x: auto;
+  margin: var(--space-3) 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs);
+  background: var(--bg-surface);
+}
+
+.guide-table th {
+  background: var(--gray-100);
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.guide-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line-light);
+  color: var(--ink-secondary);
+  vertical-align: top;
+}
+
+.guide-table tr:last-child td {
+  border-bottom: none;
+}
+
+.guide-table tr:hover td {
+  background: var(--bg-hover);
+}
+
+.guide-table code {
+  background: var(--gray-100);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--forest);
+  font-family: var(--font-mono);
+}
+
+.guide-kbd {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--gray-400);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink);
+}
+
+/* ── Search ── */
+.guide-search-wrap {
+  position: relative;
+  width: 280px;
+}
+
+.guide-search-wrap .search-icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+.guide-search-wrap input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3) var(--space-2) 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.guide-search-wrap input:focus {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+}
+
+.guide-search-empty {
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+  color: var(--ink-muted);
+}
+
+.guide-search-empty i {
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-3);
+  opacity: 0.4;
+}
+
+.guide-result-group {
+  margin-bottom: var(--space-5);
+}
+
+.guide-result-group > h4 {
+  font-size: var(--text-sm);
+  color: var(--ink);
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line-light);
+}
+
+mark {
+  background: var(--gold-light);
+  color: var(--gold-dark);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* ── Print ── */
+.guide-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Print rules are scoped to body.guide-printing (added by Guide.print())
+   so printing from ANY other page is never affected. */
+@media print {
+  body.guide-printing * { visibility: hidden !important; }
+  body.guide-printing #page-guide, body.guide-printing #page-guide * { visibility: visible !important; }
+  body.guide-printing #page-guide {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+  body.guide-printing .guide-rail,
+  body.guide-printing .guide-search-wrap,
+  body.guide-printing .guide-actions,
+  body.guide-printing .guide-toc { display: none !important; }
+  body.guide-printing .guide-book { display: block !important; }
+  body.guide-printing .guide-section-body { display: block !important; }
+  body.guide-printing .guide-chapter-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .guide-book { grid-template-columns: 1fr; }
+  .guide-rail {
+    position: static;
+    max-height: none;
+  }
+  .guide-rail-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    max-height: none;
+  }
+  .guide-rail-item {
+    width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .guide-search-wrap { width: 100%; }
+  .guide-section-body {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+  .guide-steps > li { padding-left: 46px; }
+}

@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="/static/css/reports.css">
   <link rel="stylesheet" href="/static/css/settings.css">
   <link rel="stylesheet" href="/static/css/responsive.css">
+  <link rel="stylesheet" href="/static/css/guide.css">
 </head>
 <body>
 
@@ -94,6 +95,11 @@
           Sign In
         </button>
       </form>
+
+      <div class="login-dev-hint" title="Demo logins">
+        <i data-lucide="info" style="width:14px;height:14px;"></i>
+        <span>Head Office: <strong>admin</strong> / <strong>admin123</strong> · Branch: <strong>Branch Code</strong> / <strong>Branch Phone</strong></span>
+      </div>
 
       <div class="login-divider"></div>
 
@@ -160,7 +166,7 @@
           <span class="nav-icon"><i data-lucide="list"></i></span>
           <span class="nav-label">All Farmers</span>
         </a>
-        <a class="nav-item" data-route="farmer-form" onclick="Router.navigate('farmer-form')">
+        <a class="nav-item" data-route="farmer-form" data-role="BRANCH_MANAGER" onclick="Router.navigate('farmer-form')">
           <span class="nav-icon"><i data-lucide="user-plus"></i></span>
           <span class="nav-label">Register Farmer</span>
         </a>
@@ -181,7 +187,7 @@
       </a>
 
       <!-- Pricing -->
-      <a class="nav-item" data-route="pricing" onclick="Router.navigate('pricing')">
+      <a class="nav-item" data-route="pricing" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('pricing')">
         <span class="nav-icon"><i data-lucide="dollar-sign"></i></span>
         <span class="nav-label">Rate Engine</span>
       </a>
@@ -199,13 +205,13 @@
       </a>
 
       <!-- Branches -->
-      <a class="nav-item" data-route="branches" onclick="Router.navigate('branches')">
+      <a class="nav-item" data-route="branches" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('branches')">
         <span class="nav-icon"><i data-lucide="building-2"></i></span>
         <span class="nav-label">Branches</span>
       </a>
 
       <!-- Procurement -->
-      <a class="nav-item" data-route="procurement" onclick="Router.navigate('procurement')">
+      <a class="nav-item" data-route="procurement" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('procurement')">
         <span class="nav-icon"><i data-lucide="truck"></i></span>
         <span class="nav-label">Procurement</span>
       </a>
@@ -223,13 +229,19 @@
       </a>
 
       <!-- Vehicles -->
-      <a class="nav-item" data-route="vehicles" onclick="Router.navigate('vehicles')">
+      <a class="nav-item" data-route="vehicles" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('vehicles')">
         <span class="nav-icon"><i data-lucide="car"></i></span>
         <span class="nav-label">Vehicles</span>
       </a>
 
       <!-- Divider -->
       <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+
+      <!-- User Guide -->
+      <a class="nav-item" data-route="guide" onclick="Router.navigate('guide')">
+        <span class="nav-icon"><i data-lucide="book-open"></i></span>
+        <span class="nav-label">User Guide</span>
+      </a>
 
       <!-- Reports -->
       <a class="nav-item" data-route="reports" onclick="Router.navigate('reports')">
@@ -238,13 +250,13 @@
       </a>
 
       <!-- Audit -->
-      <a class="nav-item" data-route="audit" onclick="Router.navigate('audit')">
+      <a class="nav-item" data-route="audit" data-role="SUPER_ADMIN" onclick="Router.navigate('audit')">
         <span class="nav-icon"><i data-lucide="scroll-text"></i></span>
         <span class="nav-label">Audit Logs</span>
       </a>
 
       <!-- Settings -->
-      <a class="nav-item" data-route="settings" onclick="Router.navigate('settings')">
+      <a class="nav-item" data-route="settings" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('settings')">
         <span class="nav-icon"><i data-lucide="settings"></i></span>
         <span class="nav-label">Settings</span>
       </a>
@@ -288,6 +300,10 @@
           <a href="#dashboard">Dashboard</a>
           <span class="separator">/</span>
           <span class="current">Home</span>
+        </div>
+        <div class="current-branch" id="current-branch" title="Current Branch">
+          <i data-lucide="building-2" style="width:13px;height:13px;"></i>
+          <span class="current-branch-name">All Branches</span>
         </div>
         <div class="nav-datetime">
           <span class="current-date"></span>
@@ -348,6 +364,10 @@
               <span class="item-icon"><i data-lucide="settings"></i></span>
               Settings
             </a>
+            <a class="dropdown-item" href="#guide">
+              <span class="item-icon"><i data-lucide="book-open"></i></span>
+              User Guide
+            </a>
             <a class="dropdown-item" href="#help">
               <span class="item-icon"><i data-lucide="help-circle"></i></span>
               Help Center
@@ -402,6 +422,18 @@
             <div class="skeleton skeleton-text"></div>
             <div class="skeleton skeleton-text short"></div>
           </div>
+          <div class="kpi-card kpi-blue" id="kpi-cow">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-purple" id="kpi-buffalo">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-teal" id="kpi-mixed">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
           <div class="kpi-card kpi-blue" id="kpi-farmers">
             <div class="skeleton skeleton-text"></div>
             <div class="skeleton skeleton-text short"></div>
@@ -438,15 +470,15 @@
               <div class="qa-icon"><i data-lucide="milk"></i></div>
               <span class="qa-label">Milk Collection</span>
             </a>
-            <a class="quick-action-btn" href="#farmer-form">
+            <a class="quick-action-btn" href="#farmer-form" data-role="BRANCH_MANAGER">
               <div class="qa-icon"><i data-lucide="user-plus"></i></div>
               <span class="qa-label">Register Farmer</span>
             </a>
-            <a class="quick-action-btn" href="#payments">
+            <a class="quick-action-btn" href="#payments" data-role="SUPER_ADMIN">
               <div class="qa-icon"><i data-lucide="wallet"></i></div>
               <span class="qa-label">Process Payment</span>
             </a>
-            <a class="quick-action-btn" href="#pricing">
+            <a class="quick-action-btn" href="#pricing" data-role="SUPER_ADMIN,HEAD_OFFICE">
               <div class="qa-icon"><i data-lucide="dollar-sign"></i></div>
               <span class="qa-label">Update Rates</span>
             </a>
@@ -813,7 +845,7 @@
             <p class="subtitle">Manage all registered farmers</p>
           </div>
           <div class="page-actions">
-            <button class="btn btn-primary" data-action="register" onclick="Router.navigate('farmer-form')">
+            <button class="btn btn-primary" data-action="register" data-role="BRANCH_MANAGER" onclick="Router.navigate('farmer-form')">
               <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
               Register Farmer
             </button>
@@ -924,7 +956,36 @@
           </div>
         </div>
 
-        <div class="card">
+        <!-- Company / Branch / Farmer ID header strip -->
+        <div class="card" style="padding:var(--space-4);margin-bottom:var(--space-4);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-3);">
+          <div>
+            <div style="font-size:var(--text-xs);color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;">Company</div>
+            <div style="font-weight:700;">Shree Milk Bank Dairy</div>
+          </div>
+          <div>
+            <div style="font-size:var(--text-xs);color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;">Branch</div>
+            <div style="font-weight:700;" id="farmer-form-branch">—</div>
+          </div>
+          <div>
+            <div style="font-size:var(--text-xs);color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;">Farmer ID</div>
+            <div style="font-weight:700;font-family:monospace;" id="farmer-form-farmer-id">Auto-generated (BR01001)</div>
+          </div>
+        </div>
+
+        <!-- Access notice for non-managers -->
+        <div class="card" style="display:none;" id="farmer-form-access-notice">
+          <div class="card-body" style="text-align:center;padding:var(--space-8);">
+            <i data-lucide="lock" style="width:48px;height:48px;margin-bottom:var(--space-4);opacity:0.3;"></i>
+            <h4>Farmer Registration Restricted</h4>
+            <p style="color:var(--ink-muted);margin-top:var(--space-2);">Only Branch Managers can register new farmers.</p>
+            <button class="btn btn-secondary" style="margin-top:var(--space-4);" onclick="Router.navigate('farmers')">
+              <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+              Back to Farmers
+            </button>
+          </div>
+        </div>
+
+        <div class="card" id="farmer-form-card">
           <div class="card-body">
             <form id="farmer-form">
               <!-- Personal Information -->
@@ -1327,7 +1388,7 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label class="form-label">Branch Code <span class="required">*</span></label>
-                  <input type="text" class="input-premium" id="branch-code" placeholder="e.g. BR-005" required maxlength="20">
+                  <input type="text" class="input-premium" id="branch-code" placeholder="e.g. BR06" required maxlength="20">
                 </div>
                 <div class="form-group">
                   <label class="form-label">Branch Name <span class="required">*</span></label>
@@ -1338,8 +1399,8 @@
                   <input type="text" class="input-premium" id="branch-manager" placeholder="Manager name" maxlength="120">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Phone</label>
-                  <input type="tel" class="input-premium" id="branch-phone" placeholder="Phone number" maxlength="15">
+                  <label class="form-label">Phone <span class="required">*</span> <span style="font-weight:400;color:var(--ink-muted);font-size:var(--text-xs);">(branch login password)</span></label>
+                  <input type="tel" class="input-premium" id="branch-phone" placeholder="Phone number = login password" maxlength="15" required>
                 </div>
                 <div class="form-group" style="grid-column:span 2;">
                   <label class="form-label">Address</label>
@@ -1390,7 +1451,7 @@
             <p class="subtitle">Manage farmer payments and payouts</p>
           </div>
           <div class="page-actions">
-            <button class="btn btn-primary" id="generate-payment">
+            <button class="btn btn-primary" id="generate-payment" data-role="SUPER_ADMIN">
               <i data-lucide="wallet" style="width:16px;height:16px;"></i>
               Generate Payment Sheet
             </button>
@@ -2224,6 +2285,37 @@
         </div>
       </div>
 
+      <!-- ── User Guide Page ── -->
+      <div class="page-container" id="page-guide" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">User Guide</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>📖 User Guide — Guidance Book</h2>
+            <p class="subtitle">How the system works, how to use every module, and how to handle daily operations.</p>
+          </div>
+          <div class="page-actions" style="gap:var(--space-3);">
+            <div class="guide-search-wrap">
+              <span class="search-icon"><i data-lucide="search"></i></span>
+              <input type="text" id="guide-search" placeholder="Search the guide..." autocomplete="off">
+            </div>
+            <button class="btn btn-secondary" id="guide-print-btn" title="Print guide">
+              <i data-lucide="printer" style="width:16px;height:16px;"></i>
+              Print
+            </button>
+          </div>
+        </div>
+
+        <!-- Guide book layout (rendered by static/js/guide.js) -->
+        <div class="guide-book">
+          <aside class="guide-rail" id="guide-rail"></aside>
+          <div class="guide-content" id="guide-content"></div>
+        </div>
+      </div>
+
       <!-- ── Help Page ── -->
       <div class="page-container" id="page-help" style="display:none;">
         <div class="breadcrumb">
@@ -2442,6 +2534,7 @@
 <script src="/static/js/audit.js"></script>
 <script src="/static/js/settings.js"></script>
 <script src="/static/js/notification.js"></script>
+<script src="/static/js/guide.js"></script>
 <script src="/static/js/app.js"></script>
 
 <script>

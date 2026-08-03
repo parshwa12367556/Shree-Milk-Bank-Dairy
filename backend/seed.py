@@ -5,7 +5,7 @@ Generates sample data for development and testing.
 
 Usage:
     python run.py --seed
-    
+
 Or from Python:
     from backend.seed import seed_database
     seed_database()
@@ -20,6 +20,8 @@ from backend.models import (
     Notification, AuditLog,
 )
 from backend.auth import hash_password
+
+COMPANY_NAME = 'Shree Milk Bank Dairy'
 
 
 def seed_database():
@@ -48,10 +50,9 @@ def seed_database():
 
     print('[SEED] Database seeded successfully!')
     print('[SEED] Login credentials:')
-    print('  admin      / admin123      (SUPER_ADMIN)')
-    print('  manager    / manager123    (BRANCH_MANAGER)')
-    print('  operator   / operator123   (OPERATOR)')
-    print('  accountant / accountant123 (ACCOUNTANT)')
+    print(f'  Head Office: admin / admin123 (SUPER_ADMIN)')
+    for b in Branch.query.order_by(Branch.id).all():
+        print(f'  Branch {b.code}: {b.code} / {b.phone} (BRANCH_MANAGER)')
 
 
 def _clear_data():
@@ -66,91 +67,101 @@ def _clear_data():
     db.session.commit()
 
 
-def _seed_users():
-    users = [
-        User(username='admin', password_hash=hash_password('admin123'),
-             name='Admin User', role='SUPER_ADMIN', phone='9876543000',
-             email='admin@dairy.com', status='ACTIVE'),
-        User(username='manager', password_hash=hash_password('manager123'),
-             name='Vijay Singh', role='BRANCH_MANAGER', branch_id=1,
-             phone='9876543001', email='vijay@dairy.com', status='ACTIVE'),
-        User(username='operator', password_hash=hash_password('operator123'),
-             name='Anil Sharma', role='OPERATOR', branch_id=1,
-             phone='9876543002', email='anil@dairy.com', status='ACTIVE'),
-        User(username='accountant', password_hash=hash_password('accountant123'),
-             name='Priya Patel', role='ACCOUNTANT',
-             phone='9876543003', email='priya@dairy.com', status='ACTIVE'),
-    ]
-    db.session.add_all(users)
-    db.session.commit()
-    print('[SEED] Users created')
-
-
 def _seed_branches():
     branches = [
-        Branch(code='BR-001', name='Agar Malwa Main', manager_name='Vijay Singh',
-               phone='9876543001', address='Main Road, Agar Malwa',
-               village='Agar', district='Agar Malwa', state='Madhya Pradesh', status='ACTIVE'),
-        Branch(code='BR-002', name='Susner Sub', manager_name='Ravi Sharma',
-               phone='9876543004', address='Bus Stand, Susner',
-               village='Susner', district='Shajapur', state='Madhya Pradesh', status='ACTIVE'),
-        Branch(code='BR-003', name='Kannod Branch', manager_name='Amit Verma',
-               phone='9876543005', address='Market Road, Kannod',
-               village='Kannod', district='Agar Malwa', state='Madhya Pradesh', status='ACTIVE'),
-        Branch(code='BR-004', name='Shajapur Branch', manager_name='Sanjay Patil',
-               phone='9876543006', address='Station Road, Shajapur',
-               village='Shajapur', district='Shajapur', state='Madhya Pradesh', status='ACTIVE'),
+        Branch(code='BR01', name='Nippani Branch', manager_name='Vijay Singh',
+               phone='9876543210', address='Main Road, Nippani',
+               village='Nippani', district='Belagavi', state='Karnataka', status='ACTIVE'),
+        Branch(code='BR02', name='Belagavi Branch', manager_name='Ravi Sharma',
+               phone='9123456780', address='College Road, Belagavi',
+               village='Belagavi', district='Belagavi', state='Karnataka', status='ACTIVE'),
+        Branch(code='BR03', name='Chikkodi Branch', manager_name='Amit Verma',
+               phone='9234567890', address='Market Road, Chikkodi',
+               village='Chikkodi', district='Belagavi', state='Karnataka', status='ACTIVE'),
+        Branch(code='BR04', name='Sankeshwar Branch', manager_name='Sanjay Patil',
+               phone='9345678901', address='Station Road, Sankeshwar',
+               village='Sankeshwar', district='Belagavi', state='Karnataka', status='ACTIVE'),
+        Branch(code='BR05', name='Athani Branch', manager_name='Mahesh Desai',
+               phone='9456789012', address='Bus Stand Road, Athani',
+               village='Athani', district='Belagavi', state='Karnataka', status='ACTIVE'),
     ]
     db.session.add_all(branches)
     db.session.commit()
     print('[SEED] Branches created')
 
 
-def _seed_farmers():
-    farmer_data = [
-        ('C-1042', 'Ramesh Kumar', 'Suresh Kumar', '9876543210', 'Agar', 'COW', 4, 0),
-        ('C-1043', 'Dinesh Verma', 'Ramesh Verma', '9876543211', 'Susner', 'COW', 3, 0),
-        ('B-0387', 'Suresh Patil', 'Ganesh Patil', '9876543212', 'Kannod', 'BUFFALO', 0, 5),
-        ('M-0215', 'Mahesh Sharma', 'Laxmi Sharma', '9876543213', 'Nalkheda', 'MIXED', 3, 4),
-        ('C-1089', 'Prakash Mane', 'Shivaji Mane', '9876543214', 'Shajapur', 'COW', 2, 0),
-        ('B-0401', 'Ajay Meena', 'Ravi Meena', '9876543215', 'Agar', 'BUFFALO', 0, 4),
-        ('C-1098', 'Sunil Gaikwad', 'Dattatray Gaikwad', '9876543216', 'Susner', 'COW', 3, 0),
-        ('M-0221', 'Amar Deshmukh', 'Vijay Deshmukh', '9876543217', 'Kannod', 'MIXED', 4, 2),
-        ('C-1123', 'Ravi Patil', 'Shankar Patil', '9876543218', 'Agar', 'COW', 2, 0),
-        ('B-0425', 'Vikas Yadav', 'Ram Yadav', '9876543219', 'Nalkheda', 'BUFFALO', 0, 3),
-        ('C-1150', 'Rajesh Kumar', 'Mohan Kumar', '9876543220', 'Shajapur', 'COW', 5, 0),
-        ('B-0440', 'Ganesh Das', 'Hari Das', '9876543221', 'Agar', 'BUFFALO', 0, 6),
-        ('M-0235', 'Vinod Sharma', 'Kishan Sharma', '9876543222', 'Susner', 'MIXED', 2, 3),
-        ('C-1178', 'Sanjay Patel', 'Ramesh Patel', '9876543223', 'Kannod', 'COW', 4, 0),
-        ('B-0458', 'Mohan Lal', 'Shyam Lal', '9876543224', 'Nalkheda', 'BUFFALO', 0, 4),
-        ('C-1201', 'Raju Bhai', 'Mangilal', '9876543225', 'Agar', 'COW', 3, 0),
-        ('M-0248', 'Deepak Joshi', 'Ravi Joshi', '9876543226', 'Shajapur', 'MIXED', 3, 3),
-        ('B-0472', 'Kailash Meena', 'Sohan Meena', '9876543227', 'Susner', 'BUFFALO', 0, 5),
+def _seed_users():
+    """One login per branch: username = branch code, password = branch phone."""
+    branches = Branch.query.order_by(Branch.id).all()
+    users = [
+        User(username='admin', password_hash=hash_password('admin123'),
+             name='Admin User', role='SUPER_ADMIN', phone='9876543000',
+             email='admin@dairy.com', status='ACTIVE'),
     ]
+    for b in branches:
+        users.append(User(
+            username=b.code,
+            password_hash=hash_password(b.phone),
+            name=b.manager_name or f'{b.name} Manager',
+            role='BRANCH_MANAGER',
+            branch_id=b.id,
+            phone=b.phone,
+            email=f'manager{b.code.lower()}@dairy.com',
+            status='ACTIVE',
+        ))
+    db.session.add_all(users)
+    db.session.commit()
+    print('[SEED] Users created')
 
+
+def _seed_farmers():
+    """Farmers with auto-generated IDs: <branch code><3-digit serial> (BR01001...)."""
+    first_names = ['Ramesh', 'Dinesh', 'Suresh', 'Mahesh', 'Prakash', 'Ajay',
+                   'Sunil', 'Amar', 'Ravi', 'Vikas', 'Rajesh', 'Ganesh',
+                   'Vinod', 'Sanjay', 'Mohan', 'Raju', 'Deepak', 'Kailash',
+                   'Santosh', 'Nitin', 'Anil', 'Prakash', 'Harish', 'Girish']
+    last_names = ['Kumar', 'Verma', 'Patil', 'Sharma', 'Mane', 'Meena', 'Gaikwad',
+                  'Deshmukh', 'Yadav', 'Das', 'Joshi', 'Patel', 'Lal', 'Bhai',
+                  'Kulkarni', 'Desai', 'Sutar', 'Kamble', 'More', 'Jadhav']
+
+    branches = Branch.query.order_by(Branch.id).all()
     farmers = []
-    for code, name, father, mobile, village, mtype, cows, buffs in farmer_data:
-        branch_id = random.choice([1, 2, 3, 4])
-        farmer = Farmer(
-            farmer_code=code, name=name, father_name=father,
-            mobile=mobile, village=village, milk_type=mtype,
-            cow_count=cows, buffalo_count=buffs,
-            branch_id=branch_id, status='ACTIVE',
-            joined_at=date.today() - timedelta(days=random.randint(30, 365)),
-        )
-        farmers.append(farmer)
+    per_branch = 10
 
-    # Add one blocked and one inactive farmer
+    for b in branches:
+        for i in range(1, per_branch + 1):
+            mtype = random.choice(['COW', 'BUFFALO', 'MIXED'])
+            farmer = Farmer(
+                farmer_code=f'{b.code}{i:03d}',
+                name=f'{random.choice(first_names)} {random.choice(last_names)}',
+                father_name=f'{random.choice(first_names)} {random.choice(last_names)}',
+                mobile=f'9{random.randint(200000000, 999999999)}',
+                aadhaar=str(random.randint(100000000000, 999999999999)),
+                village=b.village,
+                taluka=random.choice(['Nippani', 'Chikkodi', 'Athani', 'Kagwad', 'Raybag']),
+                district=b.district,
+                state=b.state,
+                pincode=str(random.randint(591101, 591399)),
+                milk_type=mtype,
+                cow_count=random.randint(1, 6) if mtype != 'BUFFALO' else 0,
+                buffalo_count=random.randint(1, 6) if mtype != 'COW' else 0,
+                branch_id=b.id,
+                status='ACTIVE',
+                joined_at=date.today() - timedelta(days=random.randint(30, 365)),
+            )
+            farmers.append(farmer)
+
+    # A few blocked / inactive farmers for demo purposes
     farmers.append(Farmer(
-        farmer_code='C-1305', name='Test Blocked', father_name='T Father',
-        mobile='9876543299', village='Test', milk_type='COW',
+        farmer_code=f'BR01{per_branch + 1:03d}', name='Test Blocked', father_name='T Father',
+        mobile='9876543299', village='Nippani', milk_type='COW',
         cow_count=2, buffalo_count=0, branch_id=1,
         status='BLOCKED', status_reason='Quality violation',
         joined_at=date.today() - timedelta(days=90),
     ))
     farmers.append(Farmer(
-        farmer_code='B-0500', name='Test Inactive', father_name='T Father',
-        mobile='9876543298', village='Test', milk_type='BUFFALO',
+        farmer_code=f'BR02{per_branch + 1:03d}', name='Test Inactive', father_name='T Father',
+        mobile='9876543298', village='Belagavi', milk_type='BUFFALO',
         cow_count=0, buffalo_count=2, branch_id=2,
         status='INACTIVE',
         joined_at=date.today() - timedelta(days=60),
@@ -158,14 +169,14 @@ def _seed_farmers():
 
     db.session.add_all(farmers)
     db.session.commit()
-    print('[SEED] Farmers created')
+    print(f'[SEED] {len(farmers)} Farmers created')
 
 
 def _seed_bank_details():
     farmers = Farmer.query.all()
     banks = [
         'State Bank of India', 'Bank of Baroda', 'HDFC Bank',
-        'ICICI Bank', 'Madhya Pradesh Gramin Bank',
+        'ICICI Bank', 'Karnataka Gramin Bank',
     ]
     for farmer in farmers[:12]:
         bank = BankDetail(
@@ -205,6 +216,7 @@ def _seed_collections():
     farmers = Farmer.query.filter_by(status='ACTIVE').all()
     rate_cow = RateMaster.query.filter_by(milk_type='COW', status='ACTIVE').first()
     rate_buffalo = RateMaster.query.filter_by(milk_type='BUFFALO', status='ACTIVE').first()
+    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_MANAGER').all()}
 
     collections = []
     seq = 1240
@@ -232,7 +244,7 @@ def _seed_collections():
                     receipt_no=f'RC{seq:07d}',
                     farmer_id=farmer.id,
                     branch_id=farmer.branch_id,
-                    operator_id=random.choice([2, 3]),
+                    operator_id=branch_users.get(farmer.branch_id, 1),
                     rate_master_id=rate.id if rate else None,
                     date=coll_date,
                     shift=shift,
@@ -258,7 +270,7 @@ def _seed_payments():
     farmers = Farmer.query.filter_by(status='ACTIVE').limit(8).all()
     payments = []
 
-    for i, farmer in enumerate(farmers):
+    for farmer in farmers:
         collections = Collection.query.filter(
             Collection.farmer_id == farmer.id,
             Collection.payment_id.is_(None),
@@ -272,7 +284,7 @@ def _seed_payments():
         status = random.choice(['PENDING', 'APPROVED', 'PAID'])
 
         payment = Payment(
-            pay_code=f'PAY{100 + i:07d}',
+            pay_code=f'PAY{100 + len(payments):07d}',
             farmer_id=farmer.id,
             branch_id=farmer.branch_id,
             period_start=date.today() - timedelta(days=15),
@@ -282,7 +294,7 @@ def _seed_payments():
             collection_count=len(collections),
             status=status,
             paid_at=datetime.now() if status == 'PAID' else None,
-            paid_by=4 if status == 'PAID' else None,
+            paid_by=1 if status == 'PAID' else None,  # Head Office (Super Admin)
         )
         db.session.add(payment)
         db.session.flush()
@@ -332,18 +344,22 @@ def _seed_quality_tests():
 
 
 def _seed_rejections():
-    farmers = Farmer.query.all()
+    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_MANAGER').all()}
+    farmers = Farmer.query.order_by(Farmer.id).all()
     rejections = [
         MilkRejection(farmer_id=farmers[0].id, branch_id=farmers[0].branch_id,
-                      rejected_by=3, date=date.today() - timedelta(days=1),
+                      rejected_by=branch_users.get(farmers[0].branch_id, 1),
+                      date=date.today() - timedelta(days=1),
                       shift='MORNING', quantity=30, reason='HIGH_WATER',
                       fat=3.8, water_content=9.2, remark='Water > 8% threshold'),
         MilkRejection(farmer_id=farmers[2].id, branch_id=farmers[2].branch_id,
-                      rejected_by=3, date=date.today() - timedelta(days=2),
+                      rejected_by=branch_users.get(farmers[2].branch_id, 1),
+                      date=date.today() - timedelta(days=2),
                       shift='MORNING', quantity=22, reason='SOUR_MILK',
                       fat=3.5, remark='Failed alcohol test'),
         MilkRejection(farmer_id=farmers[4].id, branch_id=farmers[4].branch_id,
-                      rejected_by=3, date=date.today() - timedelta(days=3),
+                      rejected_by=branch_users.get(farmers[4].branch_id, 1),
+                      date=date.today() - timedelta(days=3),
                       shift='EVENING', quantity=18, reason='LOW_FAT',
                       fat=2.8, remark='Fat below minimum'),
     ]
@@ -353,16 +369,18 @@ def _seed_rejections():
 
 
 def _seed_procurement():
+    b1 = Branch.query.filter_by(code='BR01').first()
+    b2 = Branch.query.filter_by(code='BR02').first()
     centers = [
-        CollectionCenter(code='CC-001', name='Agar Main Center', center_type='MAIN',
-                         branch_id=1, manager_name='Vijay Singh', capacity=5000,
-                         village='Agar', district='Agar Malwa', status='ACTIVE'),
-        CollectionCenter(code='CC-002', name='Susner Sub Center', center_type='SUB_CENTER',
-                         branch_id=2, manager_name='Ravi Sharma', capacity=2000,
-                         village='Susner', district='Shajapur', status='ACTIVE'),
-        CollectionCenter(code='CC-003', name='Kannod Chilling Point', center_type='CHILLING_POINT',
-                         branch_id=1, manager_name='Amit Verma', capacity=3000,
-                         village='Kannod', district='Agar Malwa', status='ACTIVE'),
+        CollectionCenter(code='CC-001', name='Nippani Main Center', center_type='MAIN',
+                         branch_id=b1.id, manager_name=b1.manager_name, capacity=5000,
+                         village='Nippani', district='Belagavi', status='ACTIVE'),
+        CollectionCenter(code='CC-002', name='Belagavi Sub Center', center_type='SUB_CENTER',
+                         branch_id=b2.id, manager_name=b2.manager_name, capacity=2000,
+                         village='Belagavi', district='Belagavi', status='ACTIVE'),
+        CollectionCenter(code='CC-003', name='Chikkodi Chilling Point', center_type='CHILLING_POINT',
+                         branch_id=b1.id, manager_name='Amit Verma', capacity=3000,
+                         village='Chikkodi', district='Belagavi', status='ACTIVE'),
     ]
     db.session.add_all(centers)
     db.session.commit()
@@ -384,12 +402,14 @@ def _seed_inventory():
 
 
 def _seed_employees():
+    b1 = Branch.query.filter_by(code='BR01').first()
+    b2 = Branch.query.filter_by(code='BR02').first()
     employees = [
-        Employee(code='EMP-001', name='Anil Sharma', role='Operator', branch_id=1, mobile='9876543101', email='anil@dairy.com', status='ACTIVE'),
-        Employee(code='EMP-002', name='Rahul Verma', role='Operator', branch_id=2, mobile='9876543102', email='rahul@dairy.com', status='ACTIVE'),
+        Employee(code='EMP-001', name='Anil Sharma', role='Operator', branch_id=b1.id, mobile='9876543101', email='anil@dairy.com', status='ACTIVE'),
+        Employee(code='EMP-002', name='Rahul Verma', role='Operator', branch_id=b2.id, mobile='9876543102', email='rahul@dairy.com', status='ACTIVE'),
         Employee(code='EMP-003', name='Priya Patel', role='Accountant', mobile='9876543103', email='priya@dairy.com', status='ACTIVE'),
-        Employee(code='EMP-004', name='Vijay Singh', role='Branch Manager', branch_id=1, mobile='9876543104', email='vijay@dairy.com', status='ACTIVE'),
-        Employee(code='EMP-005', name='Amit Kumar', role='Driver', branch_id=1, mobile='9876543105', email='amit@dairy.com', status='ACTIVE'),
+        Employee(code='EMP-004', name='Vijay Singh', role='Branch Manager', branch_id=b1.id, mobile='9876543104', email='vijay@dairy.com', status='ACTIVE'),
+        Employee(code='EMP-005', name='Amit Kumar', role='Driver', branch_id=b1.id, mobile='9876543105', email='amit@dairy.com', status='ACTIVE'),
     ]
     db.session.add_all(employees)
     db.session.commit()
@@ -397,10 +417,12 @@ def _seed_employees():
 
 
 def _seed_vehicles():
+    b1 = Branch.query.filter_by(code='BR01').first()
+    b2 = Branch.query.filter_by(code='BR02').first()
     vehicles = [
-        Vehicle(vehicle_number='MP-09-AB-1234', type='TANKER', driver_name='Ramesh Kumar', capacity=3000, branch_id=1, status='ACTIVE'),
-        Vehicle(vehicle_number='MP-09-CD-5678', type='TANKER', driver_name='Suresh Patil', capacity=2500, branch_id=2, status='ACTIVE'),
-        Vehicle(vehicle_number='MP-09-EF-9012', type='PICKUP', driver_name='Mahesh Das', capacity=1000, branch_id=1, status='MAINTENANCE'),
+        Vehicle(vehicle_number='KA-23-AB-1234', type='TANKER', driver_name='Ramesh Kumar', capacity=3000, branch_id=b1.id, status='ACTIVE'),
+        Vehicle(vehicle_number='KA-22-CD-5678', type='TANKER', driver_name='Suresh Patil', capacity=2500, branch_id=b2.id, status='ACTIVE'),
+        Vehicle(vehicle_number='KA-23-EF-9012', type='PICKUP', driver_name='Mahesh Das', capacity=1000, branch_id=b1.id, status='MAINTENANCE'),
     ]
     db.session.add_all(vehicles)
     db.session.commit()
@@ -410,7 +432,7 @@ def _seed_vehicles():
 def _seed_notifications():
     notifications = [
         Notification(type='collection', title='Collection Target Achieved',
-                     message='Agar Malwa branch achieved 98% of daily target.', read=False),
+                     message='Nippani branch achieved 98% of daily target.', read=False),
         Notification(type='payment', title='Payment Sheet Generated',
                      message='New payment sheet for 24 farmers.', read=False),
         Notification(type='quality', title='Quality Alert',
@@ -418,7 +440,7 @@ def _seed_notifications():
         Notification(type='system', title='Rate Version Updated',
                      message='New rate version effective from 01 Aug 2026.', read=False),
         Notification(type='farmer', title='New Farmer Registered',
-                     message='Ravi Patil (C-1097) registered at Susner branch.', read=True),
+                     message='New farmer (BR01011) registered at Nippani branch.', read=True),
     ]
     db.session.add_all(notifications)
     db.session.commit()
@@ -429,11 +451,11 @@ def _seed_audit_logs():
     logs = [
         AuditLog(user_id=1, username='Admin User', action='LOGIN', entity='Session', entity_id='admin',
                  detail='User logged in successfully', ip='192.168.1.100'),
-        AuditLog(user_id=3, username='Anil Sharma', action='CREATE', entity='Collection', entity_id='RC0001245',
-                 detail='Recorded milk collection: 25L Cow Milk'),
+        AuditLog(user_id=2, username='BR01', action='CREATE', entity='Collection', entity_id='RC0001245',
+                 detail='Recorded milk collection: 25L Cow Milk', ip='192.168.1.101'),
         AuditLog(user_id=1, username='Admin User', action='UPDATE', entity='RateMaster', entity_id='v2.1',
                  detail='Updated rates: Cow Rs 5.00, Buffalo Rs 6.50'),
-        AuditLog(user_id=4, username='Priya Patel', action='APPROVE', entity='Payment', entity_id='PAY0000124',
+        AuditLog(user_id=1, username='Admin User', action='APPROVE', entity='Payment', entity_id='PAY0000101',
                  detail='Approved payment of Rs 5,328'),
     ]
     db.session.add_all(logs)

@@ -70,6 +70,9 @@ function renderBranchesTable() {
         </td>
         <td>
           <div class="table-actions">
+            <button class="btn btn-icon btn-sm btn-ghost" title="Reset Login Password" onclick="resetBranchPassword(${idx})" style="color:var(--warning-dark);">
+              <i data-lucide="key-round" style="width:16px;height:16px;"></i>
+            </button>
             <button class="btn btn-icon btn-sm btn-ghost" title="Edit Branch" onclick="editBranch(${idx})">
               <i data-lucide="edit-3" style="width:16px;height:16px;"></i>
             </button>
@@ -171,11 +174,33 @@ async function saveBranch(event) {
     const result = await API.createBranch(payload);
     closeBranchModal();
     await loadBranches();
-    Modal.toast({ title: 'Branch Created', message: `Branch ${name} (${code}) created successfully`, type: 'success' });
+    const loginMsg = result.message || `Branch login: ${code} / ${phone || '—'}`;
+    Modal.toast({ title: 'Branch Created', message: loginMsg, type: 'success' });
   } catch (err) {
     console.warn('Failed to save branch:', err);
     Modal.toast({ title: 'Error', message: err.message || 'Failed to create branch', type: 'error' });
   }
+}
+
+/** Reset a branch's login password to its phone number */
+async function resetBranchPassword(idx) {
+  const b = branchesData[idx];
+  if (!b) return;
+
+  Modal.confirm({
+    title: 'Reset Branch Password',
+    message: `Reset login password for <strong>${b.code}</strong>?<br>It will be set to the branch phone number: <strong>${b.phone || '—'}</strong>`,
+    confirmText: 'Reset',
+    variant: 'warning',
+    onConfirm: async () => {
+      try {
+        const result = await API.resetBranchPassword(b.id);
+        Modal.toast({ title: 'Password Reset', message: result.message || 'Password reset successfully', type: 'success' });
+      } catch (err) {
+        Modal.toast({ title: 'Error', message: err.message || 'Failed to reset password', type: 'error' });
+      }
+    }
+  });
 }
 
 /** Delete branch with confirmation */
@@ -204,3 +229,4 @@ function deleteBranch(idx) {
 window.openBranchModal = openBranchModal;
 window.closeBranchModal = closeBranchModal;
 window.saveBranch = saveBranch;
+window.resetBranchPassword = resetBranchPassword;

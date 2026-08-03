@@ -93,22 +93,22 @@ def generate_receipt_no(seq):
     return f'RC{seq:07d}'
 
 
-def generate_farmer_code(milk_type, seq):
+def generate_farmer_code(branch_code, seq):
     """
-    Generate a farmer code based on milk type and sequence.
+    Generate a farmer code based on branch code and per-branch serial.
     
-    Prefixes:
-        COW → C, BUFFALO → B, MIXED → M
+    Format: <branch_code><3-digit zero-padded serial>
+    e.g. BR01 + 1 → BR01001, BR01 + 42 → BR01042
     
     Args:
-        milk_type: COW, BUFFALO, or MIXED
-        seq: Sequence number
+        branch_code: Branch code (e.g., BR01)
+        seq: Per-branch serial number (1-999)
     
     Returns:
-        Farmer code string (e.g., C1042)
+        Farmer code string (e.g., BR01001)
     """
-    prefix = {'COW': 'C', 'BUFFALO': 'B', 'MIXED': 'M'}.get(milk_type, 'F')
-    return f'{prefix}{seq}'
+    seq = max(1, min(int(seq), 999))
+    return f'{branch_code}{seq:03d}'
 
 
 def generate_pay_code(seq):

@@ -101,9 +101,10 @@ def can_collect():
 def can_pay():
     """
     Decorator for payment access.
-    Allowed roles: SUPER_ADMIN, HEAD_OFFICE, ACCOUNTANT
+    Allowed roles: SUPER_ADMIN only — the payment system is completely
+    controlled by the Head Office (Super Admin) per the architecture spec.
     """
-    return role_required('SUPER_ADMIN', 'HEAD_OFFICE', 'ACCOUNTANT')
+    return role_required('SUPER_ADMIN')
 
 
 def can_manage_rates():

@@ -68,6 +68,9 @@ function renderKPIs(k) {
   const items = [
     { id: 'kpi-collection', value: k.todayCollection != null ? fmtNum(k.todayCollection) + ' L' : '—', label: 'Today Collection', icon: 'milk' },
     { id: 'kpi-revenue', value: k.revenue != null ? fmtINR(k.revenue) : '—', label: 'Revenue', icon: 'indian-rupee' },
+    { id: 'kpi-cow', value: k.todayCow != null ? fmtNum(k.todayCow) + ' L' : '—', label: "Today Cow Milk", icon: 'milk' },
+    { id: 'kpi-buffalo', value: k.todayBuffalo != null ? fmtNum(k.todayBuffalo) + ' L' : '—', label: 'Today Buffalo Milk', icon: 'beaker' },
+    { id: 'kpi-mixed', value: k.todayMixed != null ? fmtNum(k.todayMixed) + ' L' : '—', label: 'Today Mixed Milk', icon: 'droplets' },
     { id: 'kpi-farmers', value: k.activeFarmers != null ? String(k.activeFarmers) : '—', label: 'Active Farmers', icon: 'users' },
     { id: 'kpi-fat', value: k.avgFat != null ? String(k.avgFat) + '%' : '—', label: 'Avg Fat', icon: 'droplets' },
     { id: 'kpi-snf', value: k.avgSnf != null ? String(k.avgSnf) + '%' : '—', label: 'Avg SNF', icon: 'beaker' },
@@ -76,7 +79,7 @@ function renderKPIs(k) {
     { id: 'kpi-efficiency', value: k.efficiency != null ? fmtNum(k.efficiency) + '%' : '—', label: 'Efficiency', icon: 'gauge' },
   ];
 
-  const colors = ['green', 'gold', 'blue', 'purple', 'teal', 'amber', 'red', 'cyan'];
+  const colors = ['green', 'gold', 'blue', 'purple', 'teal', 'blue', 'green', 'purple', 'amber', 'red', 'cyan'];
   items.forEach((item, i) => {
     const el = document.getElementById(item.id);
     if (!el) return;

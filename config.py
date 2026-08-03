@@ -28,10 +28,15 @@ class Config:
     JWT_IDENTITY_CLAIM = 'sub'
     JWT_ERROR_MESSAGE_KEY = 'error'
 
+    # TEMPORARY dev-only login bypass (admin / admin123) — off by default.
+    DEV_LOGIN_ENABLED = os.getenv('DEV_LOGIN_ENABLED', '0').lower() in ('1', 'true', 'yes')
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
+    # Permanent dev credentials enabled in development; override with DEV_LOGIN_ENABLED=0
+    DEV_LOGIN_ENABLED = os.getenv('DEV_LOGIN_ENABLED', '1').lower() in ('1', 'true', 'yes')
 
 
 class ProductionConfig(Config):

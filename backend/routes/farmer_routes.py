@@ -10,7 +10,7 @@ PATCH  /api/farmers/<code>   — Update farmer
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from backend.app import db
-from backend.models import Farmer, BankDetail, Collection, Payment
+from backend.models import Farmer, BankDetail, Collection, Payment, Branch
 from backend.auth import role_required, get_identity
 from backend.utils import generate_farmer_code
 
@@ -75,14 +75,19 @@ def get_farmers():
 @farmer_bp.route('/api/farmers/stats', methods=['GET'])
 @jwt_required()
 def get_farmer_stats():
-    """Get farmer statistics."""
-    total = Farmer.query.count()
-    active = Farmer.query.filter_by(status='ACTIVE').count()
-    cow = Farmer.query.filter_by(milk_type='COW', status='ACTIVE').count()
-    buffalo = Farmer.query.filter_by(milk_type='BUFFALO', status='ACTIVE').count()
-    mixed = Farmer.query.filter_by(milk_type='MIXED', status='ACTIVE').count()
-    inactive = Farmer.query.filter_by(status='INACTIVE').count()
-    blocked = Farmer.query.filter_by(status='BLOCKED').count()
+    """Get farmer statistics (respects user's branch scope)."""
+    user = get_identity()
+    user_branch_id = user.get('branchId')
+    scoped = user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id
+    q = Farmer.query.filter_by(branch_id=user_branch_id) if scoped else Farmer.query
+
+    total = q.count()
+    active = q.filter_by(status='ACTIVE').count()
+    cow = q.filter_by(milk_type='COW', status='ACTIVE').count()
+    buffalo = q.filter_by(milk_type='BUFFALO', status='ACTIVE').count()
+    mixed = q.filter_by(milk_type='MIXED', status='ACTIVE').count()
+    inactive = q.filter_by(status='INACTIVE').count()
+    blocked = q.filter_by(status='BLOCKED').count()
 
     return jsonify({
         'total': total,
@@ -97,9 +102,13 @@ def get_farmer_stats():
 
 @farmer_bp.route('/api/farmers', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE', 'BRANCH_MANAGER', 'OPERATOR')
+@role_required('BRANCH_MANAGER')
 def create_farmer():
-    """Register a new farmer."""
+    """Register a new farmer — Branch Manager only (per architecture spec).
+
+    The farmer is always assigned to the manager's own branch, and the
+    farmer ID is auto-generated as <branch_code><3-digit serial> (e.g. BR01001).
+    """
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Request body is required'}), 400
@@ -115,19 +124,33 @@ def create_farmer():
     if milk_type not in ('COW', 'BUFFALO', 'MIXED'):
         return jsonify({'error': 'Valid milk type is required (COW, BUFFALO, MIXED)'}), 400
 
-    # Auto-generate farmer code
-    last_farmer = Farmer.query.filter(
-        Farmer.farmer_code.like(f'{milk_type[0]}%')
-    ).order_by(Farmer.id.desc()).first()
+    # Farmers always belong to the branch manager's own branch
+    user = get_identity()
+    branch_id = user.get('branchId')
+    if not branch_id:
+        return jsonify({'error': 'No branch assigned to this user. Contact Head Office.'}), 400
 
-    seq = 1
-    if last_farmer:
-        try:
-            seq = int(last_farmer.farmer_code[1:]) + 1
-        except (ValueError, IndexError):
-            seq = 1
+    branch = Branch.query.get(branch_id)
+    if not branch:
+        return jsonify({'error': 'Assigned branch not found'}), 400
 
-    farmer_code = generate_farmer_code(milk_type, seq)
+    # Auto-generate farmer code: <branch_code><3-digit serial> (e.g. BR01001)
+    prefix = branch.code
+    existing_codes = [
+        f.farmer_code for f in Farmer.query.filter(
+            Farmer.farmer_code.like(f'{prefix}___')
+        ).all()
+    ]
+    max_seq = 0
+    for code in existing_codes:
+        suffix = code[len(prefix):]
+        if len(suffix) == 3 and suffix.isdigit():
+            max_seq = max(max_seq, int(suffix))
+    seq = max_seq + 1
+    if seq > 999:
+        return jsonify({'error': f'Farmer ID series exhausted for branch {prefix}. Contact Head Office.'}), 409
+
+    farmer_code = generate_farmer_code(prefix, seq)
 
     farmer = Farmer(
         farmer_code=farmer_code,
@@ -149,8 +172,8 @@ def create_farmer():
         buffalo_count=data.get('buffaloCount', 0),
         breed=data.get('breed', ''),
         preferred_shift=data.get('preferredShift', ''),
-        branch_id=data.get('branchId'),
-        created_by=get_identity().get('uid'),
+        branch_id=branch_id,
+        created_by=user.get('uid'),
     )
     db.session.add(farmer)
     db.session.flush()  # Get farmer ID

@@ -115,6 +115,10 @@ const API = {
     return this.delete(`/api/branches/${id}`);
   },
 
+  resetBranchPassword(id) {
+    return this.post(`/api/branches/${id}/reset-password`);
+  },
+
   // ── Farmers ──
   getFarmers(params = {}) {
     const query = new URLSearchParams(params).toString();

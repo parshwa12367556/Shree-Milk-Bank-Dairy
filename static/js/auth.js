@@ -50,11 +50,20 @@ const Auth = {
 
   /**
    * Check if user can process payments
+   * Payment system is fully controlled by the Head Office (Super Admin).
    * @returns {boolean}
    */
   canPay() {
     const role = this.getRole();
-    return ['SUPER_ADMIN', 'HEAD_OFFICE', 'ACCOUNTANT'].includes(role);
+    return ['SUPER_ADMIN'].includes(role);
+  },
+
+  /**
+   * Check if user is a Branch Manager (the only role that registers farmers)
+   * @returns {boolean}
+   */
+  isBranchManager() {
+    return this.getRole() === 'BRANCH_MANAGER';
   },
 
   /**
@@ -184,6 +193,18 @@ const Auth = {
       });
     }
 
+    // TEMPORARY DEV: force permanent credentials (admin / admin123) on every
+    // login page render, and clear any remembered username so they always win.
+    const devUser = document.getElementById('login-username');
+    const devPass = document.getElementById('login-password');
+    if (devUser) devUser.value = 'admin';
+    if (devPass) devPass.value = 'admin123';
+    const devRemember = document.getElementById('remember-me');
+    if (devRemember) {
+      devRemember.checked = false;
+      localStorage.removeItem('sd_remember_user');
+    }
+
     // Language selector
     document.querySelectorAll('.login-language button').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -221,6 +242,14 @@ const Auth = {
     // Restore last selected branch
     const lastBranch = localStorage.getItem('sd_last_branch');
     if (lastBranch) select.value = lastBranch;
+
+    // Persist selection so it is restored on the next login
+    if (!select.hasAttribute('data-branch-listener')) {
+      select.setAttribute('data-branch-listener', 'true');
+      select.addEventListener('change', () => {
+        if (select.value) localStorage.setItem('sd_last_branch', select.value);
+      });
+    }
   },
 
   /**
@@ -229,10 +258,11 @@ const Auth = {
   _loadBranchFallback(select) {
     const cached = Storage.getCache('branches');
     const branches = (cached && cached.length > 0) ? cached : [
-      { id: 1, name: 'Agar Malwa Main', code: 'BR-001' },
-      { id: 2, name: 'Susner Sub', code: 'BR-002' },
-      { id: 3, name: 'Kannod Branch', code: 'BR-003' },
-      { id: 4, name: 'Shajapur Branch', code: 'BR-004' },
+      { id: 1, name: 'Nippani Branch', code: 'BR01' },
+      { id: 2, name: 'Belagavi Branch', code: 'BR02' },
+      { id: 3, name: 'Chikkodi Branch', code: 'BR03' },
+      { id: 4, name: 'Sankeshwar Branch', code: 'BR04' },
+      { id: 5, name: 'Athani Branch', code: 'BR05' },
     ];
     this._populateBranchDropdown(select, branches);
   },
@@ -289,10 +319,12 @@ const Auth = {
       el.textContent = getInitials(user.name || user.username);
     });
 
-    // Set branch display
-    if (user.branchName) {
-      const branchEl = document.querySelector('.navbar .current-branch');
-      if (branchEl) branchEl.textContent = user.branchName;
+    // Set branch display (navbar chip)
+    const branchEl = document.querySelector('.navbar .current-branch');
+    if (branchEl) {
+      const nameEl = branchEl.querySelector('.current-branch-name') || branchEl;
+      nameEl.textContent = user.branchName || 'All Branches';
+      branchEl.title = user.branchName ? `Current Branch: ${user.branchName}` : 'All Branches';
     }
 
     // Show/hide role-based elements
