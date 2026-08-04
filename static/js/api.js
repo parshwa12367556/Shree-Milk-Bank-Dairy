@@ -141,6 +141,14 @@ const API = {
     return this.patch(`/api/farmers/${code}`, data);
   },
 
+  verifyFarmer(code) {
+    return this.post(`/api/farmers/${code}/verify`);
+  },
+
+  exportFarmers() {
+    return this.requestFile('/api/farmers/export');
+  },
+
   // ── Collections ──
   getCollections(params = {}) {
     const query = new URLSearchParams(params).toString();
@@ -194,6 +202,24 @@ const API = {
     return this.post('/api/rejections', data);
   },
 
+  // ── Expenses ──
+  getExpenses(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/expenses?${query}`);
+  },
+
+  createExpense(data) {
+    return this.post('/api/expenses', data);
+  },
+
+  updateExpense(id, data) {
+    return this.patch(`/api/expenses/${id}`, data);
+  },
+
+  deleteExpense(id) {
+    return this.delete(`/api/expenses/${id}`);
+  },
+
   // ── Notifications ──
   getNotifications(params = {}) {
     const query = new URLSearchParams(params).toString();
@@ -212,6 +238,10 @@ const API = {
   getReports(params = {}) {
     const query = new URLSearchParams(params).toString();
     return this.get(`/api/reports?${query}`);
+  },
+
+  exportReport(params = {}) {
+    return this.requestFile(`/api/reports/export?${new URLSearchParams(params).toString()}`);
   },
 
   // ── Procurement ──
@@ -242,6 +272,48 @@ const API = {
     return this.post('/api/procurement/chilling', data);
   },
 
+  // Suppliers
+  getSuppliers(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/procurement/suppliers?${query}`);
+  },
+
+  createSupplier(data) {
+    return this.post('/api/procurement/suppliers', data);
+  },
+
+  updateSupplier(id, data) {
+    return this.patch(`/api/procurement/suppliers/${id}`, data);
+  },
+
+  deleteSupplier(id) {
+    return this.delete(`/api/procurement/suppliers/${id}`);
+  },
+
+  // Purchase orders
+  getPurchaseOrders(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/procurement/purchase-orders?${query}`);
+  },
+
+  createPurchaseOrder(data) {
+    return this.post('/api/procurement/purchase-orders', data);
+  },
+
+  updatePurchaseOrder(id, data) {
+    return this.patch(`/api/procurement/purchase-orders/${id}`, data);
+  },
+
+  // Vendor payments
+  getVendorPayments(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/procurement/vendor-payments?${query}`);
+  },
+
+  createVendorPayment(data) {
+    return this.post('/api/procurement/vendor-payments', data);
+  },
+
   // ── Inventory ──
   getInventory(params = {}) {
     const query = new URLSearchParams(params).toString();
@@ -250,6 +322,23 @@ const API = {
 
   createInventory(data) {
     return this.post('/api/inventory', data);
+  },
+
+  updateInventory(id, data) {
+    return this.patch(`/api/inventory/${id}`, data);
+  },
+
+  deleteInventory(id) {
+    return this.delete(`/api/inventory/${id}`);
+  },
+
+  addInventoryMovement(id, data) {
+    return this.post(`/api/inventory/${id}/movement`, data);
+  },
+
+  getInventoryMovements(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/inventory/movements?${query}`);
   },
 
   // ── Employees ──
@@ -293,6 +382,33 @@ const API = {
 
   updateSettings(data) {
     return this.patch('/api/settings', data);
+  },
+
+  /**
+   * Download a file (CSV export etc.) with JWT auth
+   */
+  async requestFile(path) {
+    const token = localStorage.getItem('sd_token');
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(this.base + path, { headers });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Export failed');
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    // Derive filename from Content-Disposition if possible
+    const cd = res.headers.get('Content-Disposition') || '';
+    const m = cd.match(/filename="?([^";]+)"?/);
+    a.download = m ? m[1] : 'export.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return true;
   },
 };
 

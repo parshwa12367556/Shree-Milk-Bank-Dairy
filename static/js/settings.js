@@ -22,6 +22,23 @@ async function loadSettings() {
       const keySpan = document.querySelector('.api-key-display .key-value');
       if (keySpan) keySpan.textContent = settings.api_key_preview;
     }
+
+    // SMS / Email notification config
+    const map = {
+      'set-sms-provider': settings.sms_provider,
+      'set-sms-sender': settings.sms_sender_id,
+      'set-sms-key': settings.sms_api_key,
+      'set-sms-url': settings.sms_api_url,
+      'set-mail-host': settings.email_smtp_host,
+      'set-mail-port': settings.email_smtp_port,
+      'set-mail-from': settings.email_from,
+      'set-mail-user': settings.email_smtp_username,
+      'set-mail-pass': settings.email_smtp_password,
+    };
+    Object.entries(map).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el && val !== undefined && val !== null) el.value = val;
+    });
   } catch (err) {
     console.warn('Failed to load settings:', err);
   }
@@ -29,9 +46,28 @@ async function loadSettings() {
 
 async function saveSettings() {
   const dairyName = document.querySelector('#settings-general input[type="text"]')?.value || 'Smart Dairy ERP';
+  const payload = { dairy_name: dairyName };
+
+  // Collect SMS / Email config if the section is present
+  const smsFields = {
+    'set-sms-provider': 'sms_provider',
+    'set-sms-sender': 'sms_sender_id',
+    'set-sms-key': 'sms_api_key',
+    'set-sms-url': 'sms_api_url',
+    'set-mail-host': 'email_smtp_host',
+    'set-mail-port': 'email_smtp_port',
+    'set-mail-from': 'email_from',
+    'set-mail-user': 'email_smtp_username',
+    'set-mail-pass': 'email_smtp_password',
+  };
+  Object.entries(smsFields).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el && el.value) payload[key] = el.value;
+  });
+
   try {
-    await API.updateSettings({ dairy_name: dairyName });
-    Modal.toast({ title: 'Settings Saved', message: 'General settings updated successfully', type: 'success' });
+    await API.updateSettings(payload);
+    Modal.toast({ title: 'Settings Saved', message: 'Settings updated successfully', type: 'success' });
   } catch (err) {
     Modal.toast({ title: 'Error', message: err.message || 'Failed to save settings', type: 'error' });
   }

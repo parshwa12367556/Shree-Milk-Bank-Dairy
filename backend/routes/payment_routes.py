@@ -12,6 +12,8 @@ from backend.app import db
 from backend.models import Payment, Collection, Farmer
 from backend.auth import can_pay, get_identity
 from backend.utils import generate_pay_code
+from backend.audit import log_audit
+from backend.notify import notify
 
 payment_bp = Blueprint('payments', __name__)
 
@@ -103,11 +105,13 @@ def create_payment():
     except (ValueError, TypeError):
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
 
-    # Get unpaid collections
-    query = Collection.query.filter(
+    # Get unpaid collections — only from VERIFIED/ACTIVE farmers can receive
+    # payments (per the farmer verification workflow).
+    query = Collection.query.join(Farmer, Collection.farmer_id == Farmer.id).filter(
         Collection.date.between(start, end),
         Collection.payment_id.is_(None),
         Collection.status == 'ACCEPTED',
+        Farmer.status == 'ACTIVE',
     )
 
     if branch_id:
@@ -158,6 +162,8 @@ def create_payment():
 
         created_payments.append(payment.to_dict())
 
+    log_audit('CREATE', 'Payment', None,
+              detail=f'Generated {len(created_payments)} payment(s) for period {start} to {end}')
     db.session.commit()
 
     return jsonify({
@@ -186,11 +192,26 @@ def update_payment(payment_id):
     if new_status == 'PAID':
         payment.paid_at = datetime.utcnow()
         payment.paid_by = get_identity().get('uid')
+        # Simulated bank transfer: auto-generate a UTR-style reference when
+        # the payment is marked paid (real bank API integration can replace
+        # this with the actual bank reference later).
+        if not payment.reference:
+            payment.reference = 'UTR' + datetime.utcnow().strftime('%Y%m%d%H%M%S') + str(payment.id or 0)
 
     payment.reference = data.get('reference', payment.reference)
+    log_audit('PAY' if new_status == 'PAID' else 'APPROVE', 'Payment', payment.pay_code,
+              detail=f'Payment {payment.pay_code} {new_status} (₹{payment.total_amount}) ref {payment.reference}')
+    if new_status == 'PAID':
+        notify('payment', 'Payment Paid',
+               f'₹{payment.total_amount} transferred to {payment.farmer.name if payment.farmer else "farmer"} ({payment.pay_code}). Ref: {payment.reference}',
+               link='payments')
+    elif new_status == 'APPROVED':
+        notify('payment', 'Payment Approved',
+               f'Payment {payment.pay_code} of ₹{payment.total_amount} approved.',
+               link='payments')
     db.session.commit()
 
     return jsonify({
         'payment': payment.to_dict(),
-        'message': f'Payment {payment.pay_code} {new_status}',
+        'message': f'Payment {payment.pay_code} {new_status}' + (f'. Bank ref: {payment.reference}' if new_status == 'PAID' else ''),
     })

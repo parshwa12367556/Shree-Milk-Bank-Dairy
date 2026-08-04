@@ -1,18 +1,25 @@
 """
 Smart Dairy ERP — Farmer Routes
 
-GET    /api/farmers          — List farmers (paginated, filterable)
-POST   /api/farmers          — Register new farmer
-GET    /api/farmers/stats    — Farmer statistics
-GET    /api/farmers/<code>   — Farmer detail + bank + stats
-PATCH  /api/farmers/<code>   — Update farmer
+GET     /api/farmers               — List farmers (paginated, filterable)
+GET     /api/farmers/stats         — Farmer statistics
+GET     /api/farmers/export        — Export farmers as CSV
+POST    /api/farmers               — Register new farmer (Branch Manager)
+GET     /api/farmers/<code>        — Farmer detail + bank + stats
+PATCH   /api/farmers/<code>        — Update farmer (incl. bank details)
+POST    /api/farmers/<code>/verify — Verify farmer (Head Office)
 """
-from flask import Blueprint, request, jsonify
+from datetime import datetime
+import csv
+import io
+from flask import Blueprint, request, jsonify, Response
 from flask_jwt_extended import jwt_required
 from backend.app import db
 from backend.models import Farmer, BankDetail, Collection, Payment, Branch
 from backend.auth import role_required, get_identity
 from backend.utils import generate_farmer_code
+from backend.audit import log_audit
+from backend.notify import notify
 
 farmer_bp = Blueprint('farmers', __name__)
 
@@ -38,7 +45,7 @@ def get_farmers():
     elif branch_id:
         query = query.filter_by(branch_id=branch_id)
 
-    # Search
+    # Search (ID, name, mobile, Aadhaar, village)
     if q:
         search = f'%{q}%'
         query = query.filter(
@@ -46,6 +53,7 @@ def get_farmers():
                 Farmer.farmer_code.ilike(search),
                 Farmer.name.ilike(search),
                 Farmer.mobile.ilike(search),
+                Farmer.aadhaar.ilike(search),
                 Farmer.village.ilike(search),
             )
         )
@@ -83,6 +91,8 @@ def get_farmer_stats():
 
     total = q.count()
     active = q.filter_by(status='ACTIVE').count()
+    pending = q.filter_by(status='PENDING_VERIFICATION').count()
+    rejected = q.filter_by(status='REJECTED').count()
     cow = q.filter_by(milk_type='COW', status='ACTIVE').count()
     buffalo = q.filter_by(milk_type='BUFFALO', status='ACTIVE').count()
     mixed = q.filter_by(milk_type='MIXED', status='ACTIVE').count()
@@ -92,6 +102,8 @@ def get_farmer_stats():
     return jsonify({
         'total': total,
         'active': active,
+        'pendingVerification': pending,
+        'rejected': rejected,
         'cow': cow,
         'buffalo': buffalo,
         'mixed': mixed,
@@ -115,7 +127,7 @@ def create_farmer():
 
     name = data.get('name', '').strip()
     mobile = data.get('mobile', '').strip()
-    milk_type = data.get('milkType', '').upper()
+    milk_type = (data.get('milkType') or '').upper()
 
     if not name:
         return jsonify({'error': 'Farmer name is required'}), 400
@@ -173,6 +185,9 @@ def create_farmer():
         breed=data.get('breed', ''),
         preferred_shift=data.get('preferredShift', ''),
         branch_id=branch_id,
+        # New registrations enter the verification workflow (Head Office must
+        # verify bank/aadhaar details before the farmer can receive payments).
+        status='PENDING_VERIFICATION',
         created_by=user.get('uid'),
     )
     db.session.add(farmer)
@@ -191,12 +206,183 @@ def create_farmer():
         )
         db.session.add(bank)
 
+    log_audit('CREATE', 'Farmer', farmer_code, detail=f'Farmer {name} registered (pending verification)')
+    notify('farmer', 'New Farmer Registered',
+           f'{name} ({farmer_code}) registered and awaiting verification.',
+           link='farmers')
     db.session.commit()
 
     return jsonify({
         'farmer': farmer.to_dict(),
-        'message': f'Farmer {name} registered successfully with code {farmer_code}'
+        'message': f'Farmer {name} registered with code {farmer_code}. Awaiting verification by Head Office.'
     }), 201
+
+
+@farmer_bp.route('/api/farmers/<code>/verify', methods=['POST'])
+@jwt_required()
+@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+def verify_farmer(code):
+    """Verify (approve) or reject a farmer (Head Office only).
+
+    body: {'action': 'approve' | 'reject', 'reason': '...'}
+    - approve: PENDING_VERIFICATION → ACTIVE (eligible for payments)
+    - reject:  PENDING_VERIFICATION → REJECTED with a reason (branch can edit
+      and resubmit)
+    """
+    farmer = Farmer.query.filter_by(farmer_code=code).first()
+    if not farmer:
+        return jsonify({'error': 'Farmer not found'}), 404
+
+    if farmer.status != 'PENDING_VERIFICATION':
+        return jsonify({'error': f'Farmer is already {farmer.status}. Only pending farmers can be reviewed.'}), 400
+
+    data = request.get_json(silent=True) or {}
+    action = (data.get('action') or 'approve').lower()
+    reason = (data.get('reason') or '').strip()
+    user = get_identity()
+
+    if action == 'approve':
+        farmer.status = 'ACTIVE'
+        farmer.status_reason = None
+        farmer.verified_by = user.get('uid')
+        farmer.verified_at = datetime.utcnow()
+        log_audit('VERIFY', 'Farmer', farmer.farmer_code,
+                  detail=f'Farmer {farmer.name} verified and activated by Head Office')
+        notify('farmer', 'Farmer Verified',
+               f'{farmer.name} ({farmer.farmer_code}) verified and activated.',
+               link='farmers')
+        message = f'Farmer {farmer.farmer_code} verified and activated. Payments can now be processed.'
+    elif action == 'reject':
+        if not reason:
+            return jsonify({'error': 'A rejection reason is required'}), 400
+        farmer.status = 'REJECTED'
+        farmer.status_reason = reason
+        log_audit('REJECT', 'Farmer', farmer.farmer_code,
+                  detail=f'Farmer {farmer.name} rejected: {reason}')
+        notify('farmer', 'Farmer Rejected',
+               f'{farmer.name} ({farmer.farmer_code}) verification rejected: {reason}',
+               link='farmers')
+        message = f'Farmer {farmer.farmer_code} rejected. Branch can edit and resubmit.'
+    else:
+        return jsonify({'error': "Action must be 'approve' or 'reject'"}), 400
+
+    db.session.commit()
+    return jsonify({'farmer': farmer.to_dict(), 'message': message})
+
+
+@farmer_bp.route('/api/farmers/<code>/resubmit', methods=['POST'])
+@jwt_required()
+@role_required('BRANCH_MANAGER')
+def resubmit_farmer(code):
+    """Re-submit a REJECTED farmer for verification (Branch Manager)."""
+    farmer = Farmer.query.filter_by(farmer_code=code).first()
+    if not farmer:
+        return jsonify({'error': 'Farmer not found'}), 404
+
+    user = get_identity()
+    if user.get('branchId') != farmer.branch_id:
+        return jsonify({'error': 'You can only resubmit farmers from your own branch.'}), 403
+
+    if farmer.status != 'REJECTED':
+        return jsonify({'error': 'Only rejected farmers can be resubmitted.'}), 400
+
+    farmer.status = 'PENDING_VERIFICATION'
+    farmer.status_reason = None
+    log_audit('UPDATE', 'Farmer', farmer.farmer_code,
+              detail=f'Farmer {farmer.name} resubmitted for verification')
+    db.session.commit()
+
+    return jsonify({'farmer': farmer.to_dict(),
+                    'message': f'Farmer {farmer.farmer_code} resubmitted for Head Office review.'})
+
+
+@farmer_bp.route('/api/farmers/<code>/verify-bank', methods=['POST'])
+@jwt_required()
+@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+def verify_farmer_bank(code):
+    """Verify or reject a farmer's bank details (Head Office only).
+
+    body: {'action': 'verify' | 'reject', 'reason': '...'}
+    """
+    farmer = Farmer.query.filter_by(farmer_code=code).first()
+    if not farmer:
+        return jsonify({'error': 'Farmer not found'}), 404
+
+    bank = farmer.bank_detail
+    if not bank:
+        return jsonify({'error': 'No bank details on file for this farmer.'}), 400
+
+    data = request.get_json(silent=True) or {}
+    action = (data.get('action') or 'verify').lower()
+    reason = (data.get('reason') or '').strip()
+    user = get_identity()
+
+    if action == 'verify':
+        bank.verification_status = 'VERIFIED'
+        bank.verified_by = user.get('uid')
+        bank.verified_at = datetime.utcnow()
+        log_audit('VERIFY', 'BankDetail', farmer.farmer_code,
+                  detail=f'Bank details verified for {farmer.farmer_code} ({bank.bank_name})')
+        message = f'Bank details for {farmer.farmer_code} verified.'
+    elif action == 'reject':
+        bank.verification_status = 'REJECTED'
+        log_audit('REJECT', 'BankDetail', farmer.farmer_code,
+                  detail=f'Bank details rejected for {farmer.farmer_code}' + (f': {reason}' if reason else ''))
+        message = f'Bank details for {farmer.farmer_code} rejected.'
+    else:
+        return jsonify({'error': "Action must be 'verify' or 'reject'"}), 400
+
+    db.session.commit()
+    return jsonify({'farmer': farmer.to_dict(), 'message': message})
+
+
+@farmer_bp.route('/api/farmers/export', methods=['GET'])
+@jwt_required()
+def export_farmers():
+    """Export farmers as CSV (branch-scoped)."""
+    query = Farmer.query
+
+    user = get_identity()
+    user_branch_id = user.get('branchId')
+    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id:
+        query = query.filter_by(branch_id=user_branch_id)
+
+    branch_id = request.args.get('branchId', type=int)
+    if branch_id and user.get('role') in ('SUPER_ADMIN', 'HEAD_OFFICE'):
+        query = query.filter_by(branch_id=branch_id)
+
+    farmers = query.order_by(Farmer.farmer_code).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        'Farmer ID', 'Name', 'Father Name', 'Mobile', 'Email', 'Aadhaar',
+        'Village', 'Taluka', 'District', 'State', 'Pincode', 'Milk Type',
+        'Cows', 'Buffaloes', 'Branch', 'Bank Name', 'IFSC', 'Account No',
+        'Status', 'Joined',
+    ])
+    for f in farmers:
+        bank = f.bank_detail
+        writer.writerow([
+            f.farmer_code, f.name, f.father_name or '', f.mobile or '',
+            f.email or '', f.aadhaar or '', f.village or '', f.taluka or '',
+            f.district or '', f.state or '', f.pincode or '', f.milk_type,
+            f.cow_count or 0, f.buffalo_count or 0,
+            f.branch.code if f.branch else '',
+            bank.bank_name if bank else '', bank.ifsc if bank else '',
+            bank.account_number if bank else '', f.status,
+            f.joined_at.isoformat() if f.joined_at else '',
+        ])
+
+    log_audit('EXPORT', 'Farmer', None, detail=f'Exported {len(farmers)} farmers as CSV')
+    db.session.commit()
+
+    filename = 'farmers_export.csv'
+    return Response(
+        '\ufeff' + output.getvalue(),  # BOM for Excel compatibility
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': f'attachment; filename={filename}'},
+    )
 
 
 @farmer_bp.route('/api/farmers/<code>', methods=['GET'])
@@ -206,6 +392,11 @@ def get_farmer(code):
     farmer = Farmer.query.filter_by(farmer_code=code).first()
     if not farmer:
         return jsonify({'error': 'Farmer not found'}), 404
+
+    # Branch scope: managers can only view farmers from their own branch
+    user = get_identity()
+    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user.get('branchId') != farmer.branch_id:
+        return jsonify({'error': 'You can only view farmers from your own branch.'}), 403
 
     # Get collection stats
     total_qty = db.session.query(db.func.sum(Collection.quantity))\
@@ -243,12 +434,20 @@ def update_farmer(code):
     if not data:
         return jsonify({'error': 'Request body is required'}), 400
 
+    # Branch scope: managers can only edit farmers from their own branch
+    user = get_identity()
+    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user.get('branchId') != farmer.branch_id:
+        return jsonify({'error': 'You can only edit farmers from your own branch.'}), 403
+
     # Map JSON field names to model attributes
     field_map = {
         'name': 'name', 'fatherName': 'father_name', 'mobile': 'mobile',
-        'email': 'email', 'village': 'village', 'taluka': 'taluka',
+        'altMobile': 'alt_mobile', 'email': 'email', 'aadhaar': 'aadhaar',
+        'pan': 'pan', 'dateOfBirth': 'date_of_birth',
+        'village': 'village', 'taluka': 'taluka',
         'district': 'district', 'state': 'state', 'pincode': 'pincode',
-        'address': 'address', 'remarks': 'remarks', 'status': 'status',
+        'address': 'address', 'landmark': 'landmark', 'remarks': 'remarks',
+        'status': 'status', 'milkType': 'milk_type',
         'cowCount': 'cow_count', 'buffaloCount': 'buffalo_count',
         'breed': 'breed', 'preferredShift': 'preferred_shift',
     }
@@ -257,5 +456,32 @@ def update_farmer(code):
         if json_key in data:
             setattr(farmer, model_attr, data[json_key])
 
+    # Only Head Office may change a farmer's status (freeze / activate)
+    user = get_identity()
+    if 'status' in data and user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE'):
+        return jsonify({'error': 'Only Head Office can change farmer status.'}), 403
+
+    # Update / create bank details (Head Office authorized bank updates)
+    bank_fields = ['accountHolder', 'bankName', 'bankBranch', 'accountNumber', 'ifsc', 'upi']
+    if any(k in data for k in bank_fields):
+        bank = farmer.bank_detail
+        if not bank:
+            bank = BankDetail(farmer_id=farmer.id)
+            db.session.add(bank)
+        if 'accountHolder' in data:
+            bank.account_holder = data['accountHolder']
+        if 'bankName' in data:
+            bank.bank_name = data['bankName']
+        if 'bankBranch' in data:
+            bank.branch_name = data['bankBranch']
+        if 'accountNumber' in data:
+            bank.account_number = data['accountNumber']
+        if 'ifsc' in data:
+            bank.ifsc = data['ifsc']
+        if 'upi' in data:
+            bank.upi = data['upi']
+
+    log_audit('UPDATE', 'Farmer', farmer.farmer_code,
+              detail=f'Farmer {farmer.name} updated')
     db.session.commit()
     return jsonify({'farmer': farmer.to_dict(), 'message': 'Farmer updated successfully'})

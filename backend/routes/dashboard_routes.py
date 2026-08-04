@@ -8,8 +8,12 @@ from datetime import date, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from backend.app import db
-from backend.models import Collection, Farmer, Payment, MilkRejection, Branch
+from backend.models import (
+    Collection, Farmer, Payment, MilkRejection, Branch, Expense, VendorPayment,
+    PurchaseOrder, InventoryItem, Vehicle,
+)
 from backend.auth import get_identity
+from backend.notify import notify_low_stock, notify_service_due
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -180,6 +184,44 @@ def get_dashboard():
             'amount': round(row.amt or 0, 2),
         })
 
+    # ── Analytics: monthly collection, rejected %, inventory & vehicle status ──
+    month_start = today.replace(day=1)
+    month_colls = _scoped_query(Collection, Collection.date >= month_start, Collection.date <= today).all()
+    monthly_qty = round(sum(c.quantity or 0 for c in month_colls), 2)
+    monthly_amount = round(sum(c.amount or 0 for c in month_colls), 2)
+
+    total_colls_30d = _scoped_query(Collection, Collection.date >= month_start, Collection.date <= today).all()
+    rejected_30d = sum(1 for c in total_colls_30d if c.status == 'REJECTED')
+    rejected_pct = round(rejected_30d / max(len(total_colls_30d), 1) * 100, 1)
+
+    all_inventory = InventoryItem.query.all()
+    low_stock_count = sum(1 for i in all_inventory if (i.stock or 0) <= (i.min_stock or 0))
+    vehicles = Vehicle.query.all()
+    vehicles_active = sum(1 for v in vehicles if v.status == 'ACTIVE')
+    vehicles_maintenance = sum(1 for v in vehicles if v.status == 'MAINTENANCE')
+
+    # Farmer payments paid (cost of milk) for P&L
+    paid_payments = payment_query.filter(Payment.status == 'PAID').all()
+    farmer_paid = round(sum(p.total_amount or 0 for p in paid_payments), 2)
+
+    # ── Profit & Loss (last 30 days): revenue − expenses − procurement spend − farmer payments ──
+    exp_query = Expense.query.filter(
+        Expense.expense_date >= month_start, Expense.expense_date <= today)
+    if scoped:
+        exp_query = exp_query.filter_by(branch_id=user_branch_id)
+    expenses_30d = sum(e.amount or 0 for e in exp_query.all())
+
+    # Procurement spend: vendor payments linked to POs (branch-scoped via PO branch)
+    vp_join = VendorPayment.query.join(PurchaseOrder, VendorPayment.po_id == PurchaseOrder.id)
+    if scoped:
+        vp_join = vp_join.filter(PurchaseOrder.branch_id == user_branch_id)
+    procurement_30d = sum(v.amount or 0 for v in vp_join.filter(
+        VendorPayment.payment_date >= month_start, VendorPayment.payment_date <= today).all())
+    revenue_30d = sum(c.amount or 0 for c in _scoped_query(
+        Collection, Collection.date >= month_start, Collection.date <= today).all())
+    total_costs_30d = round(expenses_30d + procurement_30d + farmer_paid, 2)
+    net_30d = round(revenue_30d - total_costs_30d, 2)
+
     # ── System health ──
     db_ok = True
     try:
@@ -187,6 +229,14 @@ def get_dashboard():
             pass
     except Exception:
         db_ok = False
+
+    # Auto-generate low-stock & service-due notifications when the dashboard loads
+    try:
+        notify_low_stock()
+        notify_service_due()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
     return jsonify({
         'kpis': {
@@ -201,6 +251,26 @@ def get_dashboard():
             'pendingPayments': pending_amount,
             'rejectedToday': rejected_today,
             'efficiency': progress_pct,
+            'revenue30d': round(revenue_30d, 2),
+            'expenses30d': round(total_costs_30d, 2),
+            'farmerPaid30d': farmer_paid,
+            'profit30d': net_30d if net_30d >= 0 else 0,
+            'loss30d': abs(net_30d) if net_30d < 0 else 0,
+            'monthlyCollection': monthly_qty,
+            'monthlyRevenue': monthly_amount,
+            'rejectedPct': rejected_pct,
+            'lowStockCount': low_stock_count,
+            'vehiclesActive': vehicles_active,
+            'vehiclesMaintenance': vehicles_maintenance,
+        },
+        'analytics': {
+            'monthlyCollection': monthly_qty,
+            'monthlyRevenue': monthly_amount,
+            'rejectedPct': rejected_pct,
+            'lowStockCount': low_stock_count,
+            'vehiclesActive': vehicles_active,
+            'vehiclesMaintenance': vehicles_maintenance,
+            'farmerPaid': farmer_paid,
         },
         'collectionProgress': {
             'target': target,

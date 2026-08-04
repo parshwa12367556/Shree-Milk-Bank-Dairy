@@ -10,6 +10,8 @@ from flask_jwt_extended import jwt_required
 from backend.app import db
 from backend.models import MilkRejection, Collection, Farmer
 from backend.auth import get_identity
+from backend.audit import log_audit
+from backend.notify import notify
 
 rejection_bp = Blueprint('rejections', __name__)
 
@@ -85,6 +87,12 @@ def create_rejection():
         remark=data.get('remark', ''),
     )
     db.session.add(rejection)
+    db.session.flush()
+    log_audit('REJECT', 'MilkRejection', rejection.id,
+              detail=f'Rejected {quantity}L ({reason}) for farmer #{farmer_id}')
+    notify('quality', 'Milk Rejected',
+           f'{quantity}L milk rejected ({reason}) for farmer #{farmer_id}.',
+           link='rejections')
     db.session.commit()
 
     # If linked to a collection, update its status
@@ -92,6 +100,7 @@ def create_rejection():
         collection = Collection.query.get(data['collectionId'])
         if collection:
             collection.status = 'REJECTED'
+            log_audit('UPDATE', 'Collection', collection.receipt_no, detail='Collection marked REJECTED')
             db.session.commit()
 
     return jsonify({

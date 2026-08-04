@@ -12,6 +12,7 @@ from flask_jwt_extended import jwt_required
 from backend.app import db
 from backend.models import Branch, User
 from backend.auth import role_required, hash_password
+from backend.audit import log_audit
 
 branch_bp = Blueprint('branches', __name__)
 
@@ -80,6 +81,7 @@ def create_branch():
         )
         db.session.add(branch_user)
 
+    log_audit('CREATE', 'Branch', branch.code, detail=f'Branch {branch.name} created (login {code})')
     db.session.commit()
     return jsonify({
         'branch': branch.to_dict(),
@@ -136,6 +138,7 @@ def update_branch(branch_id):
         if branch.manager_name:
             branch_user.name = branch.manager_name
 
+    log_audit('UPDATE', 'Branch', branch.code, detail=f'Branch {branch.name} updated')
     db.session.commit()
     return jsonify({'branch': branch.to_dict(), 'message': 'Branch updated successfully'})
 
@@ -165,6 +168,7 @@ def reset_branch_password(branch_id):
         branch_user.password_hash = hash_password(branch.phone)
         branch_user.phone = branch.phone
 
+    log_audit('UPDATE', 'Branch', branch.code, detail=f'Branch login password reset')
     db.session.commit()
     return jsonify({
         'message': f'Password reset successfully. Branch login: {branch.code} / {branch.phone}'
@@ -190,5 +194,6 @@ def delete_branch(branch_id):
     branch_user = User.query.filter_by(branch_id=branch.id, role='BRANCH_MANAGER').first()
     if branch_user:
         branch_user.status = 'INACTIVE'
+    log_audit('DELETE', 'Branch', branch.code, detail=f'Branch {branch.name} deleted')
     db.session.commit()
     return jsonify({'message': f'Branch {branch.name} deleted successfully'})

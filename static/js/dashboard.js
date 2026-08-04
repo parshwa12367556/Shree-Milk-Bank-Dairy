@@ -76,10 +76,11 @@ function renderKPIs(k) {
     { id: 'kpi-snf', value: k.avgSnf != null ? String(k.avgSnf) + '%' : '—', label: 'Avg SNF', icon: 'beaker' },
     { id: 'kpi-pending', value: k.pendingPayments != null ? fmtINR(k.pendingPayments) : '—', label: 'Pending Payments', icon: 'clock' },
     { id: 'kpi-rejected', value: k.rejectedToday != null ? String(k.rejectedToday) : '—', label: 'Rejected Today', icon: 'x-circle' },
+    { id: 'kpi-profit', value: k.profit30d != null ? fmtINR(k.profit30d) : '—', label: 'Profit (30d)', icon: 'trending-up' },
     { id: 'kpi-efficiency', value: k.efficiency != null ? fmtNum(k.efficiency) + '%' : '—', label: 'Efficiency', icon: 'gauge' },
   ];
 
-  const colors = ['green', 'gold', 'blue', 'purple', 'teal', 'blue', 'green', 'purple', 'amber', 'red', 'cyan'];
+  const colors = ['green', 'gold', 'blue', 'purple', 'teal', 'blue', 'green', 'purple', 'amber', 'red', 'cyan', 'cyan'];
   items.forEach((item, i) => {
     const el = document.getElementById(item.id);
     if (!el) return;

@@ -14,6 +14,7 @@ from flask_jwt_extended import create_access_token, jwt_required
 from backend.app import db
 from backend.models import User, Branch
 from backend.auth import check_password, hash_password, get_identity
+from backend.audit import log_audit
 
 # TEMPORARY DEV: permanent credentials (admin / admin123) — see DEV_LOGIN_ENABLED
 # in config.py. Remove this bypass before any production release.
@@ -72,6 +73,9 @@ def login():
 
     from datetime import datetime
     user.last_login_at = datetime.utcnow()
+    log_audit('LOGIN', 'Session', user.username, user_id=user.id, username=user.username,
+              role=user.role, branch_code=user.branch.code if user.branch else None,
+              detail=f'User logged in as {user.role}')
     db.session.commit()
 
     # Branch display resolution:
@@ -104,6 +108,9 @@ def login():
 @jwt_required()
 def logout():
     """Logout — tokens are stateless; client should clear the token."""
+    log_audit('LOGOUT', 'Session', get_identity().get('username'),
+              detail='User logged out')
+    db.session.commit()
     return jsonify({'message': 'Logged out successfully'})
 
 
@@ -176,6 +183,8 @@ def change_password():
         return jsonify({'error': 'New password must be at least 6 characters'}), 400
 
     user.password_hash = hash_password(new_password)
+    log_audit('UPDATE', 'User', user.username, detail='Password changed',
+              user_id=user.id, username=user.username)
     db.session.commit()
 
     return jsonify({'message': 'Password changed successfully'})

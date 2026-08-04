@@ -16,8 +16,10 @@ from backend.app import db
 from backend.models import (
     User, Branch, Farmer, BankDetail, RateMaster,
     Collection, Payment, QualityTest, MilkRejection,
-    CollectionCenter, InventoryItem, Employee, Vehicle,
-    Notification, AuditLog,
+    CollectionCenter, CollectionRoute, ChillingCenter,
+    InventoryItem, StockMovement, Employee, Vehicle,
+    Supplier, PurchaseOrder, PurchaseOrderItem, VendorPayment,
+    Expense, Notification, AuditLog,
 )
 from backend.auth import hash_password
 
@@ -45,6 +47,9 @@ def seed_database():
     _seed_inventory()
     _seed_employees()
     _seed_vehicles()
+    _seed_suppliers_and_orders()
+    _seed_expenses()
+    _seed_stock_movements()
     _seed_notifications()
     _seed_audit_logs()
 
@@ -58,9 +63,11 @@ def seed_database():
 def _clear_data():
     """Clear all existing data."""
     models = [
-        AuditLog, Notification, Vehicle, Employee, InventoryItem,
-        CollectionCenter, MilkRejection, QualityTest, Payment,
-        Collection, RateMaster, BankDetail, Farmer, Branch, User,
+        AuditLog, Notification, VendorPayment, PurchaseOrderItem, PurchaseOrder,
+        Supplier, Expense, StockMovement, Vehicle, Employee, InventoryItem,
+        CollectionCenter, ChillingCenter, CollectionRoute, MilkRejection,
+        QualityTest, Payment, Collection, RateMaster, BankDetail, Farmer,
+        Branch, User,
     ]
     for model in models:
         model.query.delete()
@@ -165,6 +172,13 @@ def _seed_farmers():
         cow_count=0, buffalo_count=2, branch_id=2,
         status='INACTIVE',
         joined_at=date.today() - timedelta(days=60),
+    ))
+    farmers.append(Farmer(
+        farmer_code=f'BR03{per_branch + 1:03d}', name='Test Pending Verify', father_name='P Father',
+        mobile='9876543297', village='Chikkodi', milk_type='COW',
+        cow_count=3, buffalo_count=0, branch_id=3,
+        status='PENDING_VERIFICATION',
+        joined_at=date.today() - timedelta(days=5),
     ))
 
     db.session.add_all(farmers)
@@ -420,13 +434,102 @@ def _seed_vehicles():
     b1 = Branch.query.filter_by(code='BR01').first()
     b2 = Branch.query.filter_by(code='BR02').first()
     vehicles = [
-        Vehicle(vehicle_number='KA-23-AB-1234', type='TANKER', driver_name='Ramesh Kumar', capacity=3000, branch_id=b1.id, status='ACTIVE'),
-        Vehicle(vehicle_number='KA-22-CD-5678', type='TANKER', driver_name='Suresh Patil', capacity=2500, branch_id=b2.id, status='ACTIVE'),
-        Vehicle(vehicle_number='KA-23-EF-9012', type='PICKUP', driver_name='Mahesh Das', capacity=1000, branch_id=b1.id, status='MAINTENANCE'),
+        Vehicle(vehicle_number='KA-23-AB-1234', type='TANKER', driver_name='Ramesh Kumar', capacity=3000, branch_id=b1.id, status='ACTIVE',
+                insurance_no='POL-2026-112233', insurance_expiry=date(2026, 12, 31), last_service_date=date.today() - timedelta(days=30), next_service_date=date.today() + timedelta(days=60), gps_status='ACTIVE'),
+        Vehicle(vehicle_number='KA-22-CD-5678', type='TANKER', driver_name='Suresh Patil', capacity=2500, branch_id=b2.id, status='ACTIVE',
+                insurance_no='POL-2026-445566', insurance_expiry=date(2026, 9, 15), last_service_date=date.today() - timedelta(days=15), next_service_date=date.today() + timedelta(days=45), gps_status='ACTIVE'),
+        Vehicle(vehicle_number='KA-23-EF-9012', type='PICKUP', driver_name='Mahesh Das', capacity=1000, branch_id=b1.id, status='MAINTENANCE',
+                insurance_expiry=date(2026, 3, 1), gps_status='NOT_TRACKED'),
     ]
     db.session.add_all(vehicles)
     db.session.commit()
     print('[SEED] Vehicles created')
+
+
+def _seed_suppliers_and_orders():
+    suppliers = [
+        Supplier(code='SUP-001', name='Karnataka Dairy Equipments', contact_person='Ravi Patil',
+                 phone='9888800001', email='sales@kde.in', address='Belagavi',
+                 category='EQUIPMENT', status='ACTIVE'),
+        Supplier(code='SUP-002', name='PackPlus Industries', contact_person='Amit Jain',
+                 phone='9888800002', email='amit@packplus.in', address='Pune',
+                 category='PACKAGING', status='ACTIVE'),
+        Supplier(code='SUP-003', name='AgroFeed Solutions', contact_person='Sunil Kumar',
+                 phone='9888800003', email='sunil@agrofeed.in', address='Kolhapur',
+                 category='FEED', status='ACTIVE'),
+        Supplier(code='SUP-004', name='VetChem Labs', contact_person='Dr. Sneha Rao',
+                 phone='9888800004', email='sneha@vetchem.in', address='Hubli',
+                 category='CHEMICALS', status='ACTIVE'),
+    ]
+    db.session.add_all(suppliers)
+    db.session.commit()
+
+    b1 = Branch.query.filter_by(code='BR01').first()
+    po = PurchaseOrder(
+        po_code='PO000001',
+        supplier_id=suppliers[0].id,
+        branch_id=b1.id,
+        order_date=date.today() - timedelta(days=12),
+        expected_date=date.today() + timedelta(days=8),
+        status='APPROVED',
+        total_amount=97500.00,
+        paid_amount=97500.00,
+        remarks='Milk cans & testing equipment',
+        created_by=1,
+    )
+    db.session.add(po)
+    db.session.flush()
+    db.session.add_all([
+        PurchaseOrderItem(po_id=po.id, item_name='Milk Cans (40L)', quantity=50, unit='nos', unit_price=1400, amount=70000.00),
+        PurchaseOrderItem(po_id=po.id, item_name='Lactometer', quantity=25, unit='nos', unit_price=450, amount=11250.00),
+        PurchaseOrderItem(po_id=po.id, item_name='Butyrometer', quantity=10, unit='nos', unit_price=1625, amount=16250.00),
+    ])
+    db.session.add(VendorPayment(
+        payment_code='VP000001', po_id=po.id, amount=97500.00,
+        payment_date=date.today() - timedelta(days=2), method='BANK_TRANSFER',
+        reference='UTR20260701123456', status='COMPLETED', created_by=1,
+    ))
+    db.session.commit()
+    print('[SEED] Suppliers & purchase orders created')
+
+
+def _seed_expenses():
+    b1 = Branch.query.filter_by(code='BR01').first()
+    b2 = Branch.query.filter_by(code='BR02').first()
+    expenses = [
+        Expense(code='EXP000001', branch_id=b1.id, category='FEED',
+                description='Animal feed purchase', amount=12500.00,
+                expense_date=date.today() - timedelta(days=2), created_by=1),
+        Expense(code='EXP000002', branch_id=b2.id, category='TRANSPORT',
+                description='Milk tanker fuel', amount=8400.00,
+                expense_date=date.today() - timedelta(days=3), created_by=1),
+        Expense(code='EXP000003', branch_id=b1.id, category='ELECTRICITY',
+                description='Chilling unit electricity bill', amount=5600.00,
+                expense_date=date.today() - timedelta(days=5), created_by=1),
+        Expense(code='EXP000004', branch_id=None, category='ADMIN',
+                description='Head office stationery & admin', amount=3100.00,
+                expense_date=date.today() - timedelta(days=6), created_by=1),
+    ]
+    db.session.add_all(expenses)
+    db.session.commit()
+    print('[SEED] Expenses created')
+
+
+def _seed_stock_movements():
+    raw_milk = InventoryItem.query.filter_by(code='INV-001').first()
+    packaging = InventoryItem.query.filter_by(code='INV-004').first()
+    b1 = Branch.query.filter_by(code='BR01').first()
+    movements = [
+        StockMovement(item_id=raw_milk.id, movement_type='IN', quantity=2500, reference='Collection',
+                      note='Morning bulk intake', created_by=1),
+        StockMovement(item_id=raw_milk.id, movement_type='ALLOCATE', quantity=800, branch_id=b1.id,
+                      reference='ALLOC-101', note='Allocated to BR01', created_by=1),
+        StockMovement(item_id=packaging.id, movement_type='OUT', quantity=300, reference='PACK-88',
+                      note='Dispatch to packing line', created_by=1),
+    ]
+    db.session.add_all(movements)
+    db.session.commit()
+    print('[SEED] Stock movements created')
 
 
 def _seed_notifications():

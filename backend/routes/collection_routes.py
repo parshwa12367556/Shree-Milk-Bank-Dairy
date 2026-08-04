@@ -12,6 +12,7 @@ from backend.models import Collection, Farmer, RateMaster
 from backend.auth import can_collect, get_identity
 from backend.utils import generate_receipt_no
 from backend.pricing import compute_price
+from backend.audit import log_audit
 
 collection_bp = Blueprint('collections', __name__)
 
@@ -125,6 +126,9 @@ def create_collection():
         remarks=data.get('remarks', ''),
     )
     db.session.add(collection)
+    db.session.flush()
+    log_audit('CREATE', 'Collection', receipt_no,
+              detail=f'Recorded {quantity}L {farmer.milk_type} milk for {farmer.farmer_code} (₹{price["amount"]})')
     db.session.commit()
 
     return jsonify({

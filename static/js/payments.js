@@ -68,20 +68,64 @@ function renderPaymentsTable(payments) {
   }
 
   const statusBadges = { PENDING: 'tag-gold', APPROVED: 'tag-blue', PAID: 'tag-green' };
-  tbody.innerHTML = payments.map(p => `
+  const user = window.Auth ? Auth.getUser() : null;
+  const isGlobal = !!user && ['SUPER_ADMIN', 'HEAD_OFFICE'].includes(user.role);
+
+  tbody.innerHTML = payments.map(p => {
+    const actions = [];
+    if (isGlobal && p.status === 'PENDING') {
+      actions.push(`<button class="btn btn-sm btn-primary" onclick="approvePayment(${p.id})"><i data-lucide="check-circle" style="width:14px;height:14px;"></i> Approve</button>`);
+    }
+    if (isGlobal && p.status === 'APPROVED') {
+      actions.push(`<button class="btn btn-sm btn-success" onclick="markPaymentPaid(${p.id})"><i data-lucide="wallet" style="width:14px;height:14px;"></i> Mark Paid</button>`);
+    }
+    if (!actions.length) actions.push('<span style="color:var(--ink-muted);font-size:var(--text-xs);">—</span>');
+    return `
     <tr>
       <td><span class="font-mono" style="font-weight:600;">${p.payCode || '-'}</span></td>
       <td>${p.farmerName || '-'}</td>
       <td>${p.periodStart ? fmtDate(p.periodStart, true) : '-'} - ${p.periodEnd ? fmtDate(p.periodEnd, true) : '-'}</td>
       <td>${p.totalQuantity ? p.totalQuantity + ' L' : '-'}</td>
       <td>${p.totalAmount ? fmtINR(p.totalAmount) : '-'}</td>
-      <td>${p.collectionCount || 0}</td>
+      <td><span class="font-mono" style="font-size:var(--text-xs);">${p.reference || '<span style="color:var(--ink-muted);">—</span>'}</span></td>
       <td><span class="tag ${statusBadges[p.status] || 'tag-neutral'}">${p.status || '-'}</span></td>
       <td>${fmtDate(p.createdAt, true)}</td>
-      <td><div class="table-actions"><button class="btn btn-icon btn-sm btn-ghost" title="View"><i data-lucide="eye" style="width:16px;height:16px;"></i></button></div></td>
+      <td><div class="table-actions">${actions.join('')}</div></td>
     </tr>
-  `).join('');
+  `;}).join('');
   if (window.lucide) lucide.createIcons();
+}
+
+/** Approve a payment (Head Office) */
+async function approvePayment(id) {
+  try {
+    const result = await API.updatePayment(id, { status: 'APPROVED' });
+    Modal.toast({ title: 'Approved', message: result.message || 'Payment approved', type: 'success' });
+    const statusFilter = document.getElementById('payment-status-filter');
+    loadPayments(statusFilter && statusFilter.value ? { status: statusFilter.value } : {});
+  } catch (err) {
+    Modal.toast({ title: 'Error', message: err.message, type: 'error' });
+  }
+}
+
+/** Mark a payment as PAID — simulated bank transfer with UTR reference */
+async function markPaymentPaid(id) {
+  Modal.confirm({
+    title: 'Transfer Payment',
+    message: 'Confirm bank transfer to the farmer\'s registered account? A UTR reference will be generated.',
+    confirmText: 'Transfer & Mark Paid',
+    variant: 'info',
+    onConfirm: async () => {
+      try {
+        const result = await API.updatePayment(id, { status: 'PAID' });
+        Modal.toast({ title: 'Paid', message: result.message || 'Payment transferred', type: 'success' });
+        const statusFilter = document.getElementById('payment-status-filter');
+        loadPayments(statusFilter && statusFilter.value ? { status: statusFilter.value } : {});
+      } catch (err) {
+        Modal.toast({ title: 'Error', message: err.message, type: 'error' });
+      }
+    }
+  });
 }
 
 function initPaymentActions() {
@@ -148,3 +192,5 @@ async function generatePaymentSheet() {
 // Expose modal functions
 window.openPaymentModal = openPaymentModal;
 window.closePaymentModal = closePaymentModal;
+window.approvePayment = approvePayment;
+window.markPaymentPaid = markPaymentPaid;

@@ -57,7 +57,7 @@ window.initFarmerForm = function() {
         variant: 'primary',
         onConfirm: async () => {
           try {
-            await API.updateFarmer(editFarmer.code, buildFarmerPayload(data));
+            await API.updateFarmer(editFarmer.farmerCode || editFarmer.code, buildFarmerPayload(data));
             Modal.toast({ title: 'Success', message: `Farmer ${data.farmer_name} updated successfully!`, type: 'success' });
             setTimeout(() => Router.navigate('farmers'), 1500);
           } catch (err) {
@@ -91,14 +91,14 @@ function buildFarmerPayload(data) {
   // Farmers always belong to the logged-in Branch Manager's own branch
   const branchId = user && user.branchId ? parseInt(user.branchId) : (parseInt(data.branch_id) || null);
   return {
-    farmer_name: data.farmer_name,
-    father_name: data.father_name,
+    name: data.farmer_name,
+    fatherName: data.father_name,
     mobile: data.mobile,
-    alt_mobile: data.alt_mobile || null,
+    altMobile: data.alt_mobile || null,
     email: data.email || null,
     aadhaar: data.aadhaar,
     pan: data.pan || null,
-    date_of_birth: data.date_of_birth || null,
+    dateOfBirth: data.date_of_birth || null,
     address: data.address || null,
     village: data.village,
     taluka: data.taluka || null,
@@ -106,12 +106,19 @@ function buildFarmerPayload(data) {
     state: data.state || null,
     pincode: data.pincode || null,
     landmark: data.landmark || null,
-    milk_type: data.milk_type,
-    cow_count: parseInt(data.cow_count) || 0,
-    buffalo_count: parseInt(data.buffalo_count) || 0,
+    milkType: data.milk_type,
+    cowCount: parseInt(data.cow_count) || 0,
+    buffaloCount: parseInt(data.buffalo_count) || 0,
     breed: data.breed || null,
-    preferred_shift: data.preferred_shift || null,
+    preferredShift: data.preferred_shift || null,
     branch_id: branchId,
+    // Bank details (created at registration, editable by Head Office)
+    accountHolder: data.account_holder || data.farmer_name,
+    bankName: data.bank_name || null,
+    bankBranch: data.branch_name || null,
+    accountNumber: data.account_number || null,
+    ifsc: data.ifsc || null,
+    upi: data.upi || null,
     notification_sms: data.notification_sms === 'on',
     notification_whatsapp: data.notification_whatsapp === 'on',
     notification_email: data.notification_email === 'on',
@@ -176,7 +183,7 @@ function updateFormForEdit(isEditing, farmer) {
   const submitBtn = document.querySelector('#farmer-form button[type="submit"]');
 
   if (isEditing && farmer) {
-    if (titleEl) titleEl.textContent = `Edit Farmer: ${farmer.code}`;
+    if (titleEl) titleEl.textContent = `Edit Farmer: ${farmer.farmerCode || farmer.code}`;
     if (subtitleEl) subtitleEl.textContent = `Updating details for ${farmer.name}`;
     if (submitBtn) {
       submitBtn.innerHTML = '<i data-lucide="save" style="width:18px;height:18px;"></i> Update Farmer';
@@ -192,28 +199,36 @@ function updateFormForEdit(isEditing, farmer) {
 }
 
 function populateFormFields(farmer) {
+  const bank = farmer.bankDetail || {};
   const fieldMap = {
     'farmer_name': farmer.name,
-    'father_name': farmer.father,
+    'father_name': farmer.fatherName || farmer.father,
     'mobile': farmer.mobile,
+    'alt_mobile': farmer.altMobile,
+    'email': farmer.email,
+    'aadhaar': farmer.aadhaar,
     'village': farmer.village,
+    'taluka': farmer.taluka,
     'district': farmer.district,
     'state': farmer.state,
-    'milk_type': farmer.type,
+    'pincode': farmer.pincode,
+    'address': farmer.address,
+    'milk_type': farmer.milkType || farmer.type,
+    'cow_count': farmer.cowCount,
+    'buffalo_count': farmer.buffaloCount,
+    'breed': farmer.breed,
+    'preferred_shift': farmer.preferredShift,
+    'account_holder': bank.accountHolder || farmer.name,
+    'bank_name': bank.bankName,
+    'branch_name': bank.branchName,
+    'account_number': bank.accountNumber,
+    'ifsc': bank.ifsc,
+    'upi': bank.upi,
   };
   Object.entries(fieldMap).forEach(([name, value]) => {
     const input = document.querySelector(`[name="${name}"]`);
-    if (input && value) input.value = value;
+    if (input && value !== undefined && value !== null) input.value = value;
   });
-  if (farmer.animals) {
-    if (farmer.type === 'COW') {
-      const cowInput = document.querySelector('[name="cow_count"]');
-      if (cowInput) cowInput.value = farmer.animals;
-    } else if (farmer.type === 'BUFFALO') {
-      const bufInput = document.querySelector('[name="buffalo_count"]');
-      if (bufInput) bufInput.value = farmer.animals;
-    }
-  }
 }
 
 function generateFarmerQR() {

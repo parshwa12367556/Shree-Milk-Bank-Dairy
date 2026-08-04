@@ -11,6 +11,7 @@ from backend.app import db
 from backend.models import QualityTest, Collection, Farmer
 from backend.auth import get_identity
 from backend.pricing import auto_grade_quality
+from backend.audit import log_audit
 
 quality_bp = Blueprint('quality', __name__)
 
@@ -113,6 +114,9 @@ def create_quality_test():
         result_summary='; '.join(grading['warnings']) if grading['warnings'] else grading['overall'],
     )
     db.session.add(test)
+    db.session.flush()
+    log_audit('CREATE', 'QualityTest', test.id,
+              detail=f'Quality test for {farmer.farmer_code} → {grading["overall"]}')
     db.session.commit()
 
     return jsonify({

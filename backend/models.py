@@ -114,8 +114,11 @@ class Farmer(db.Model):
     remarks = db.Column(db.Text)
     qr_code = db.Column(db.Text)
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False)
-    status = db.Column(db.String(20), default='ACTIVE')  # ACTIVE, INACTIVE, BLOCKED
+    status = db.Column(db.String(20), default='PENDING_VERIFICATION')
+    # ACTIVE, PENDING_VERIFICATION, INACTIVE, BLOCKED
     status_reason = db.Column(db.String(200))
+    verified_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    verified_at = db.Column(db.DateTime, nullable=True)
     notification_sms = db.Column(db.Boolean, default=True)
     notification_whatsapp = db.Column(db.Boolean, default=False)
     notification_email = db.Column(db.Boolean, default=False)
@@ -167,6 +170,10 @@ class BankDetail(db.Model):
     ifsc = db.Column(db.String(11))
     upi = db.Column(db.String(100))
     passbook_image = db.Column(db.String(500))
+    # Bank verification by Head Office (PENDING / VERIFIED / REJECTED)
+    verification_status = db.Column(db.String(20), default='PENDING')
+    verified_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    verified_at = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self):
         return {
@@ -177,6 +184,7 @@ class BankDetail(db.Model):
             'accountNumber': self.account_number,
             'ifsc': self.ifsc,
             'upi': self.upi,
+            'verificationStatus': self.verification_status,
         }
 
 
@@ -537,20 +545,30 @@ class InventoryItem(db.Model):
     stock = db.Column(db.Float, default=0)
     unit = db.Column(db.String(30))
     min_stock = db.Column(db.Float, default=0)
+    max_stock = db.Column(db.Float, nullable=True)
+    reserved = db.Column(db.Float, default=0)
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
+    branch = db.relationship('Branch', backref='inventory_items', lazy=True)
     status = db.Column(db.String(20), default='IN_STOCK')
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        reserved = self.reserved or 0
+        available = max((self.stock or 0) - reserved, 0)
         return {
             'id': self.id,
             'code': self.code,
             'name': self.name,
             'category': self.category,
             'stock': self.stock,
+            'available': round(available, 2),
+            'reserved': round(reserved, 2),
             'unit': self.unit,
             'minStock': self.min_stock,
+            'maxStock': self.max_stock,
+            'branchId': self.branch_id,
+            'branchName': self.branch.name if self.branch else None,
             'status': 'Low Stock' if self.stock <= self.min_stock else 'In Stock',
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -600,7 +618,16 @@ class Vehicle(db.Model):
     driver_name = db.Column(db.String(120))
     capacity = db.Column(db.Float)
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
+    branch = db.relationship('Branch', backref='vehicles', lazy=True)
     last_service_date = db.Column(db.Date)
+    # Vehicle extras (insurance / maintenance / tracking)
+    insurance_no = db.Column(db.String(50))
+    insurance_expiry = db.Column(db.Date)
+    fitness_expiry = db.Column(db.Date)
+    permit_expiry = db.Column(db.Date)
+    mileage = db.Column(db.Float, default=0)  # odometer (km)
+    next_service_date = db.Column(db.Date)
+    gps_status = db.Column(db.String(20), default='NOT_TRACKED')  # ACTIVE, NOT_TRACKED, OFFLINE
     status = db.Column(db.String(20), default='ACTIVE')  # ACTIVE, MAINTENANCE, INACTIVE
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -612,7 +639,15 @@ class Vehicle(db.Model):
             'driverName': self.driver_name,
             'capacity': self.capacity,
             'branchId': self.branch_id,
+            'branchName': self.branch.name if self.branch else None,
             'lastServiceDate': self.last_service_date.isoformat() if self.last_service_date else None,
+            'insuranceNo': self.insurance_no,
+            'insuranceExpiry': self.insurance_expiry.isoformat() if self.insurance_expiry else None,
+            'fitnessExpiry': self.fitness_expiry.isoformat() if self.fitness_expiry else None,
+            'permitExpiry': self.permit_expiry.isoformat() if self.permit_expiry else None,
+            'mileage': self.mileage,
+            'nextServiceDate': self.next_service_date.isoformat() if self.next_service_date else None,
+            'gpsStatus': self.gps_status,
             'status': self.status,
         }
 
@@ -624,6 +659,8 @@ class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     username = db.Column(db.String(80))
+    role = db.Column(db.String(30))
+    branch_code = db.Column(db.String(20))
     action = db.Column(db.String(50), nullable=False)
     # CREATE, UPDATE, DELETE, LOGIN, LOGOUT, APPROVE, REJECT
     entity = db.Column(db.String(50), nullable=False)
@@ -641,10 +678,13 @@ class AuditLog(db.Model):
             'id': self.id,
             'userId': self.user_id,
             'username': self.username,
+            'role': self.role,
+            'branchCode': self.branch_code,
             'action': self.action,
             'entity': self.entity,
             'entityId': self.entity_id,
             'detail': self.detail or f'{self.action} on {self.entity} {self.entity_id}',
+            'ip': self.ip,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -673,4 +713,284 @@ class Notification(db.Model):
             'link': self.link,
             'read': self.read,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class Supplier(db.Model):
+    """Procurement suppliers/vendors."""
+    __tablename__ = 'suppliers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), unique=True, nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    contact_person = db.Column(db.String(120))
+    phone = db.Column(db.String(15))
+    email = db.Column(db.String(120))
+    address = db.Column(db.Text)
+    category = db.Column(db.String(50), default='OTHER')
+    # EQUIPMENT, PACKAGING, CHEMICALS, FEED, DAIRY, OTHER
+    gstin = db.Column(db.String(20))
+    status = db.Column(db.String(20), default='ACTIVE')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'code': self.code,
+            'name': self.name,
+            'contactPerson': self.contact_person,
+            'phone': self.phone,
+            'email': self.email,
+            'address': self.address,
+            'category': self.category,
+            'gstin': self.gstin,
+            'status': self.status,
+        }
+
+
+class PurchaseOrder(db.Model):
+    """Purchase orders raised against suppliers."""
+    __tablename__ = 'purchase_orders'
+
+    id = db.Column(db.Integer, primary_key=True)
+    po_code = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
+    order_date = db.Column(db.Date, nullable=False, default=date.today)
+    expected_date = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(20), default='DRAFT')
+    # DRAFT, PENDING, APPROVED, RECEIVED, COMPLETED, REJECTED
+    delivery_status = db.Column(db.String(20), default='PENDING')
+    # PENDING, DISPATCHED, IN_TRANSIT, DELIVERED
+    grn_no = db.Column(db.String(20))
+    total_amount = db.Column(db.Float, default=0)
+    paid_amount = db.Column(db.Float, default=0)
+    remarks = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    supplier = db.relationship('Supplier', backref='purchase_orders', lazy=True)
+    branch = db.relationship('Branch', backref='purchase_orders', lazy=True)
+    items = db.relationship('PurchaseOrderItem', backref='po', lazy=True, cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'poCode': self.po_code,
+            'supplierId': self.supplier_id,
+            'supplierName': self.supplier.name if self.supplier else None,
+            'branchId': self.branch_id,
+            'branchName': self.branch.name if self.branch else None,
+            'orderDate': self.order_date.isoformat() if self.order_date else None,
+            'expectedDate': self.expected_date.isoformat() if self.expected_date else None,
+            'status': self.status,
+            'deliveryStatus': self.delivery_status,
+            'grnNo': self.grn_no,
+            'totalAmount': self.total_amount,
+            'paidAmount': self.paid_amount,
+            'balance': round((self.total_amount or 0) - (self.paid_amount or 0), 2),
+            'remarks': self.remarks,
+            'items': [i.to_dict() for i in self.items],
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class PurchaseOrderItem(db.Model):
+    """Line items on a purchase order."""
+    __tablename__ = 'purchase_order_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    po_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=False)
+    item_name = db.Column(db.String(200), nullable=False)
+    quantity = db.Column(db.Float, nullable=False, default=0)
+    unit = db.Column(db.String(20), default='nos')
+    unit_price = db.Column(db.Float, default=0)
+    amount = db.Column(db.Float, default=0)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'poId': self.po_id,
+            'itemName': self.item_name,
+            'quantity': self.quantity,
+            'unit': self.unit,
+            'unitPrice': self.unit_price,
+            'amount': self.amount,
+        }
+
+
+class VendorPayment(db.Model):
+    """Payments made to suppliers against purchase orders."""
+    __tablename__ = 'vendor_payments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    payment_code = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    po_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    payment_date = db.Column(db.Date, nullable=False, default=date.today)
+    method = db.Column(db.String(30), default='BANK_TRANSFER')
+    # BANK_TRANSFER, CASH, CHEQUE, UPI
+    reference = db.Column(db.String(100))
+    status = db.Column(db.String(20), default='COMPLETED')
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    po = db.relationship('PurchaseOrder', backref='vendor_payments', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'paymentCode': self.payment_code,
+            'poId': self.po_id,
+            'poCode': self.po.po_code if self.po else None,
+            'supplierName': self.po.supplier.name if self.po and self.po.supplier else None,
+            'amount': self.amount,
+            'paymentDate': self.payment_date.isoformat() if self.payment_date else None,
+            'method': self.method,
+            'reference': self.reference,
+            'status': self.status,
+        }
+
+
+class StockMovement(db.Model):
+    """Inventory stock in/out/allocate ledger entries."""
+    __tablename__ = 'stock_movements'
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('inventory_items.id'), nullable=False)
+    movement_type = db.Column(db.String(20), nullable=False)  # IN, OUT, ALLOCATE
+    quantity = db.Column(db.Float, nullable=False)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
+    reference = db.Column(db.String(100))
+    note = db.Column(db.String(255))
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    item = db.relationship('InventoryItem', backref='movements', lazy=True)
+    branch = db.relationship('Branch', backref='stock_movements', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'itemId': self.item_id,
+            'itemName': self.item.name if self.item else None,
+            'movementType': self.movement_type,
+            'quantity': self.quantity,
+            'branchId': self.branch_id,
+            'branchName': self.branch.name if self.branch else None,
+            'reference': self.reference,
+            'note': self.note,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class InventoryAllocation(db.Model):
+    """Per-branch allocation of a central inventory item."""
+    __tablename__ = 'inventory_allocations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('inventory_items.id'), nullable=False)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False)
+    quantity = db.Column(db.Float, nullable=False, default=0)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    item = db.relationship('InventoryItem', backref='allocations', lazy=True)
+    branch = db.relationship('Branch', backref='inventory_allocations', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'itemId': self.item_id,
+            'itemName': self.item.name if self.item else None,
+            'branchId': self.branch_id,
+            'branchCode': self.branch.code if self.branch else None,
+            'branchName': self.branch.name if self.branch else None,
+            'quantity': self.quantity,
+        }
+
+
+class VehicleServiceRecord(db.Model):
+    """Service/maintenance history for vehicles."""
+    __tablename__ = 'vehicle_service_records'
+
+    id = db.Column(db.Integer, primary_key=True)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicles.id'), nullable=False)
+    service_date = db.Column(db.Date, nullable=False, default=date.today)
+    description = db.Column(db.String(255))
+    cost = db.Column(db.Float, default=0)
+    odometer = db.Column(db.Float, nullable=True)
+    vendor = db.Column(db.String(120))
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    vehicle = db.relationship('Vehicle', backref='service_records', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'vehicleId': self.vehicle_id,
+            'vehicleNumber': self.vehicle.vehicle_number if self.vehicle else None,
+            'serviceDate': self.service_date.isoformat() if self.service_date else None,
+            'description': self.description,
+            'cost': self.cost,
+            'odometer': self.odometer,
+            'vendor': self.vendor,
+        }
+
+
+class EmployeeAttendance(db.Model):
+    """Daily employee attendance records."""
+    __tablename__ = 'employee_attendance'
+
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+    status = db.Column(db.String(20), nullable=False)  # PRESENT, ABSENT, LEAVE, HALF_DAY
+    shift = db.Column(db.String(20))
+    notes = db.Column(db.String(255))
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    employee = db.relationship('Employee', backref='attendance', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'employeeId': self.employee_id,
+            'employeeName': self.employee.name if self.employee else None,
+            'date': self.date.isoformat() if self.date else None,
+            'status': self.status,
+            'shift': self.shift,
+            'notes': self.notes,
+        }
+
+
+class Expense(db.Model):
+    """Operational expenses for profit/loss accounting."""
+    __tablename__ = 'expenses'
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), unique=True, nullable=False)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
+    category = db.Column(db.String(50), nullable=False)
+    # FEED, LABOUR, TRANSPORT, MAINTENANCE, ELECTRICITY, ADMIN, PROCUREMENT, OTHER
+    description = db.Column(db.String(255))
+    amount = db.Column(db.Float, nullable=False)
+    expense_date = db.Column(db.Date, nullable=False, default=date.today)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    branch = db.relationship('Branch', backref='expenses', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'code': self.code,
+            'branchId': self.branch_id,
+            'branchName': self.branch.name if self.branch else None,
+            'category': self.category,
+            'description': self.description,
+            'amount': self.amount,
+            'expenseDate': self.expense_date.isoformat() if self.expense_date else None,
         }

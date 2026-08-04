@@ -234,6 +234,12 @@
         <span class="nav-label">Vehicles</span>
       </a>
 
+      <!-- Expenses -->
+      <a class="nav-item" data-route="expenses" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('expenses')">
+        <span class="nav-icon"><i data-lucide="receipt"></i></span>
+        <span class="nav-label">Expenses</span>
+      </a>
+
       <!-- Divider -->
       <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
 
@@ -451,6 +457,10 @@
             <div class="skeleton skeleton-text short"></div>
           </div>
           <div class="kpi-card kpi-red" id="kpi-rejected">
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+          <div class="kpi-card kpi-cyan" id="kpi-profit">
             <div class="skeleton skeleton-text"></div>
             <div class="skeleton skeleton-text short"></div>
           </div>
@@ -866,7 +876,7 @@
             </div>
             <div class="search-bar" style="width:280px;">
               <span class="search-icon"><i data-lucide="search"></i></span>
-              <input type="text" placeholder="Search farmers...">
+              <input type="text" id="farmer-search-input" placeholder="Search by ID / name / mobile / Aadhaar...">
             </div>
           </div>
           <div class="toolbar-right">
@@ -878,10 +888,12 @@
             </select>
             <select id="farmer-status-filter" style="padding:var(--space-1) var(--space-6) var(--space-1) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
               <option value="all">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-              <option value="Blocked">Blocked</option>
+              <option value="ACTIVE">Active</option>
+              <option value="PENDING_VERIFICATION">Pending Verification</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="BLOCKED">Blocked</option>
             </select>
+            <button class="btn btn-sm btn-ghost" title="Export CSV" onclick="exportFarmersCSV()"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
             <button class="btn btn-sm btn-ghost" title="Export CSV" onclick="Table.exportCSV('farmers-table', 'farmers.csv')"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
             <button class="btn btn-sm btn-ghost" title="Print" onclick="Table.printTable('farmers-table')"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
             <button class="btn btn-sm btn-ghost" title="Refresh" onclick="loadFarmers()"><i data-lucide="refresh-cw" style="width:16px;height:16px;"></i></button>
@@ -1484,20 +1496,7 @@
             </div>
           </div>
           <div class="table-responsive">
-            <table class="table-premium" id="payments-table" style="width:100%;">
-              <thead>
-                <tr>
-                  <th>Pay Code</th>
-                  <th>Farmer</th>
-                  <th>Period</th>
-                  <th>Quantity</th>
-                  <th>Amount</th>
-                  <th>Collections</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+            <table class="table-premium" id="payments-table" style="width:100%;">              <thead><tr><th>Pay Code</th><th>Farmer</th><th>Period</th><th>Quantity</th><th>Amount</th><th>Bank Ref</th><th>Status</th><th>Created</th><th style="width:150px;">Actions</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1683,62 +1682,186 @@
         </div>
       </div>
 
-      <!-- ── Procurement Page ── -->
-      <div class="page-container" id="page-procurement" style="display:none;">
-        <div class="breadcrumb">
-          <a href="#dashboard">Dashboard</a>
-          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
-          <span class="current">Procurement</span>
-        </div>
-        <div class="page-header">
-          <div>
-            <h2>Procurement Management</h2>
-            <p class="subtitle">Collection centers, routes, and chilling plants</p>
+      <!-- ── Procurement Page ── -->        <div class="page-container" id="page-procurement" style="display:none;">
+          <div class="breadcrumb">
+            <a href="#dashboard">Dashboard</a>
+            <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+            <span class="current">Procurement</span>
           </div>
-        </div>
-        <div class="card" style="margin-bottom:var(--space-4);">
-          <div class="card-body">
-            <div class="segmented-control">
-              <button class="segmented-btn procurement-tab active" data-tab="centers">Collection Centers</button>
-              <button class="segmented-btn procurement-tab" data-tab="routes">Routes</button>
-              <button class="segmented-btn procurement-tab" data-tab="chilling">Chilling Centers</button>
+          <div class="page-header">
+            <div>
+              <h2>Procurement Management</h2>
+              <p class="subtitle">Collection infrastructure, suppliers, and purchase orders</p>
             </div>
           </div>
-        </div>
-        <div class="procurement-tab-content active" id="centers">
-          <div class="table-wrapper">
-            <div class="table-responsive">
-              <table class="table-premium" id="centers-table" style="width:100%;">
-                <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Manager</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody></tbody>
-              </table>
+          <div class="card" style="margin-bottom:var(--space-4);">
+            <div class="card-body">
+              <div class="segmented-control" style="flex-wrap:wrap;gap:var(--space-1);">
+                <button class="segmented-btn procurement-tab active" data-tab="centers">Collection Centers</button>
+                <button class="segmented-btn procurement-tab" data-tab="routes">Routes</button>
+                <button class="segmented-btn procurement-tab" data-tab="chilling">Chilling Centers</button>
+                <button class="segmented-btn procurement-tab" data-tab="suppliers">Suppliers</button>
+                <button class="segmented-btn procurement-tab" data-tab="purchase-orders">Purchase Orders</button>
+                <button class="segmented-btn procurement-tab" data-tab="vendor-payments">Vendor Payments</button>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="procurement-tab-content" id="routes" style="display:none;">
-          <div class="table-wrapper">
-            <div class="table-responsive">
-              <table class="table-premium" id="routes-table" style="width:100%;">
-                <thead><tr><th>Code</th><th>Name</th><th>Center</th><th>Driver</th><th>Vehicle</th><th>Distance</th><th>Farmers</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody></tbody>
-              </table>
+          <div class="procurement-tab-content active" id="centers">
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="centers-table" style="width:100%;">
+                  <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Manager</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="procurement-tab-content" id="chilling" style="display:none;">
-          <div class="table-wrapper">
-            <div class="table-responsive">
-              <table class="table-premium" id="chilling-table" style="width:100%;">
-                <thead><tr><th>Code</th><th>Name</th><th>Tanks</th><th>Capacity</th><th>Current</th><th>Temp</th><th>Generator</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody></tbody>
-              </table>
+          <div class="procurement-tab-content" id="routes" style="display:none;">
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="routes-table" style="width:100%;">
+                  <thead><tr><th>Code</th><th>Name</th><th>Center</th><th>Driver</th><th>Vehicle</th><th>Distance</th><th>Farmers</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+          <div class="procurement-tab-content" id="chilling" style="display:none;">
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="chilling-table" style="width:100%;">
+                  <thead><tr><th>Code</th><th>Name</th><th>Tanks</th><th>Capacity</th><th>Current</th><th>Temp</th><th>Generator</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content" id="suppliers" style="display:none;">
+            <div class="table-header">
+              <div class="table-title">Suppliers</div>
+              <div class="table-toolbar">
+                <button class="btn btn-primary btn-sm" onclick="openSupplierModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Add Supplier</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="suppliers-table" style="width:100%;">
+                  <thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Contact</th><th>Phone</th><th>Email</th><th>Status</th><th style="width:90px;">Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content" id="purchase-orders" style="display:none;">
+            <div class="table-header">
+              <div class="table-title">Purchase Orders</div>
+              <div class="table-toolbar">
+                <button class="btn btn-primary btn-sm" onclick="openPOModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> New Purchase Order</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="pos-table" style="width:100%;">
+                  <thead><tr><th>PO Code</th><th>Supplier</th><th>Order Date</th><th>Items</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th style="width:190px;">Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content" id="vendor-payments" style="display:none;">
+            <div class="table-header">
+              <div class="table-title">Vendor Payments</div>
+              <div class="table-toolbar">
+                <button class="btn btn-primary btn-sm" onclick="openVendorPaymentModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Record Payment</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="vp-table" style="width:100%;">
+                  <thead><tr><th>Payment Code</th><th>PO</th><th>Supplier</th><th>Amount</th><th>Date</th><th>Method</th><th>Reference</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
 
-      <!-- ── Inventory Page ── -->
-      <div class="page-container" id="page-inventory" style="display:none;">
+          <!-- Supplier Modal -->
+          <div class="modal" id="supplier-modal">
+            <div class="modal-backdrop" onclick="closeSupplierModal()"></div>
+            <div class="modal-content anim-scale-in">
+              <div class="modal-header"><h5 id="supplier-modal-title">Add Supplier</h5><button class="modal-close" onclick="closeSupplierModal()">&times;</button></div>
+              <div class="modal-body">
+                <form id="supplier-form">
+                  <input type="hidden" id="supplier-id">
+                  <div class="form-grid">
+                    <div class="form-group"><label class="form-label">Supplier Name <span class="required">*</span></label><input type="text" class="input-premium" id="supplier-name" required></div>
+                    <div class="form-group"><label class="form-label">Category</label><select class="input-premium" id="supplier-category"><option value="EQUIPMENT">Equipment</option><option value="PACKAGING">Packaging</option><option value="CHEMICALS">Chemicals</option><option value="FEED">Animal Feed</option><option value="DAIRY">Dairy</option><option value="OTHER">Other</option></select></div>
+                    <div class="form-group"><label class="form-label">Contact Person</label><input type="text" class="input-premium" id="supplier-contact"></div>
+                    <div class="form-group"><label class="form-label">Phone</label><input type="text" class="input-premium" id="supplier-phone"></div>
+                    <div class="form-group"><label class="form-label">Email</label><input type="email" class="input-premium" id="supplier-email"></div>
+                    <div class="form-group" style="grid-column:span 2;"><label class="form-label">Address</label><textarea class="input-premium" id="supplier-address" rows="2"></textarea></div>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSupplierModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSupplier()">Save Supplier</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purchase Order Modal -->
+          <div class="modal" id="po-modal">
+            <div class="modal-backdrop" onclick="closePOModal()"></div>
+            <div class="modal-content anim-scale-in" style="max-width:720px;">
+              <div class="modal-header"><h5>New Purchase Order</h5><button class="modal-close" onclick="closePOModal()">&times;</button></div>
+              <div class="modal-body">
+                <form id="po-form">
+                  <div class="form-grid">
+                    <div class="form-group"><label class="form-label">Supplier <span class="required">*</span></label><select class="input-premium" id="po-supplier"></select></div>
+                    <div class="form-group"><label class="form-label">Order Date</label><input type="date" class="input-premium" id="po-date"></div>
+                    <div class="form-group"><label class="form-label">Expected Date</label><input type="date" class="input-premium" id="po-expected"></div>
+                    <div class="form-group"><label class="form-label">Allocate to Branch</label><select class="input-premium" id="po-branch"><option value="">Central Warehouse</option></select></div>
+                  </div>
+                  <div class="form-group"><label class="form-label">Remarks</label><input type="text" class="input-premium" id="po-remarks" placeholder="Optional"></div>
+                  <div class="form-section"><h5 class="form-section-title"><span class="section-number">+</span> Line Items</h5></div>
+                  <div id="po-items-container"></div>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="addPOItemRow()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Add Item</button>
+                  <div class="form-actions" style="margin-top:var(--space-3);">
+                    <strong style="font-size:var(--text-lg);">Total: <span id="po-total">₹0.00</span></strong>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePOModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="savePurchaseOrder()">Create Purchase Order</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vendor Payment Modal -->
+          <div class="modal" id="vp-modal">
+            <div class="modal-backdrop" onclick="closeVendorPaymentModal()"></div>
+            <div class="modal-content anim-scale-in">
+              <div class="modal-header"><h5>Record Vendor Payment</h5><button class="modal-close" onclick="closeVendorPaymentModal()">&times;</button></div>
+              <div class="modal-body">
+                <form id="vp-form">
+                  <div class="form-group"><label class="form-label">Purchase Order <span class="required">*</span></label><select class="input-premium" id="vp-po"></select></div>
+                  <div class="form-group"><label class="form-label">Amount <span class="required">*</span></label><input type="number" class="input-premium" id="vp-amount" min="0" step="0.01"></div>
+                  <div class="form-group"><label class="form-label">Payment Date</label><input type="date" class="input-premium" id="vp-date"></div>
+                  <div class="form-group"><label class="form-label">Method</label><select class="input-premium" id="vp-method"><option value="BANK_TRANSFER">Bank Transfer</option><option value="CASH">Cash</option><option value="CHEQUE">Cheque</option><option value="UPI">UPI</option></select></div>
+                  <div class="form-group"><label class="form-label">Reference</label><input type="text" class="input-premium" id="vp-reference" placeholder="UTR / cheque no."></div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeVendorPaymentModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveVendorPayment()">Record Payment</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      <!-- ── Inventory Page ── -->        <div class="page-container" id="page-inventory" style="display:none;">
         <div class="breadcrumb">
           <a href="#dashboard">Dashboard</a>
           <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
@@ -1747,15 +1870,97 @@
         <div class="page-header">
           <div>
             <h2>Inventory Management</h2>
-            <p class="subtitle">Track stock levels and movements</p>
+            <p class="subtitle">Track stock levels, movements, and branch allocations</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="openInventoryItemModal()">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i>
+              Add Item
+            </button>
+            <button class="btn btn-secondary" onclick="toggleInventoryView()">
+              <i data-lucide="history" style="width:16px;height:16px;"></i>
+              <span id="inventory-view-label">Stock Movements</span>
+            </button>
           </div>
         </div>
-        <div class="table-wrapper">
+        <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:var(--space-4);">
+          <div class="kpi-card kpi-blue" id="inv-kpi-total"><div class="kpi-value" style="font-size:var(--text-xl);">—</div><div class="kpi-label">Total Items</div></div>
+          <div class="kpi-card kpi-red" id="inv-kpi-low"><div class="kpi-value" style="font-size:var(--text-xl);">—</div><div class="kpi-label">Low Stock Alerts</div></div>
+        </div>
+        <div class="table-wrapper" id="inventory-items-view">
           <div class="table-responsive">
             <table class="table-premium" id="inventory-table" style="width:100%;">
-              <thead><tr><th>Code</th><th>Item</th><th>Category</th><th>Stock</th><th>Unit</th><th>Min Stock</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Code</th><th>Item</th><th>Category</th><th>Stock</th><th>Unit</th><th>Min Stock</th><th>Branch</th><th>Status</th><th>Updated</th><th style="width:150px;">Actions</th></tr></thead>
               <tbody></tbody>
             </table>
+          </div>
+        </div>
+        <div class="table-wrapper" id="inventory-movements-view" style="display:none;">
+          <div class="table-responsive">
+            <table class="table-premium" id="inventory-movements-table" style="width:100%;">
+              <thead><tr><th>Date</th><th>Item</th><th>Type</th><th>Quantity</th><th>Branch</th><th>Reference</th><th>Note</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add/Edit Item Modal -->
+        <div class="modal" id="inventory-item-modal">
+          <div class="modal-backdrop" onclick="closeInventoryItemModal()"></div>
+          <div class="modal-content anim-scale-in">
+            <div class="modal-header">
+              <h5 id="inventory-item-modal-title">Add Inventory Item</h5>
+              <button class="modal-close" onclick="closeInventoryItemModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <form id="inventory-item-form">
+                <input type="hidden" id="inv-item-id">
+                <div class="form-grid">
+                  <div class="form-group"><label class="form-label">Item Name <span class="required">*</span></label><input type="text" class="input-premium" id="inv-item-name" required></div>
+                  <div class="form-group"><label class="form-label">Category</label><input type="text" class="input-premium" id="inv-item-category" placeholder="Dairy, Packaging..."></div>
+                  <div class="form-group"><label class="form-label">Opening Stock</label><input type="number" class="input-premium" id="inv-item-stock" min="0" value="0"></div>
+                  <div class="form-group"><label class="form-label">Unit</label><input type="text" class="input-premium" id="inv-item-unit" placeholder="Liters, kg, nos"></div>
+                  <div class="form-group"><label class="form-label">Min Stock (Alert)</label><input type="number" class="input-premium" id="inv-item-min" min="0" value="0"></div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" onclick="closeInventoryItemModal()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveInventoryItem()">Save Item</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Movement Modal -->
+        <div class="modal" id="inventory-movement-modal">
+          <div class="modal-backdrop" onclick="closeInventoryMovementModal()"></div>
+          <div class="modal-content anim-scale-in">
+            <div class="modal-header">
+              <h5 id="inventory-movement-title">Stock Movement</h5>
+              <button class="modal-close" onclick="closeInventoryMovementModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p style="font-size:var(--text-sm);color:var(--ink-muted);margin-bottom:var(--space-3);" id="inventory-movement-item-info"></p>
+              <form id="inventory-movement-form">
+                <input type="hidden" id="inv-move-item-id">
+                <div class="form-group">
+                  <label class="form-label">Movement Type</label>
+                  <select class="input-premium" id="inv-move-type">
+                    <option value="IN">Stock In</option>
+                    <option value="OUT">Stock Out</option>
+                    <option value="ALLOCATE">Allocate to Branch</option>
+                  </select>
+                </div>
+                <div class="form-group"><label class="form-label">Quantity <span class="required">*</span></label><input type="number" class="input-premium" id="inv-move-qty" min="0" step="0.5" required></div>
+                <div class="form-group" id="inv-move-branch-group" style="display:none;"><label class="form-label">Branch</label><select class="input-premium" id="inv-move-branch"></select></div>
+                <div class="form-group"><label class="form-label">Reference</label><input type="text" class="input-premium" id="inv-move-ref" placeholder="e.g. PO000001 / ALLOC-101"></div>
+                <div class="form-group"><label class="form-label">Note</label><input type="text" class="input-premium" id="inv-move-note" placeholder="Optional note"></div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" onclick="closeInventoryMovementModal()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveInventoryMovement()">Record Movement</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1893,7 +2098,7 @@
         <div class="table-wrapper">
           <div class="table-responsive">
             <table class="table-premium" id="vehicles-table" style="width:100%;">
-              <thead><tr><th>Number</th><th>Type</th><th>Driver</th><th>Capacity</th><th>Branch</th><th>Last Service</th><th>Status</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Number</th><th>Type</th><th>Driver</th><th>Capacity</th><th>Branch</th><th>Insurance</th><th>Next Service</th><th>GPS</th><th>Status</th><th style="width:120px;">Actions</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1945,6 +2150,33 @@
                     <option value="INACTIVE">Inactive</option>
                   </select>
                 </div>
+                <div class="form-section"><h5 class="form-section-title"><span class="section-number">+</span> Insurance & Maintenance</h5></div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Insurance Policy No.</label>
+                    <input type="text" class="input-premium" id="vehicle-insurance-no" placeholder="POL-2026-XXXX">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Insurance Expiry</label>
+                    <input type="date" class="input-premium" id="vehicle-insurance-expiry">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Last Service Date</label>
+                    <input type="date" class="input-premium" id="vehicle-last-service">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Next Service Due</label>
+                    <input type="date" class="input-premium" id="vehicle-next-service">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">GPS Status</label>
+                    <select class="input-premium" id="vehicle-gps">
+                      <option value="ACTIVE">Active Tracking</option>
+                      <option value="NOT_TRACKED">Not Tracked</option>
+                      <option value="OFFLINE">Offline</option>
+                    </select>
+                  </div>
+                </div>
               </form>
             </div>
             <div class="modal-footer">
@@ -1953,6 +2185,82 @@
                 <i data-lucide="save" style="width:16px;height:16px;"></i>
                 Save Vehicle
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Expenses Page ── -->
+      <div class="page-container" id="page-expenses" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Expenses</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Expenses</h2>
+            <p class="subtitle">Operational expenses & profit/loss tracking</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openExpenseModal()">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i>
+              Add Expense
+            </button>
+          </div>
+        </div>
+
+        <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:var(--space-4);">
+          <div class="kpi-card kpi-red" id="exp-kpi-total"><div class="kpi-value" style="font-size:var(--text-xl);">—</div><div class="kpi-label">Total Expenses</div></div>
+          <div class="kpi-card kpi-blue" id="exp-kpi-count"><div class="kpi-value" style="font-size:var(--text-xl);">—</div><div class="kpi-label">Entries</div></div>
+        </div>
+
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Expense Records</div>
+            <div class="table-toolbar">
+              <select id="expense-category-filter" style="padding:var(--space-1) var(--space-6) var(--space-1) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
+                <option value="">All Categories</option>
+                <option value="FEED">Feed</option>
+                <option value="LABOUR">Labour</option>
+                <option value="TRANSPORT">Transport</option>
+                <option value="MAINTENANCE">Maintenance</option>
+                <option value="ELECTRICITY">Electricity</option>
+                <option value="ADMIN">Admin</option>
+                <option value="PROCUREMENT">Procurement</option>
+                <option value="OTHER">Other</option>
+              </select>
+              <button class="btn btn-sm btn-ghost" title="Refresh" onclick="loadExpenses()"><i data-lucide="refresh-cw" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="expenses-table" style="width:100%;">
+              <thead><tr><th>Code</th><th>Date</th><th>Category</th><th>Description</th><th>Branch</th><th>Amount</th><th style="width:90px;">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Expense Modal -->
+        <div class="modal" id="expense-modal">
+          <div class="modal-backdrop" onclick="closeExpenseModal()"></div>
+          <div class="modal-content anim-scale-in">
+            <div class="modal-header"><h5 id="expense-modal-title">Add Expense</h5><button class="modal-close" onclick="closeExpenseModal()">&times;</button></div>
+            <div class="modal-body">
+              <form id="expense-form">
+                <input type="hidden" id="expense-id">
+                <div class="form-grid">
+                  <div class="form-group"><label class="form-label">Category <span class="required">*</span></label><select class="input-premium" id="expense-category"><option value="FEED">Feed</option><option value="LABOUR">Labour</option><option value="TRANSPORT">Transport</option><option value="MAINTENANCE">Maintenance</option><option value="ELECTRICITY">Electricity</option><option value="ADMIN">Admin</option><option value="PROCUREMENT">Procurement</option><option value="OTHER">Other</option></select></div>
+                  <div class="form-group"><label class="form-label">Amount (₹) <span class="required">*</span></label><input type="number" class="input-premium" id="expense-amount" min="0" step="0.01"></div>
+                  <div class="form-group" style="grid-column:span 2;"><label class="form-label">Description</label><input type="text" class="input-premium" id="expense-description" placeholder="What was this expense for?"></div>
+                  <div class="form-group"><label class="form-label">Date</label><input type="date" class="input-premium" id="expense-date"></div>
+                  <div class="form-group"><label class="form-label">Branch</label><select class="input-premium" id="expense-branch"><option value="">Head Office</option></select></div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" onclick="closeExpenseModal()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveExpense()">Save Expense</button>
             </div>
           </div>
         </div>
@@ -1971,7 +2279,7 @@
             <p class="subtitle">Generate and export reports</p>
           </div>
           <div class="page-actions">
-            <button class="btn btn-secondary" data-action="export-report"><i data-lucide="download" style="width:16px;height:16px;"></i> Export PDF</button>
+            <button class="btn btn-secondary" data-action="export-report-csv"><i data-lucide="download" style="width:16px;height:16px;"></i> Export CSV</button>
             <button class="btn btn-secondary" data-action="print-report"><i data-lucide="printer" style="width:16px;height:16px;"></i> Print</button>
           </div>
         </div>
@@ -2020,6 +2328,20 @@
               <div class="report-desc">Branch-wise performance</div>
             </div>
           </div>
+          <div class="report-type-card" data-report="expense">
+            <div class="report-icon" style="background:var(--danger-light);color:var(--danger);"><i data-lucide="receipt"></i></div>
+            <div class="report-info">
+              <div class="report-name">Expense Report</div>
+              <div class="report-desc">Operational expenses by category</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="pnl">
+            <div class="report-icon" style="background:var(--success-light);color:var(--success);"><i data-lucide="trending-up"></i></div>
+            <div class="report-info">
+              <div class="report-name">Profit & Loss</div>
+              <div class="report-desc">Revenue vs expenses & procurement</div>
+            </div>
+          </div>
         </div>
 
         <!-- Filters -->
@@ -2027,14 +2349,12 @@
           <div class="card-body">
             <div class="flex items-center gap-4">
               <div class="date-range-picker">
-                <input type="date" value="2026-07-01">
+                <input type="date" id="report-from" value="2026-07-01">
                 <span class="date-separator">to</span>
-                <input type="date" value="2026-07-19">
+                <input type="date" id="report-to" value="2026-08-03">
               </div>
-              <select style="padding:var(--space-2) var(--space-6) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
-                <option>All Branches</option>
-                <option>Agar Malwa Main</option>
-                <option>Susner Sub</option>
+              <select id="report-branch" style="padding:var(--space-2) var(--space-6) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
+                <option value="">All Branches</option>
               </select>            <button class="btn btn-primary" onclick="generateReport()"><i data-lucide="search" style="width:16px;height:16px;"></i> Generate</button>
             </div>
           </div>
@@ -2112,6 +2432,10 @@
               <i data-lucide="users" style="width:18px;height:18px;"></i>
               Users
             </button>
+            <button class="settings-nav-item" data-section="settings-notifications">
+              <i data-lucide="message-circle" style="width:18px;height:18px;"></i>
+              SMS / Email
+            </button>
             <button class="settings-nav-item" data-section="settings-backup">
               <i data-lucide="hard-drive" style="width:18px;height:18px;"></i>
               Backup
@@ -2178,6 +2502,39 @@
                   <span class="tag tag-blue">BRANCH_MANAGER</span>
                   <button class="btn btn-sm btn-ghost"><i data-lucide="edit-3" style="width:14px;height:14px;"></i></button>
                 </div>
+              </div>
+            </div>
+            <!-- SMS / Email Notifications -->
+            <div class="settings-section" id="settings-notifications">
+              <div class="settings-header">
+                <h4>SMS & Email Notifications</h4>
+                <p>Configure messaging gateways for farmer & staff alerts</p>
+              </div>
+              <div class="form-section">
+                <h5 class="form-section-title"><span class="section-number">SMS</span> SMS Gateway</h5>
+                <div class="form-grid">
+                  <div class="form-group"><label class="form-label">SMS Provider</label><input type="text" class="input-premium" id="set-sms-provider" placeholder="e.g. MSG91, Twilio, TextLocal"></div>
+                  <div class="form-group"><label class="form-label">Sender ID</label><input type="text" class="input-premium" id="set-sms-sender" placeholder="6-char sender id"></div>
+                  <div class="form-group"><label class="form-label">API Key</label><input type="password" class="input-premium" id="set-sms-key" placeholder="Provider API key"></div>
+                  <div class="form-group"><label class="form-label">API URL</label><input type="text" class="input-premium" id="set-sms-url" placeholder="https://api.provider.com/send"></div>
+                </div>
+              </div>
+              <div class="form-section">
+                <h5 class="form-section-title"><span class="section-number">@</span> Email / SMTP</h5>
+                <div class="form-grid">
+                  <div class="form-group"><label class="form-label">SMTP Host</label><input type="text" class="input-premium" id="set-mail-host" placeholder="smtp.gmail.com"></div>
+                  <div class="form-group"><label class="form-label">SMTP Port</label><input type="text" class="input-premium" id="set-mail-port" placeholder="587"></div>
+                  <div class="form-group"><label class="form-label">From Address</label><input type="email" class="input-premium" id="set-mail-from" placeholder="noreply@dairy.com"></div>
+                  <div class="form-group"><label class="form-label">Username</label><input type="text" class="input-premium" id="set-mail-user" placeholder="SMTP username"></div>
+                  <div class="form-group"><label class="form-label">Password</label><input type="password" class="input-premium" id="set-mail-pass" placeholder="SMTP password / app password"></div>
+                </div>
+              </div>
+              <p style="font-size:var(--text-xs);color:var(--ink-muted);margin-top:var(--space-2);">
+                <i data-lucide="info" style="width:12px;height:12px;display:inline-block;vertical-align:-2px;"></i>
+                Credentials are stored as configuration. Live sending requires your provider's API keys — connect them here.
+              </p>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
               </div>
             </div>
             <!-- Backup -->
@@ -2529,9 +2886,9 @@
 <script src="/static/js/procurement.js"></script>
 <script src="/static/js/inventory.js"></script>
 <script src="/static/js/employees.js"></script>
-<script src="/static/js/vehicles.js"></script>
-<script src="/static/js/reports.js"></script>
-<script src="/static/js/audit.js"></script>
+<script src="/static/js/vehicles.js"></script><script src="/static/js/reports.js"></script>
+  <script src="/static/js/expenses.js"></script>
+  <script src="/static/js/audit.js"></script>
 <script src="/static/js/settings.js"></script>
 <script src="/static/js/notification.js"></script>
 <script src="/static/js/guide.js"></script>

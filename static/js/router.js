@@ -20,6 +20,7 @@ const Router = {
     branches: ['SUPER_ADMIN', 'HEAD_OFFICE'],
     procurement: ['SUPER_ADMIN', 'HEAD_OFFICE'],
     vehicles: ['SUPER_ADMIN', 'HEAD_OFFICE'],
+    expenses: ['SUPER_ADMIN', 'HEAD_OFFICE'],
     pricing: ['SUPER_ADMIN', 'HEAD_OFFICE'],
     audit: ['SUPER_ADMIN'],
     settings: ['SUPER_ADMIN', 'HEAD_OFFICE'],
@@ -228,6 +229,7 @@ Router.register('procurement', { title: 'Procurement', icon: 'truck', init: 'ini
 Router.register('inventory', { title: 'Inventory', icon: 'package', init: 'initInventory' });
 Router.register('employees', { title: 'Employees', icon: 'briefcase', init: 'initEmployees' });
 Router.register('vehicles', { title: 'Vehicles', icon: 'car', init: 'initVehicles' });
+Router.register('expenses', { title: 'Expenses', icon: 'receipt', init: 'initExpenses' });
 Router.register('reports', { title: 'Reports', icon: 'bar-chart-3', init: 'initReports' });
 Router.register('audit', { title: 'Audit Logs', icon: 'scroll-text', init: 'initAudit' });
 Router.register('settings', { title: 'Settings', icon: 'settings', init: 'initSettings' });

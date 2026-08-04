@@ -1,1 +1,15 @@
-/usr/bin/bash: line 1: C:/Users/jaina/AppData/Local/Programs/Python/Python313/python.exe: No such file or directory
+ * Serving Flask app 'backend.app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+127.0.0.1 - - [03/Aug/2026 21:46:51] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:51] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:52] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:52] "GET /api/farmers?status=PENDING_VERIFICATION HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:52] "GET /api/procurement/suppliers HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:52] "GET /api/inventory HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:52] "GET /api/expenses HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:52] "GET /api/reports?type=pnl HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:52] "GET /api/settings/backups HTTP/1.1" 200 -
+127.0.0.1 - - [03/Aug/2026 21:46:52] "GET /api/employees HTTP/1.1" 200 -
