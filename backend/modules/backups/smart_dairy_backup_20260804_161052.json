@@ -1,0 +1,22 @@
+{
+  "settings": {
+    "dairy_name": "Smart Dairy ERP",
+    "currency": "INR",
+    "timezone": "Asia/Kolkata",
+    "language": "en",
+    "auto_backup": true,
+    "backup_time": "03:00",
+    "notification_email": true,
+    "notification_sms": true,
+    "sms_provider": "MSG91",
+    "sms_sender_id": "DAIRY",
+    "sms_api_key": "",
+    "sms_api_url": "",
+    "email_smtp_host": "smtp.gmail.com",
+    "email_smtp_port": "587",
+    "email_from": "",
+    "email_smtp_username": "",
+    "email_smtp_password": ""
+  },
+  "timestamp": "20260804_161052"
+}

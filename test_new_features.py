@@ -7,10 +7,12 @@ import json
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-# Fresh database
-if os.path.exists('smart_dairy.db'):
-    os.remove('smart_dairy.db')
-    print("Removed old database")
+# Fresh database — path is configurable via TEST_DB_PATH so the suite can
+# run against a scratch DB while a dev server holds the main smart_dairy.db.
+DB_PATH = os.getenv('TEST_DB_PATH', 'smart_dairy.db')
+if os.path.exists(DB_PATH):
+    os.remove(DB_PATH)
+    print(f"Removed old database ({DB_PATH})")
 
 from backend.app import create_app
 from backend.app import db as _db
@@ -352,6 +354,121 @@ with app.test_client() as c:
     check('dashboard monthly collection', 'monthlyCollection' in k)
     check('dashboard rejected %', 'rejectedPct' in k)
     check('dashboard low stock', 'lowStockCount' in k)
+
+# ═══════════════ Phase 3 — RBAC hardening regression tests ═══════════════
+
+    # ── Procurement: Branch Manager blocked from ALL reads ──
+    check('BM blocked: procurement centers', c.get('/api/procurement/centers', headers=auth(br_token)).status_code == 403)
+    check('BM blocked: procurement routes', c.get('/api/procurement/routes', headers=auth(br_token)).status_code == 403)
+    check('BM blocked: procurement chilling', c.get('/api/procurement/chilling', headers=auth(br_token)).status_code == 403)
+    check('BM blocked: suppliers read', c.get('/api/procurement/suppliers', headers=auth(br_token)).status_code == 403)
+    check('BM blocked: purchase orders read', c.get('/api/procurement/purchase-orders', headers=auth(br_token)).status_code == 403)
+    check('BM blocked: vendor payments read', c.get('/api/procurement/vendor-payments', headers=auth(br_token)).status_code == 403)
+
+    # ── Vehicles: Branch Manager blocked from all writes ──
+    check('BM blocked: create vehicle', c.post('/api/vehicles', json={'vehicleNumber': 'KA-99-TEST-00', 'type': 'PICKUP'},
+                                               headers=auth(br_token)).status_code == 403)
+    vh_list = c.get('/api/vehicles', headers=auth(admin_token)).get_json()['vehicles']
+    vh_id = vh_list[0]['id']
+    check('BM blocked: update vehicle', c.patch(f'/api/vehicles/{vh_id}', json={'driverName': 'X'},
+                                                headers=auth(br_token)).status_code == 403)
+    check('BM blocked: delete vehicle', c.delete(f'/api/vehicles/{vh_id}', headers=auth(br_token)).status_code == 403)
+    check('BM blocked: add service record', c.post(f'/api/vehicles/{vh_id}/service',
+                                                   json={'description': 'x', 'cost': 100},
+                                                   headers=auth(br_token)).status_code == 403)
+
+    # ── Employees: Branch Manager blocked from all writes ──
+    check('BM blocked: create employee', c.post('/api/employees', json={'name': 'X'},
+                                                headers=auth(br_token)).status_code == 403)
+    emp_list = c.get('/api/employees', headers=auth(admin_token)).get_json()['employees']
+    emp_id = emp_list[0]['id']
+    check('BM blocked: update employee', c.patch(f'/api/employees/{emp_id}', json={'salary': 1},
+                                                 headers=auth(br_token)).status_code == 403)
+    check('BM blocked: mark attendance', c.post('/api/employees/attendance',
+                                                json={'employeeId': emp_id, 'status': 'PRESENT'},
+                                                headers=auth(br_token)).status_code == 403)
+
+    # ── Reports: Branch Manager scoped to own branch + restricted types ──
+    r = c.get('/api/reports?type=collection&from=2026-07-01&to=2026-08-03&branchId=2', headers=auth(br_token))
+    coll_branches = {x['branchId'] for x in r.get_json().get('collections', [])}
+    check('BM report: own-branch only (branchId=2 ignored)', r.status_code == 200 and coll_branches <= {1},
+          f"({coll_branches})")
+    for rt in ('pnl', 'branch', 'inventory', 'procurement', 'vehicle', 'employee'):
+        check(f'BM blocked: {rt} report', c.get(f'/api/reports?type={rt}&from=2026-07-01&to=2026-08-03',
+                                                headers=auth(br_token)).status_code == 403)
+    check('BM blocked: export pnl', c.get('/api/reports/export?type=pnl&format=csv',
+                                          headers=auth(br_token)).status_code == 403)
+    check('BM export: own collection csv', c.get('/api/reports/export?type=collection&format=csv',
+                                                 headers=auth(br_token)).status_code == 200)
+    # Cross-branch farmer ledger
+    all_farmers = c.get('/api/farmers?per_page=100', headers=auth(admin_token)).get_json()['farmers']
+    br2_farmer = next((f for f in all_farmers if f['branchId'] == 2), None)
+    if br2_farmer:
+        check('BM blocked: other-branch farmer ledger',
+              c.get(f"/api/reports?type=farmer&farmerId={br2_farmer['id']}&from=2026-07-01&to=2026-08-03",
+                    headers=auth(br_token)).status_code == 403)
+
+    # ── List scoping for Branch Manager ──
+    r = c.get('/api/vehicles?branchId=2', headers=auth(br_token))
+    v = r.get_json()['vehicles']
+    check('BM vehicle list: own-branch only', r.status_code == 200 and len(v) >= 1 and all(x['branchId'] == 1 for x in v),
+          f"({len(v)} vehicles)")
+
+    r = c.get('/api/employees?branchId=2', headers=auth(br_token))
+    e = r.get_json()['employees']
+    check('BM employee list: own-branch only', r.status_code == 200 and len(e) >= 1 and all(x['branchId'] == 1 for x in e),
+          f"({len(e)} employees)")
+
+    r = c.get('/api/inventory', headers=auth(br_token))
+    i = r.get_json()['items']
+    check('BM inventory list: own-branch only', r.status_code == 200 and all(x['branchId'] == 1 for x in i),
+          f"({len(i)} items)")
+
+    r = c.get('/api/quality', headers=auth(br_token))
+    q = r.get_json()
+    check('BM quality list: own-branch only', r.status_code == 200 and all(t['branchId'] == 1 for t in q['tests']),
+          f"({q['total']} tests)")
+    if br2_farmer:
+        r = c.get(f"/api/quality?farmerId={br2_farmer['id']}", headers=auth(br_token))
+        check('BM quality: other-branch farmer excluded', r.get_json()['total'] == 0)
+
+    r = c.get('/api/rejections', headers=auth(br_token))
+    rj = r.get_json()
+    check('BM rejections list: own-branch only', r.status_code == 200 and all(x['branchId'] == 1 for x in rj['rejections']),
+          f"({rj['total']} rejections)")
+
+    # ── Payments: Branch Manager blocked from ALL payment writes ──
+    check('BM blocked: generate payment sheet', c.post('/api/payments',
+                                                       json={'periodStart': '2026-07-01', 'periodEnd': '2026-08-03'},
+                                                       headers=auth(br_token)).status_code == 403)
+    pay_list = c.get('/api/payments', headers=auth(admin_token)).get_json()['payments']
+    if pay_list:
+        pay_id = pay_list[0]['id']
+        check('BM blocked: approve payment', c.patch(f'/api/payments/{pay_id}', json={'status': 'APPROVED'},
+                                                     headers=auth(br_token)).status_code == 403)
+        check('BM blocked: mark paid', c.patch(f'/api/payments/{pay_id}', json={'status': 'PAID'},
+                                               headers=auth(br_token)).status_code == 403)
+
+    # ── Collections: BM forced to own branch (read + write) ──
+    new_farmer = next((f for f in all_farmers if f['farmerCode'] == new_code), None)
+    if new_farmer and br2_farmer:
+        check('BM blocked: collect for other-branch farmer',
+              c.post('/api/collections', json={'farmerId': br2_farmer['id'], 'quantity': 20},
+                     headers=auth(br_token)).status_code == 403)
+    if new_farmer:
+        r = c.post('/api/collections', json={'farmerId': new_farmer['id'], 'quantity': 20},
+                   headers=auth(br_token))
+        check('BM collects own-branch farmer', r.status_code == 201,
+              f"(branch={r.get_json().get('collection', {}).get('branchId')})")
+
+    # ── Settings: Branch Manager blocked ──
+    check('BM blocked: settings read', c.get('/api/settings', headers=auth(br_token)).status_code == 403)
+
+    # ── Admin unaffected after hardening ──
+    check('admin: vehicle create still ok', c.post('/api/vehicles', json={'vehicleNumber': 'KA-55-TEST-77', 'type': 'PICKUP'},
+                                                   headers=auth(admin_token)).status_code == 201)
+    check('admin: pnl report still ok', c.get('/api/reports?type=pnl&from=2026-07-01&to=2026-08-03',
+                                              headers=auth(admin_token)).status_code == 200)
 
 print(f"\n=== RESULT: {PASS} passed, {FAIL} failed ===")
 sys.exit(1 if FAIL else 0)

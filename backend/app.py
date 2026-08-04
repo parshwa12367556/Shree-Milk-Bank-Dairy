@@ -159,26 +159,33 @@ def register_jwt_handlers(jwt_instance):
 
 
 def register_blueprints(app):
-    """Register all route blueprints with the app."""
-    from backend.routes.health_routes import health_bp
-    from backend.routes.dashboard_routes import dashboard_bp
-    from backend.routes.auth_routes import auth_bp
-    from backend.routes.branch_routes import branch_bp
-    from backend.routes.farmer_routes import farmer_bp
-    from backend.routes.collection_routes import collection_bp
-    from backend.routes.payment_routes import payment_bp
-    from backend.routes.pricing_routes import pricing_bp
-    from backend.routes.quality_routes import quality_bp
-    from backend.routes.rejection_routes import rejection_bp
-    from backend.routes.procurement_routes import procurement_bp
-    from backend.routes.inventory_routes import inventory_bp
-    from backend.routes.employee_routes import employee_bp
-    from backend.routes.vehicle_routes import vehicle_bp
-    from backend.routes.report_routes import report_bp
-    from backend.routes.audit_routes import audit_bp
-    from backend.routes.settings_routes import settings_bp
-    from backend.routes.notification_routes import notification_bp
-    from backend.routes.expense_routes import expense_bp
+    """Register all route blueprints with the app (organized by role module)."""
+    # ── Admin (Head Office) modules ──
+    from backend.modules.admin.branches import branch_bp
+    from backend.modules.admin.procurement import procurement_bp
+    from backend.modules.admin.inventory import inventory_bp
+    from backend.modules.admin.vehicles import vehicle_bp
+    from backend.modules.admin.employees import employee_bp
+    from backend.modules.admin.audit import audit_bp
+    from backend.modules.admin.settings import settings_bp
+    from backend.modules.admin.pricing import pricing_bp
+    from backend.modules.admin.expenses import expense_bp
+    from backend.modules.admin.payments import payment_bp
+
+    # ── Branch (Branch Manager) modules ──
+    from backend.modules.branch.collection import collection_bp
+    from backend.modules.branch.quality import quality_bp
+    from backend.modules.branch.rejections import rejection_bp
+
+    # ── Farmer module ──
+    from backend.modules.farmer.farmers import farmer_bp
+
+    # ── Shared modules (all roles) ──
+    from backend.modules.shared.auth import auth_bp
+    from backend.modules.shared.dashboard import dashboard_bp
+    from backend.modules.shared.reports import report_bp
+    from backend.modules.shared.notifications import notification_bp
+    from backend.modules.shared.health import health_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(dashboard_bp)

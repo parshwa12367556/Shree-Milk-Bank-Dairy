@@ -156,7 +156,8 @@ Built with a **Flask REST API backend** and a **vanilla JavaScript single-page a
 ┌───────────────────────────▼────────────────────────────────┐
 │                    BACKEND (Flask)                         │
 │   app.py — application factory (create_app)                │
-│   Blueprints per module → routes/*_routes.py               │
+│   Blueprints grouped by role → modules/{admin,             │
+│     branch,farmer,shared}/*.py                             │
 │   auth.py — JWT helpers + RBAC decorators                  │
 │   pricing.py — pricing & quality-grading business logic    │
 │   audit.py — live audit-log helper (role/branch/IP)        │
@@ -278,7 +279,7 @@ shree-milk-bank-dairy/
 ├── config.py                   # Environment-based configuration classes
 ├── requirements.txt            # Python dependencies
 ├── smart_dairy.db              # SQLite database (auto-created)
-├── test_new_features.py        # 79-test feature suite (audit, verification, procurement, P&L, exports, backup, …)
+├── test_new_features.py        # 116-test feature suite (audit, verification, procurement, P&L, exports, RBAC, …)
 ├── test_check.py               # Smoke test — verifies the app serves correctly
 ├── test_seed.py                # Verifies database seeding
 ├── backend/
@@ -290,42 +291,42 @@ shree-milk-bank-dairy/
 │   ├── notify.py               # Automatic in-app notification helper
 │   ├── utils.py                # INR formatting, date helpers, code generators
 │   ├── seed.py                 # Database seeder (sample data)
-│   └── routes/                 # One blueprint per module
-│       ├── auth_routes.py      #   Login/logout/profile/password
-│       ├── dashboard_routes.py #   Aggregated dashboard stats + P&L KPIs
-│       ├── health_routes.py    #   /api/health
-│       ├── branch_routes.py    #   Branch CRUD + reset password
-│       ├── farmer_routes.py    #   Farmer CRUD, verify/reject/resubmit, bank verification, CSV export
-│       ├── collection_routes.py#   Milk collections
-│       ├── payment_routes.py   #   Payment sheets, approval workflow, UTR reference
-│       ├── pricing_routes.py   #   Rate master (versioned)
-│       ├── quality_routes.py   #   Quality tests with auto-grading
-│       ├── rejection_routes.py #   Milk rejections
-│       ├── procurement_routes.py # Suppliers, purchase orders, GRN, delivery tracking, vendor payments, centers/routes/chilling
-│       ├── inventory_routes.py #   Central inventory, stock movements, branch allocations
-│       ├── expense_routes.py   #   Operational expenses (P&L input)
-│       ├── employee_routes.py  #   Employees CRUD + attendance
-│       ├── vehicle_routes.py   #   Vehicles + service history
-│       ├── report_routes.py    #   12 report types + CSV/XLSX/PDF export
-│       ├── audit_routes.py     #   Audit logs (SUPER_ADMIN)
-│       ├── settings_routes.py  #   System settings, SMS/email config, disk backups & restore
-│       └── notification_routes.py # In-app notifications
+│   └── modules/                # Role-based API modules (blueprints)
+│       ├── admin/              #   Head Office (SUPER_ADMIN) only
+│       │   ├── branches.py     #     Branch CRUD + reset password
+│       │   ├── procurement.py  #     Suppliers, POs, GRN, delivery tracking, vendor payments, centers/routes/chilling
+│       │   ├── inventory.py    #     Central inventory, stock movements, branch allocations
+│       │   ├── vehicles.py     #     Vehicles + service history
+│       │   ├── employees.py    #     Employees CRUD + attendance
+│       │   ├── audit.py        #     Audit logs (SUPER_ADMIN)
+│       │   ├── settings.py     #     System settings, SMS/email config, backups & restore
+│       │   ├── pricing.py      #     Rate master (versioned)
+│       │   ├── expenses.py     #     Operational expenses (P&L input)
+│       │   └── payments.py     #     Payment sheets, approval workflow, UTR reference
+│       ├── branch/             #   Branch Manager operational modules
+│       │   ├── collection.py   #     Milk collections
+│       │   ├── quality.py      #     Quality tests with auto-grading
+│       │   └── rejections.py   #     Milk rejections
+│       ├── farmer/             #   Farmer-facing module
+│       │   └── farmers.py      #     Farmer CRUD, verify/reject/resubmit, bank verification, CSV export
+│       └── shared/             #   Used by all roles
+│           ├── auth.py         #     Login/logout/profile/password
+│           ├── dashboard.py    #     Aggregated dashboard stats + P&L KPIs
+│           ├── reports.py      #     12 report types + CSV/XLSX/PDF export
+│           ├── notifications.py#     In-app notifications
+│           └── health.py       #     /api/health
 ├── templates/
 │   └── index.html              # SPA shell — contains ALL page views
 │   # (other *.html files in this folder are legacy/unused — only
 │   #  index.html is rendered by the app; pages load inside the SPA)
 ├── static/
 │   ├── css/                    # Design system & page styles (variables.css, style.css, …)
-│   └── js/                     # Vanilla JS modules
-│       ├── api.js              #   REST API client (window.API)
-│       ├── router.js           #   Hash router (window.Router)
-│       ├── app.js              #   App bootstrap & global handlers
-│       ├── auth.js             #   Login/logout/session logic
-│       ├── storage.js          #   localStorage wrapper
-│       ├── chart.js            #   Chart.js helpers
-│       ├── table.js            #   Table rendering, CSV export, print
-│       ├── utils.js            #   Shared UI helpers
-│       └── *.js                #   One controller per page (dashboard, farmers, collection, …)
+│   └── js/                     # Vanilla JS modules, grouped by role
+│       ├── core/               #   App shell: api, router, app, auth, storage, chart, table, modal, utils
+│       ├── admin/              #   Head Office pages: branches, procurement, inventory, vehicles, employees, audit, settings, pricing, expenses, payments
+│       ├── branch/             #   Branch Manager pages: collection, quality, rejections
+│       ├── farmer/             #   Farmer pages: farmers, farmer-form, farmer-profile
+│       └── shared/             #   All roles: dashboard, reports, notifications, guide, profile
 └── backups/                    # Created at runtime — disk backups (smart_dairy_backup_*.db)
 ```
 
@@ -609,11 +610,11 @@ All endpoints return JSON. Except where noted, every endpoint requires `Authoriz
 
 The frontend is a **single-page application without any framework** — all views live inside `templates/index.html` as `<div class="page-container">` blocks, and vanilla JS modules control behavior.
 
-- **Routing** (`static/js/router.js`): hash-based routing. `Router.navigate('farmers')` switches the visible page container and updates `window.location.hash` (`#farmers`). The router also listens to `hashchange` and role-gates pages (branch managers are blocked from branches/procurement/vehicles/pricing/audit/settings/expenses).
-- **API client** (`static/js/api.js`): a single `API` object wrapping `fetch()` — automatically attaches the JWT `Authorization` header, centralizes 401 handling (clears session, redirects to login), and exposes typed helpers (`API.getFarmers(...)`, `API.verifyFarmer(...)`, `API.createPurchaseOrder(...)`, …).
-- **State** (`static/js/storage.js`): localStorage wrapper. Keys: `sd_token`, `sd_user`, `sd_theme`, `sd_sidebar`.
-- **Page controllers**: one JS file per module (`dashboard.js`, `farmers.js`, `collection.js`, `payments.js`, `pricing.js`, `quality.js`, `rejections.js`, `branches.js`, `procurement.js`, `inventory.js`, `expenses.js`, `employees.js`, `vehicles.js`, `reports.js`, `audit.js`, `settings.js`, `notifications.js`, `profile.js`, `farmer-form.js`, `farmer-profile.js`).
-- **Shared components**: `table.js` (rendering, sorting, pagination, CSV export, print), `chart.js` (Chart.js wrapper), `modal.js` (modal dialogs), `form-validation.js`, `utils.js`.
+- **Routing** (`static/js/core/router.js`): hash-based routing. `Router.navigate('farmers')` switches the visible page container and updates `window.location.hash` (`#farmers`). The router also listens to `hashchange`, role-gates pages (branch managers are blocked from branches/procurement/vehicles/pricing/audit/settings/expenses), and tags every route with a role `owner` (`admin` / `branch` / `farmer` / `shared` / `auth`) exposed via `Router.getRouteOwner()`.
+- **API client** (`static/js/core/api.js`): a single `API` object wrapping `fetch()` — automatically attaches the JWT `Authorization` header, centralizes 401 handling (clears session, redirects to login), and exposes typed helpers (`API.getFarmers(...)`, `API.verifyFarmer(...)`, `API.createPurchaseOrder(...)`, …).
+- **State** (`static/js/core/storage.js`): localStorage wrapper. Keys: `sd_token`, `sd_user`, `sd_theme`, `sd_sidebar`.
+- **Page controllers** (grouped by role under `static/js/`): `admin/` — branches, payments, pricing, procurement, inventory, employees, vehicles, expenses, audit, settings; `branch/` — collection, quality, rejections; `farmer/` — farmers, farmer-form, farmer-profile; `shared/` — dashboard, reports, notifications, guide.
+- **Shared components** (`static/js/core/`): `table.js` (rendering, sorting, pagination, CSV export, print), `chart.js` (Chart.js wrapper), `modal.js` (modal dialogs), `form-validation.js`, `utils.js`.
 - **Design system** (`static/css/`): CSS custom properties in `variables.css` drive theming (light/dark via `data-theme` attribute on `<html>`), `style.css` provides base layout, `responsive.css` handles mobile, and per-module stylesheets cover each page.
 - **CDN dependencies**: Chart.js 4.4.7, Lucide icons, Google Fonts (Inter + Playfair Display).
 
@@ -624,12 +625,12 @@ The frontend is a **single-page application without any framework** — all view
 Three verification scripts are included:
 
 ```bash
-# 1. Full feature suite (79 assertions) — audit logging, farmer verification &
+# 1. Full feature suite (116 assertions) — audit logging, farmer verification &
 #    bank verification, procurement (PO/GRN/vendor payments), inventory
 #    movements & allocation, expenses/P&L, CSV/XLSX/PDF exports, vehicle service
 #    records, employee attendance, auto-notifications, backups, dashboard KPIs,
-#    cross-branch isolation, and role gating.
-#    ⚠️ WARNING: Deletes smart_dairy.db first, then re-seeds it
+#    cross-branch isolation, role gating, and RBAC hardening.
+#    ⚠️ WARNING: Deletes smart_dairy.db (or TEST_DB_PATH) first, then re-seeds
 python test_new_features.py
 
 # 2. Smoke test — verifies the Flask app boots and serves the SPA correctly
@@ -640,7 +641,7 @@ python test_check.py
 python test_seed.py
 ```
 
-Expected result: `=== RESULT: 79 passed, 0 failed ===` for the feature suite.
+Expected result: `=== RESULT: 116 passed, 0 failed ===` for the feature suite.
 
 ---
 
@@ -654,7 +655,7 @@ Expected result: `=== RESULT: 79 passed, 0 failed ===` for the feature suite.
 4. **Use a production-grade database** — the default SQLite setup is fine for a single-instance deployment; switch `DATABASE_URL` to PostgreSQL or MySQL for multi-instance/high-availability setups.
 5. **Enable HTTPS** — all traffic should be TLS-encrypted, since authentication uses Bearer tokens.
 6. **Password reset** — `POST /api/auth/forgot-password` currently returns the reset email in the response (dev-mode behavior). Wire it to a real email-sending service (e.g., SMTP, SendGrid, Resend) before production.
-7. **Remove the dev login bypass** — `backend/routes/auth_routes.py` contains a temporary development bypass (`admin` / `admin123` always authenticates while `DEV_LOGIN_ENABLED` is on). Disable it before any production release.
+7. **Remove the dev login bypass** — `backend/modules/shared/auth.py` contains a temporary development bypass (`admin` / `admin123` always authenticates while `DEV_LOGIN_ENABLED` is on). Disable it before any production release.
 8. **SMS/Email sending** — the settings store SMTP/MSG91 configuration; wire up actual delivery (e.g., via SMTP or MSG91 API) before relying on automatic notifications externally.
 9. **Audit & backups** — backups are stored on the local filesystem (`backups/`); for production, ship them to durable object storage and enforce a retention policy.
 

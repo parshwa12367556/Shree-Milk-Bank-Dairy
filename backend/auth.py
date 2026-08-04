@@ -6,9 +6,18 @@ and role-based access control (RBAC) decorators.
 """
 from functools import wraps
 import json
-from flask import jsonify
+from flask import jsonify, abort, make_response
 from flask_jwt_extended import get_jwt_identity as _get_jwt_identity, verify_jwt_in_request
 import bcrypt
+
+# Roles that are always restricted to their own branch. Roles not listed here
+# (SUPER_ADMIN, HEAD_OFFICE, ACCOUNTANT) are treated as unrestricted/global.
+BRANCH_SCOPED_ROLES = ('BRANCH_MANAGER', 'OPERATOR')
+
+
+def _deny(message):
+    """Abort the request with a JSON 403 response (matches API error contract)."""
+    abort(make_response(jsonify({'error': message}), 403))
 
 
 def hash_password(password):
@@ -158,3 +167,52 @@ def is_branch_accessible(branch_id):
     
     # Branch-specific roles can only access their branch
     return user.get('branchId') == branch_id
+
+
+def get_branch_scope():
+    """
+    Return the branch_id a branch-scoped user is restricted to, or None.
+
+    This is the single source of truth for branch-level data isolation and
+    fails CLOSED: branch-scoped roles (BRANCH_MANAGER / OPERATOR) are always
+    forced to their assigned branch, and if no branch is assigned the request
+    is denied (403) instead of silently granting unrestricted access.
+    Unrestricted roles (SUPER_ADMIN / HEAD_OFFICE / ACCOUNTANT) return None.
+
+    Returns:
+        branch_id (int) to filter by, or None for unrestricted access
+    """
+    user = get_identity()
+    if not user:
+        return None
+    if user.get('role') not in BRANCH_SCOPED_ROLES:
+        return None
+    branch_id = user.get('branchId')
+    if not branch_id:
+        _deny('No branch assigned to this account. Contact Head Office.')
+    return branch_id
+
+
+def scope_query(query, model):
+    """
+    Apply branch isolation to a SQLAlchemy query for branch-scoped users.
+
+    Global roles pass through unfiltered; branch-scoped users (e.g. Branch
+    Managers) are always restricted to their own branch, regardless of any
+    client-supplied filters.
+
+    Usage:
+        query = scope_query(Collection.query, Collection)
+        # Branch Manager ⇒ Collection.branch_id == <their branch_id>
+
+    Args:
+        query: SQLAlchemy query object
+        model: Model class exposing a `branch_id` column
+
+    Returns:
+        Query filtered to the user's branch (unchanged for global roles)
+    """
+    branch_id = get_branch_scope()
+    if branch_id:
+        query = query.filter(getattr(model, 'branch_id') == branch_id)
+    return query
