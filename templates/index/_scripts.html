@@ -1,0 +1,47 @@
+<script src="/static/js/core/utils.js"></script>
+<script src="/static/js/core/api.js"></script>
+<script src="/static/js/core/storage.js"></script>
+<script src="/static/js/core/router.js"></script>
+<script src="/static/js/core/modal.js"></script>
+<script src="/static/js/core/table.js"></script>
+<script src="/static/js/core/form-validation.js"></script>
+<script src="/static/js/core/chart.js"></script>
+<script src="/static/js/core/auth.js"></script>
+<script src="/static/js/shared/dashboard.js"></script>
+<script src="/static/js/branch/collection.js"></script>
+<script src="/static/js/farmer/farmers.js"></script>
+<script src="/static/js/farmer/farmer-form.js"></script>
+<script src="/static/js/farmer/farmer-profile.js"></script>
+<script src="/static/js/admin/branches.js"></script>
+<script src="/static/js/admin/payments.js"></script>
+<script src="/static/js/admin/pricing.js"></script>
+<script src="/static/js/branch/quality.js"></script>
+<script src="/static/js/branch/rejections.js"></script>
+<script src="/static/js/admin/procurement.js"></script>
+<script src="/static/js/admin/inventory.js"></script>
+<script src="/static/js/admin/employees.js"></script>
+<script src="/static/js/admin/vehicles.js"></script><script src="/static/js/shared/reports.js"></script>
+  <script src="/static/js/admin/expenses.js"></script>
+  <script src="/static/js/admin/audit.js"></script>
+<script src="/static/js/admin/settings.js"></script>
+<script src="/static/js/shared/notification.js"></script>
+<script src="/static/js/shared/guide.js"></script>
+<script src="/static/js/core/app.js"></script>
+
+<script>
+/**
+ * Sidebar search filter
+ */
+function filterSidebar(query) {
+  const items = document.querySelectorAll('.sidebar-nav .nav-item');
+  const q = query.toLowerCase().trim();
+  
+  items.forEach(item => {
+    const label = item.querySelector('.nav-label');
+    if (!label) return;
+    const text = label.textContent.toLowerCase();
+    item.style.display = !q || text.includes(q) ? 'flex' : 'none';
+  });
+}
+</script>
+

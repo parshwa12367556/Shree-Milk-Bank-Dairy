@@ -1,0 +1,214 @@
+      <!-- ── Collection Page ── -->
+      <div class="page-container" id="page-collection" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Milk Collection</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Milk Collection Desk</h2>
+            <p class="subtitle">Record and manage daily milk collections</p>
+          </div>
+          <div class="page-actions">
+            <span class="auto-save-indicator" id="auto-save">
+              <span class="save-dot saved"></span>
+              <span>Auto-save enabled</span>
+            </span>
+            <button class="btn btn-sm btn-ghost" onclick="undoLastCollection()">
+              <i data-lucide="undo-2" style="width:16px;height:16px;"></i>
+              Undo
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Panel Layout -->
+        <div class="collection-panels">
+          <!-- Left Panel: Farmer Identification -->
+          <div class="collection-panel">
+            <div class="panel-header">
+              <h5><i data-lucide="user-search" style="width:16px;height:16px;"></i> Find Farmer</h5>
+            </div>
+            <div class="panel-body">
+              <div class="farmer-search-tabs">
+                <button class="tab-btn active">QR</button>
+                <button class="tab-btn">Code</button>
+                <button class="tab-btn">Phone</button>
+                <button class="tab-btn">Name</button>
+              </div>
+              <div class="input-group" style="margin-bottom:var(--space-3);">
+                <span class="input-icon"><i data-lucide="search"></i></span>
+                <input type="text" class="input-premium input-with-icon" id="farmer-search-input" placeholder="Scan QR or enter code...">
+              </div>
+              <div id="farmer-suggestions"></div>
+
+              <div id="current-farmer" style="margin-bottom:var(--space-3);">
+                <div class="card" style="padding:var(--space-4);">
+                  <div class="flex items-center gap-3">
+                    <div class="farmer-avatar-lg" style="width:48px;height:48px;border-radius:var(--radius-full);background:linear-gradient(135deg,var(--forest-light),var(--forest));display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:white;font-weight:700;flex-shrink:0;">?</div>
+                    <div>
+                      <div style="font-weight:600;">Select a Farmer</div>
+                      <div style="font-size:var(--text-xs);color:var(--ink-muted);">Search or scan QR above</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h6 style="font-size:var(--text-xs);color:var(--ink-muted);margin-bottom:var(--space-2);">LIVE QUEUE</h6>
+                <div class="live-queue" id="collection-queue"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center Panel: Collection Form -->
+          <div class="collection-panel">
+            <div class="panel-header">
+              <h5><i data-lucide="clipboard-list" style="width:16px;height:16px;"></i> Collection Details</h5>
+              <span class="tag tag-blue">Shift: Morning</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Quantity (Liters)</label>
+                <input type="number" class="input-premium input-premium-lg" id="collection-qty" placeholder="Enter quantity" step="0.5" min="0" oninput="calculateCollectionAmount()">
+                <div class="collection-quick-pills">
+                  <button class="qty-pill active" data-value="10">10 L</button>
+                  <button class="qty-pill" data-value="15">15 L</button>
+                  <button class="qty-pill" data-value="20">20 L</button>
+                  <button class="qty-pill" data-value="25">25 L</button>
+                  <button class="qty-pill" data-value="30">30 L</button>
+                </div>
+              </div>
+
+              <div class="analyzer-grid">
+                <div class="analyzer-field">
+                  <label>Fat %</label>
+                  <input type="number" class="input-premium" id="collection-fat" placeholder="0.0" step="0.1" oninput="calculateCollectionAmount()">
+                </div>
+                <div class="analyzer-field">
+                  <label>SNF %</label>
+                  <input type="number" class="input-premium" id="collection-snf" placeholder="0.0" step="0.1" oninput="calculateCollectionAmount()">
+                </div>
+                <div class="analyzer-field">
+                  <label>CLR</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.5">
+                </div>
+                <div class="analyzer-field">
+                  <label>Temperature °C</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                </div>
+                <div class="analyzer-field">
+                  <label>Density</label>
+                  <input type="number" class="input-premium" placeholder="0.000">
+                </div>
+                <div class="analyzer-field">
+                  <label>Water %</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                </div>
+                <div class="analyzer-field">
+                  <label>Protein %</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                </div>
+                <div class="analyzer-field">
+                  <label>Lactose %</label>
+                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Remarks</label>
+                <textarea class="input-premium" rows="2" placeholder="Any remarks..."></textarea>
+              </div>
+
+              <button class="btn btn-primary btn-lg w-full" id="save-collection">
+                <i data-lucide="save"></i>
+                Save Collection
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Panel: Pricing Engine -->
+          <div class="collection-panel">
+            <div class="panel-header">
+              <h5><i data-lucide="calculator" style="width:16px;height:16px;"></i> Live Pricing</h5>
+            </div>
+            <div class="panel-body pricing-engine">
+              <div class="rate-display">
+                <div class="rate-item">
+                  <div class="rate-label">Fat Rate</div>
+                  <div class="rate-value" style="font-size:var(--text-sm);">₹5.00 / %</div>
+                </div>
+                <div class="rate-item">
+                  <div class="rate-label">SNF Rate</div>
+                  <div class="rate-value" style="font-size:var(--text-sm);">₹2.50 / %</div>
+                </div>
+              </div>
+
+              <div class="price-breakdown">
+                <div class="flex justify-between"><span>Fat (4.2% × 25L)</span><span id="calc-fat">0.0%</span></div>
+                <div class="flex justify-between"><span>SNF (8.6% × 25L)</span><span id="calc-snf">0.0%</span></div>
+                <div class="flex justify-between"><span>Total Quantity</span><span id="calc-qty">0.0 L</span></div>
+              </div>
+
+              <div class="price-total">
+                <span class="total-label">Rate / Liter</span>
+                <span class="total-amount" id="rate-per-liter" style="font-size:var(--text-lg);">₹0.00</span>
+              </div>
+              <div class="price-total" style="border-top:2px solid var(--gold);">
+                <span class="total-label">Total Amount</span>
+                <span class="total-amount" id="total-amount" style="color:var(--gold);">₹0.00</span>
+              </div>
+
+              <div id="today-summary"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Collections Table -->
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Today's Collections</div>
+            <div class="table-toolbar">
+              <div class="segmented-control">
+                <button class="segmented-btn active">All</button>
+                <button class="segmented-btn">Morning</button>
+                <button class="segmented-btn">Evening</button>
+              </div>
+              <button class="btn btn-sm btn-ghost" title="Export CSV" onclick="Table.exportCSV('collections-table', 'collections.csv')"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
+              <button class="btn btn-sm btn-ghost" title="Print" onclick="Table.printTable('collections-table')"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="collections-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Receipt</th>
+                  <th>Farmer</th>
+                  <th>Quantity</th>
+                  <th>Fat</th>
+                  <th>SNF</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  <th>Shift</th>
+                  <th>Status</th>
+                  <th style="width:80px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <div class="table-info">Showing 4 of 124 entries</div>
+            <div class="pagination">
+              <button class="page-btn prev-btn" disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <span class="page-ellipsis">...</span>
+              <button class="page-btn">12</button>
+              <button class="page-btn next-btn"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+

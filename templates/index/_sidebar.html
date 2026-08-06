@@ -1,0 +1,156 @@
+  <!-- ══════════════════════════════════════════════════
+       SIDEBAR
+       ══════════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i data-lucide="milk"></i>
+      </div>
+      <div class="sidebar-brand">
+        <span class="brand-name">Smart Dairy</span>
+        <span class="brand-sub">ERP System v2.0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-search">
+      <span class="search-icon"><i data-lucide="search"></i></span>
+      <input type="text" placeholder="Search menu..." onkeyup="filterSidebar(this.value)">
+    </div>
+
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- Dashboard -->
+      <a class="nav-item active" data-route="dashboard" onclick="Router.navigate('dashboard')">
+        <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+
+      <!-- Milk Collection -->
+      <a class="nav-item" data-route="collection" onclick="Router.navigate('collection')">
+        <span class="nav-icon"><i data-lucide="milk"></i></span>
+        <span class="nav-label">Milk Collection</span>
+      </a>
+
+      <!-- Farmers -->
+      <a class="nav-item has-submenu">
+        <span class="nav-icon"><i data-lucide="users"></i></span>
+        <span class="nav-label">Farmers</span>
+        <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+      </a>
+      <div class="nav-submenu">
+        <a class="nav-item" data-route="farmers" onclick="Router.navigate('farmers')">
+          <span class="nav-icon"><i data-lucide="list"></i></span>
+          <span class="nav-label">All Farmers</span>
+        </a>
+        <a class="nav-item" data-route="farmer-form" data-role="BRANCH_MANAGER" onclick="Router.navigate('farmer-form')">
+          <span class="nav-icon"><i data-lucide="user-plus"></i></span>
+          <span class="nav-label">Register Farmer</span>
+        </a>
+        <a class="nav-item" data-route="farmer-profile" onclick="Router.navigate('farmer-profile')">
+          <span class="nav-icon"><i data-lucide="user"></i></span>
+          <span class="nav-label">Farmer Profile</span>
+        </a>
+        <a class="nav-item" data-route="farmer-passbook" onclick="Router.navigate('farmer-passbook')">
+          <span class="nav-icon"><i data-lucide="book-open"></i></span>
+          <span class="nav-label">Passbook</span>
+        </a>
+      </div>
+
+      <!-- Payments -->
+      <a class="nav-item" data-route="payments" onclick="Router.navigate('payments')">
+        <span class="nav-icon"><i data-lucide="wallet"></i></span>
+        <span class="nav-label">Payments</span>
+      </a>
+
+      <!-- Pricing -->
+      <a class="nav-item" data-route="pricing" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('pricing')">
+        <span class="nav-icon"><i data-lucide="dollar-sign"></i></span>
+        <span class="nav-label">Rate Engine</span>
+      </a>
+
+      <!-- Quality -->
+      <a class="nav-item" data-route="quality" onclick="Router.navigate('quality')">
+        <span class="nav-icon"><i data-lucide="flask-conical"></i></span>
+        <span class="nav-label">Quality Control</span>
+      </a>
+
+      <!-- Rejections -->
+      <a class="nav-item" data-route="rejections" onclick="Router.navigate('rejections')">
+        <span class="nav-icon"><i data-lucide="x-circle"></i></span>
+        <span class="nav-label">Rejections</span>
+      </a>
+
+      <!-- Branches -->
+      <a class="nav-item" data-route="branches" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('branches')">
+        <span class="nav-icon"><i data-lucide="building-2"></i></span>
+        <span class="nav-label">Branches</span>
+      </a>
+
+      <!-- Procurement -->
+      <a class="nav-item" data-route="procurement" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('procurement')">
+        <span class="nav-icon"><i data-lucide="truck"></i></span>
+        <span class="nav-label">Procurement</span>
+      </a>
+
+      <!-- Inventory -->
+      <a class="nav-item" data-route="inventory" onclick="Router.navigate('inventory')">
+        <span class="nav-icon"><i data-lucide="package"></i></span>
+        <span class="nav-label">Inventory</span>
+      </a>
+
+      <!-- Employees -->
+      <a class="nav-item" data-route="employees" onclick="Router.navigate('employees')">
+        <span class="nav-icon"><i data-lucide="briefcase"></i></span>
+        <span class="nav-label">Employees</span>
+      </a>
+
+      <!-- Vehicles -->
+      <a class="nav-item" data-route="vehicles" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('vehicles')">
+        <span class="nav-icon"><i data-lucide="car"></i></span>
+        <span class="nav-label">Vehicles</span>
+      </a>
+
+      <!-- Expenses -->
+      <a class="nav-item" data-route="expenses" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('expenses')">
+        <span class="nav-icon"><i data-lucide="receipt"></i></span>
+        <span class="nav-label">Expenses</span>
+      </a>
+
+      <!-- Divider -->
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+
+      <!-- User Guide -->
+      <a class="nav-item" data-route="guide" onclick="Router.navigate('guide')">
+        <span class="nav-icon"><i data-lucide="book-open"></i></span>
+        <span class="nav-label">User Guide</span>
+      </a>
+
+      <!-- Reports -->
+      <a class="nav-item" data-route="reports" onclick="Router.navigate('reports')">
+        <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
+        <span class="nav-label">Reports</span>
+      </a>
+
+      <!-- Audit -->
+      <a class="nav-item" data-route="audit" data-role="SUPER_ADMIN" onclick="Router.navigate('audit')">
+        <span class="nav-icon"><i data-lucide="scroll-text"></i></span>
+        <span class="nav-label">Audit Logs</span>
+      </a>
+
+      <!-- Settings -->
+      <a class="nav-item" data-route="settings" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('settings')">
+        <span class="nav-icon"><i data-lucide="settings"></i></span>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="Router.navigate('profile')">
+        <div class="user-avatar">AD</div>
+        <div class="user-info">
+          <div class="user-name">Admin User</div>
+          <div class="user-role">Super Admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+

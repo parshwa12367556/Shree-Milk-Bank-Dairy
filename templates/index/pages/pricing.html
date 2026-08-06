@@ -1,0 +1,123 @@
+      <!-- ── Pricing Page ── -->
+      <div class="page-container" id="page-pricing" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Rate Engine</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Rate Engine</h2>
+            <p class="subtitle">Manage milk pricing and rate versions</p>
+          </div>
+        </div>
+
+        <!-- Current Rates -->
+        <div class="rate-cards">
+          <div class="rate-card cow">
+            <div class="rate-type">
+              <div class="type-icon"><i data-lucide="milk"></i></div>
+              <div>
+                <div class="type-name">Cow Milk</div>
+                <div style="font-size:var(--text-xs);color:var(--ink-muted);">Active Rate v2.1</div>
+              </div>
+              <span class="tag tag-green" style="margin-left:auto;">Active</span>
+            </div>
+            <div class="rate-values">
+              <div class="rate-field">
+                <div class="field-label">Fat Rate</div>
+                <div class="field-value" style="color:var(--forest);">₹5.00</div>
+              </div>
+              <div class="rate-field">
+                <div class="field-label">SNF Rate</div>
+                <div class="field-value" style="color:var(--info);">₹2.50</div>
+              </div>
+            </div>
+          </div>
+          <div class="rate-card buffalo">
+            <div class="rate-type">
+              <div class="type-icon"><i data-lucide="milk"></i></div>
+              <div>
+                <div class="type-name">Buffalo Milk</div>
+                <div style="font-size:var(--text-xs);color:var(--ink-muted);">Active Rate v2.1</div>
+              </div>
+              <span class="tag tag-green" style="margin-left:auto;">Active</span>
+            </div>
+            <div class="rate-values">
+              <div class="rate-field">
+                <div class="field-label">Fat Rate</div>
+                <div class="field-value" style="color:var(--purple);">₹6.50</div>
+              </div>
+              <div class="rate-field">
+                <div class="field-label">SNF Rate</div>
+                <div class="field-value" style="color:var(--teal);">₹3.00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Rate Form -->
+        <div class="card" style="margin-bottom:var(--space-5);">
+          <div class="card-header">
+            <h5 class="section-title">Create New Rate Version</h5>
+          </div>
+          <div class="card-body">
+            <form id="rate-form">
+              <div class="form-grid-4">
+                <div class="form-group">
+                  <label class="form-label">Milk Type</label>
+                  <select class="input-premium" required>
+                    <option value="">Select</option>
+                    <option>COW</option>
+                    <option>BUFFALO</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fat Rate (₹)</label>
+                  <input type="number" class="input-premium" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">SNF Rate (₹)</label>
+                  <input type="number" class="input-premium" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Effective From</label>
+                  <input type="date" class="input-premium" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
+                Create Rate
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Rate Comparison Chart -->
+        <div class="card" style="margin-bottom:var(--space-5);">
+          <div class="card-header">
+            <h5 class="section-title">Rate Trend</h5>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="rate-comparison-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rate History -->
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Rate Version History</div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="rate-history-table" style="width:100%;">
+              <thead>
+                <tr><th>Version</th><th>Milk Type</th><th>Fat Rate</th><th>SNF Rate</th><th>Effective From</th><th>Status</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+

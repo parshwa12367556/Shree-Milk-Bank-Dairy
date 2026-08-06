@@ -1,0 +1,31 @@
+      <!-- ── Quality Page ── -->
+      <div class="page-container" id="page-quality" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Quality Control</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Quality Control</h2>
+            <p class="subtitle">Milk quality testing and analysis</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openQualityModal()">
+              <i data-lucide="flask-conical" style="width:16px;height:16px;"></i>
+              New Test
+            </button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-responsive">
+            <table class="table-premium" id="quality-table" style="width:100%;">
+              <thead>
+                <tr><th>Receipt</th><th>Farmer</th><th>Fat</th><th>SNF</th><th>CLR</th><th>Water</th><th>Temp</th><th>Result</th><th>Date</th><th>Actions</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+

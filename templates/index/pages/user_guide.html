@@ -1,0 +1,31 @@
+      <!-- ── User Guide Page ── -->
+      <div class="page-container" id="page-guide" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">User Guide</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>📖 User Guide — Guidance Book</h2>
+            <p class="subtitle">How the system works, how to use every module, and how to handle daily operations.</p>
+          </div>
+          <div class="page-actions" style="gap:var(--space-3);">
+            <div class="guide-search-wrap">
+              <span class="search-icon"><i data-lucide="search"></i></span>
+              <input type="text" id="guide-search" placeholder="Search the guide..." autocomplete="off">
+            </div>
+            <button class="btn btn-secondary" id="guide-print-btn" title="Print guide">
+              <i data-lucide="printer" style="width:16px;height:16px;"></i>
+              Print
+            </button>
+          </div>
+        </div>
+
+        <!-- Guide book layout (rendered by static/js/guide.js) -->
+        <div class="guide-book">
+          <aside class="guide-rail" id="guide-rail"></aside>
+          <div class="guide-content" id="guide-content"></div>
+        </div>
+      </div>
+

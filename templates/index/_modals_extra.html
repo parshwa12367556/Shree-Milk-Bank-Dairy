@@ -1,0 +1,94 @@
+<!-- ══════════════════════════════════════════════════════
+     APPLICATION SCRIPTS
+     ══════════════════════════════════════════════════════ -->
+
+      <!-- Quality Test Modal -->
+      <div class="modal" id="quality-modal">
+        <div class="modal-backdrop" onclick="closeQualityModal()"></div>
+        <div class="modal-content" style="max-width:560px;">
+          <div class="modal-header">
+            <h5 id="quality-modal-title">New Quality Test</h5>
+            <button class="modal-close" onclick="closeQualityModal()"><i data-lucide="x"></i></button>
+          </div>
+          <form id="quality-form" onsubmit="saveQualityTest();return false">
+            <div class="modal-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Collection ID</label>
+                  <input type="number" class="input-premium" id="q-test-collection" placeholder="Collection receipt #">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Farmer ID <span class="required">*</span></label>
+                  <input type="number" class="input-premium" id="q-test-farmer" placeholder="Farmer ID" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fat %</label>
+                  <input type="number" class="input-premium" id="q-test-fat" placeholder="0.0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">SNF %</label>
+                  <input type="number" class="input-premium" id="q-test-snf" placeholder="0.0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CLR</label>
+                  <input type="number" class="input-premium" id="q-test-clr" placeholder="0.0" step="0.5">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Temperature °C</label>
+                  <input type="number" class="input-premium" id="q-test-temp" placeholder="0.0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Water %</label>
+                  <input type="number" class="input-premium" id="q-test-water" placeholder="0.0" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Result</label>
+                  <select class="input-premium" id="q-test-result">
+                    <option value="PASS">PASS</option>
+                    <option value="BORDERLINE">BORDERLINE</option>
+                    <option value="FAIL">FAIL</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="closeQualityModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i data-lucide="flask-conical" style="width:16px;height:16px;"></i> Save Test</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Payment Modal -->
+      <div class="modal" id="payment-modal">
+        <div class="modal-backdrop" onclick="closePaymentModal()"></div>
+        <div class="modal-content" style="max-width:500px;">
+          <div class="modal-header">
+            <h5 id="payment-modal-title">Generate Payment Sheet</h5>
+            <button class="modal-close" onclick="closePaymentModal()"><i data-lucide="x"></i></button>
+          </div>
+          <form id="payment-form" onsubmit="generatePaymentSheet();return false">
+            <div class="modal-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Farmer ID <span class="required">*</span></label>
+                  <input type="number" class="input-premium" id="payment-farmer-id" placeholder="Enter farmer ID" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Period Start <span class="required">*</span></label>
+                  <input type="date" class="input-premium" id="payment-period-start" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Period End <span class="required">*</span></label>
+                  <input type="date" class="input-premium" id="payment-period-end" required>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i data-lucide="wallet" style="width:16px;height:16px;"></i> Generate</button>
+            </div>
+          </form>
+        </div>
+      </div>
+

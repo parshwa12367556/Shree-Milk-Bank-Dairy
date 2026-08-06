@@ -1,0 +1,111 @@
+      <!-- ── Employees Page ── -->
+      <div class="page-container" id="page-employees" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Employees</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Employees</h2>
+            <p class="subtitle">Manage all employees</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="openAddEmployeeModal()">
+              <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
+              Add Employee
+            </button>
+          </div>
+        </div>
+
+        <!-- Employee Stats -->
+        <div class="farmer-stats-grid" id="employee-stats"></div>
+
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">All Employees</div>
+            <div class="table-toolbar">
+              <button class="btn btn-sm btn-ghost" title="Export CSV" onclick="Table.exportCSV('employees-table', 'employees.csv')"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
+              <button class="btn btn-sm btn-ghost" title="Print" onclick="Table.printTable('employees-table')"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="employees-table" style="width:100%;">
+              <thead><tr><th>Code</th><th>Name</th><th>Role</th><th>Branch</th><th>Mobile</th><th>Status</th><th>Joined</th><th style="width:100px;">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add Employee Modal -->
+        <div class="modal" id="employee-modal">
+          <div class="modal-backdrop" onclick="Modal.close('employee-modal')"></div>
+          <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+              <h5 id="employee-modal-title">Add Employee</h5>
+              <button class="modal-close" onclick="Modal.close('employee-modal')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+              <form id="employee-form" onsubmit="event.preventDefault(); saveEmployee();">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">Employee Code</label>
+                    <input type="text" class="input-premium" id="emp-code" placeholder="EMP-006" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Full Name <span class="required">*</span></label>
+                    <input type="text" class="input-premium" id="emp-name" placeholder="Enter full name" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Role <span class="required">*</span></label>
+                    <select class="input-premium" id="emp-role" required>
+                      <option value="">Select Role</option>
+                      <option value="Operator">Operator</option>
+                      <option value="Accountant">Accountant</option>
+                      <option value="Branch Manager">Branch Manager</option>
+                      <option value="Driver">Driver</option>
+                      <option value="Supervisor">Supervisor</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Branch</label>
+                    <input type="text" class="input-premium" id="emp-branch" placeholder="Branch name">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Mobile <span class="required">*</span></label>
+                    <input type="tel" class="input-premium" id="emp-mobile" placeholder="10-digit mobile" maxlength="10" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="input-premium" id="emp-email" placeholder="email@dairy.com">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Salary (₹)</label>
+                    <input type="number" class="input-premium" id="emp-salary" placeholder="Monthly salary">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="input-premium" id="emp-status">
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top:var(--space-4);">
+                  <label class="form-label">Address</label>
+                  <textarea class="input-premium" id="emp-address" rows="2" placeholder="Full address"></textarea>
+                </div>
+                <div class="form-actions" style="border:none;padding:0;margin-top:var(--space-4);">
+                  <button type="button" class="btn btn-secondary" onclick="Modal.close('employee-modal')">Cancel</button>
+                  <button type="submit" class="btn btn-primary" id="emp-save-btn">
+                    <i data-lucide="save" style="width:16px;height:16px;"></i>
+                    Save Employee
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+

@@ -1,0 +1,98 @@
+      <!-- ── Reports Page ── -->
+      <div class="page-container" id="page-reports" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Reports</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Reports</h2>
+            <p class="subtitle">Generate and export reports</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" data-action="export-report-csv"><i data-lucide="download" style="width:16px;height:16px;"></i> Export CSV</button>
+            <button class="btn btn-secondary" data-action="print-report"><i data-lucide="printer" style="width:16px;height:16px;"></i> Print</button>
+          </div>
+        </div>
+
+        <!-- Report Type Selector -->
+        <div class="report-type-grid">
+          <div class="report-type-card active" data-report="collection">
+            <div class="report-icon" style="background:var(--info-light);color:var(--info);"><i data-lucide="milk"></i></div>
+            <div class="report-info">
+              <div class="report-name">Collection Summary</div>
+              <div class="report-desc">Daily milk collection report</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="payment">
+            <div class="report-icon" style="background:var(--success-light);color:var(--success);"><i data-lucide="wallet"></i></div>
+            <div class="report-info">
+              <div class="report-name">Payment Summary</div>
+              <div class="report-desc">Farmer payment report</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="farmer">
+            <div class="report-icon" style="background:var(--teal-light);color:var(--teal);"><i data-lucide="users"></i></div>
+            <div class="report-info">
+              <div class="report-name">Farmer Ledger</div>
+              <div class="report-desc">Individual farmer statement</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="quality">
+            <div class="report-icon" style="background:var(--purple-light);color:var(--purple);"><i data-lucide="flask-conical"></i></div>
+            <div class="report-info">
+              <div class="report-name">Quality Report</div>
+              <div class="report-desc">Quality analysis report</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="rejection">
+            <div class="report-icon" style="background:var(--danger-light);color:var(--danger);"><i data-lucide="x-circle"></i></div>
+            <div class="report-info">
+              <div class="report-name">Rejection Report</div>
+              <div class="report-desc">Milk rejection analysis</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="branch">
+            <div class="report-icon" style="background:var(--orange-light);color:var(--orange);"><i data-lucide="building-2"></i></div>
+            <div class="report-info">
+              <div class="report-name">Branch Report</div>
+              <div class="report-desc">Branch-wise performance</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="expense">
+            <div class="report-icon" style="background:var(--danger-light);color:var(--danger);"><i data-lucide="receipt"></i></div>
+            <div class="report-info">
+              <div class="report-name">Expense Report</div>
+              <div class="report-desc">Operational expenses by category</div>
+            </div>
+          </div>
+          <div class="report-type-card" data-report="pnl">
+            <div class="report-icon" style="background:var(--success-light);color:var(--success);"><i data-lucide="trending-up"></i></div>
+            <div class="report-info">
+              <div class="report-name">Profit & Loss</div>
+              <div class="report-desc">Revenue vs expenses & procurement</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom:var(--space-4);">
+          <div class="card-body">
+            <div class="flex items-center gap-4">
+              <div class="date-range-picker">
+                <input type="date" id="report-from" value="2026-07-01">
+                <span class="date-separator">to</span>
+                <input type="date" id="report-to" value="2026-08-03">
+              </div>
+              <select id="report-branch" style="padding:var(--space-2) var(--space-6) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
+                <option value="">All Branches</option>
+              </select>            <button class="btn btn-primary" onclick="generateReport()"><i data-lucide="search" style="width:16px;height:16px;"></i> Generate</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Content -->
+        <div id="report-content"></div>
+      </div>
+

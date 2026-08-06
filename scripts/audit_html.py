@@ -61,7 +61,13 @@ else:
     print('  OK: all includes exist')
 
 # 5) Unclosed tags / unbalanced divs (rough heuristic)
+#    Skip templates/index/ — those are intentional SPA fragments split at
+#    structural boundaries (e.g. _layout_open.html opens .app-layout that
+#    _main_close.html closes); div balance only holds for whole documents.
+INDEX_FRAGMENTS = os.path.join(TPL, 'index') + os.sep
 for f in html_files:
+    if f.startswith(INDEX_FRAGMENTS):
+        continue
     src = open(f, encoding='utf-8').read()
     body = re.sub(r'<!--.*?-->', '', src, flags=re.S)
     body = re.sub(r'<script.*?</script>', '', body, flags=re.S)

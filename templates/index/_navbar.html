@@ -1,0 +1,104 @@
+    <!-- ════════════════════════════════════════════════
+         TOP NAVBAR
+         ════════════════════════════════════════════════ -->
+    <header class="navbar" id="navbar">
+      <div class="nav-left">
+        <button class="sidebar-toggle-mobile" onclick="App._toggleMobileSidebar()">
+          <i data-lucide="menu"></i>
+        </button>
+        <a href="#dashboard" class="nav-brand">
+          <div class="brand-logo">
+            <i data-lucide="milk" style="width:20px;height:20px;"></i>
+          </div>
+          <span class="brand-text">Smart Dairy</span>
+          <span class="brand-badge">ERP</span>
+        </a>
+      </div>
+
+      <div class="nav-center">
+        <div class="breadcrumb-nav">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator">/</span>
+          <span class="current">Home</span>
+        </div>
+        <div class="current-branch" id="current-branch" title="Current Branch">
+          <i data-lucide="building-2" style="width:13px;height:13px;"></i>
+          <span class="current-branch-name">All Branches</span>
+        </div>
+        <div class="nav-datetime">
+          <span class="current-date"></span>
+          <span class="datetime-separator">|</span>
+          <span class="current-time"></span>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <div class="search-bar" style="width:240px;">
+          <span class="search-icon"><i data-lucide="search"></i></span>
+          <input type="text" placeholder="Search farmers, receipts..." id="global-search">
+        </div>
+
+        <span class="nav-divider"></span>
+
+        <button class="nav-item notif-trigger" id="notif-trigger" title="Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-count">3</span>
+
+          <!-- Notification Dropdown -->
+          <div class="notif-dropdown" id="notif-dropdown">
+            <div class="notif-header">
+              <h6>Notifications</h6>
+              <a href="#notifications">View All</a>
+            </div>
+            <div class="notif-list">
+              <!-- Dynamic content -->
+            </div>
+            <div class="notif-footer">
+              <a href="#notifications">See all notifications</a>
+            </div>
+          </div>
+        </button>
+
+        <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">
+          <i data-lucide="moon"></i>
+        </button>
+
+        <span class="nav-divider"></span>
+
+        <div class="user-dropdown">
+          <button class="user-trigger" id="user-trigger">
+            <div class="user-avatar">AD</div>
+            <div class="user-meta hide-mobile">
+              <span class="user-name">Admin User</span>
+              <span class="user-role">Super Admin</span>
+            </div>
+            <span class="user-chevron"><i data-lucide="chevron-down"></i></span>
+          </button>
+          <div class="dropdown-menu">
+            <div class="dropdown-header">User Menu</div>
+            <a class="dropdown-item" href="#profile">
+              <span class="item-icon"><i data-lucide="user-circle"></i></span>
+              My Profile
+            </a>
+            <a class="dropdown-item" href="#settings">
+              <span class="item-icon"><i data-lucide="settings"></i></span>
+              Settings
+            </a>
+            <a class="dropdown-item" href="#guide">
+              <span class="item-icon"><i data-lucide="book-open"></i></span>
+              User Guide
+            </a>
+            <a class="dropdown-item" href="#help">
+              <span class="item-icon"><i data-lucide="help-circle"></i></span>
+              Help Center
+            </a>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger" id="logout-btn">
+              <span class="item-icon"><i data-lucide="log-out"></i></span>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+

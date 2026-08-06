@@ -1,0 +1,179 @@
+      <!-- ── Procurement Page ── -->        <div class="page-container" id="page-procurement" style="display:none;">
+          <div class="breadcrumb">
+            <a href="#dashboard">Dashboard</a>
+            <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+            <span class="current">Procurement</span>
+          </div>
+          <div class="page-header">
+            <div>
+              <h2>Procurement Management</h2>
+              <p class="subtitle">Collection infrastructure, suppliers, and purchase orders</p>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:var(--space-4);">
+            <div class="card-body">
+              <div class="segmented-control" style="flex-wrap:wrap;gap:var(--space-1);">
+                <button class="segmented-btn procurement-tab active" data-tab="centers">Collection Centers</button>
+                <button class="segmented-btn procurement-tab" data-tab="routes">Routes</button>
+                <button class="segmented-btn procurement-tab" data-tab="chilling">Chilling Centers</button>
+                <button class="segmented-btn procurement-tab" data-tab="suppliers">Suppliers</button>
+                <button class="segmented-btn procurement-tab" data-tab="purchase-orders">Purchase Orders</button>
+                <button class="segmented-btn procurement-tab" data-tab="vendor-payments">Vendor Payments</button>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content active" id="centers">
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="centers-table" style="width:100%;">
+                  <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Manager</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content" id="routes" style="display:none;">
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="routes-table" style="width:100%;">
+                  <thead><tr><th>Code</th><th>Name</th><th>Center</th><th>Driver</th><th>Vehicle</th><th>Distance</th><th>Farmers</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content" id="chilling" style="display:none;">
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="chilling-table" style="width:100%;">
+                  <thead><tr><th>Code</th><th>Name</th><th>Tanks</th><th>Capacity</th><th>Current</th><th>Temp</th><th>Generator</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content" id="suppliers" style="display:none;">
+            <div class="table-header">
+              <div class="table-title">Suppliers</div>
+              <div class="table-toolbar">
+                <button class="btn btn-primary btn-sm" onclick="openSupplierModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Add Supplier</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="suppliers-table" style="width:100%;">
+                  <thead><tr><th>Code</th><th>Name</th><th>Category</th><th>Contact</th><th>Phone</th><th>Email</th><th>Status</th><th style="width:90px;">Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content" id="purchase-orders" style="display:none;">
+            <div class="table-header">
+              <div class="table-title">Purchase Orders</div>
+              <div class="table-toolbar">
+                <button class="btn btn-primary btn-sm" onclick="openPOModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> New Purchase Order</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="pos-table" style="width:100%;">
+                  <thead><tr><th>PO Code</th><th>Supplier</th><th>Order Date</th><th>Items</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th style="width:190px;">Actions</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="procurement-tab-content" id="vendor-payments" style="display:none;">
+            <div class="table-header">
+              <div class="table-title">Vendor Payments</div>
+              <div class="table-toolbar">
+                <button class="btn btn-primary btn-sm" onclick="openVendorPaymentModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Record Payment</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <div class="table-responsive">
+                <table class="table-premium" id="vp-table" style="width:100%;">
+                  <thead><tr><th>Payment Code</th><th>PO</th><th>Supplier</th><th>Amount</th><th>Date</th><th>Method</th><th>Reference</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Supplier Modal -->
+          <div class="modal" id="supplier-modal">
+            <div class="modal-backdrop" onclick="closeSupplierModal()"></div>
+            <div class="modal-content anim-scale-in">
+              <div class="modal-header"><h5 id="supplier-modal-title">Add Supplier</h5><button class="modal-close" onclick="closeSupplierModal()">&times;</button></div>
+              <div class="modal-body">
+                <form id="supplier-form">
+                  <input type="hidden" id="supplier-id">
+                  <div class="form-grid">
+                    <div class="form-group"><label class="form-label">Supplier Name <span class="required">*</span></label><input type="text" class="input-premium" id="supplier-name" required></div>
+                    <div class="form-group"><label class="form-label">Category</label><select class="input-premium" id="supplier-category"><option value="EQUIPMENT">Equipment</option><option value="PACKAGING">Packaging</option><option value="CHEMICALS">Chemicals</option><option value="FEED">Animal Feed</option><option value="DAIRY">Dairy</option><option value="OTHER">Other</option></select></div>
+                    <div class="form-group"><label class="form-label">Contact Person</label><input type="text" class="input-premium" id="supplier-contact"></div>
+                    <div class="form-group"><label class="form-label">Phone</label><input type="text" class="input-premium" id="supplier-phone"></div>
+                    <div class="form-group"><label class="form-label">Email</label><input type="email" class="input-premium" id="supplier-email"></div>
+                    <div class="form-group" style="grid-column:span 2;"><label class="form-label">Address</label><textarea class="input-premium" id="supplier-address" rows="2"></textarea></div>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSupplierModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSupplier()">Save Supplier</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purchase Order Modal -->
+          <div class="modal" id="po-modal">
+            <div class="modal-backdrop" onclick="closePOModal()"></div>
+            <div class="modal-content anim-scale-in" style="max-width:720px;">
+              <div class="modal-header"><h5>New Purchase Order</h5><button class="modal-close" onclick="closePOModal()">&times;</button></div>
+              <div class="modal-body">
+                <form id="po-form">
+                  <div class="form-grid">
+                    <div class="form-group"><label class="form-label">Supplier <span class="required">*</span></label><select class="input-premium" id="po-supplier"></select></div>
+                    <div class="form-group"><label class="form-label">Order Date</label><input type="date" class="input-premium" id="po-date"></div>
+                    <div class="form-group"><label class="form-label">Expected Date</label><input type="date" class="input-premium" id="po-expected"></div>
+                    <div class="form-group"><label class="form-label">Allocate to Branch</label><select class="input-premium" id="po-branch"><option value="">Central Warehouse</option></select></div>
+                  </div>
+                  <div class="form-group"><label class="form-label">Remarks</label><input type="text" class="input-premium" id="po-remarks" placeholder="Optional"></div>
+                  <div class="form-section"><h5 class="form-section-title"><span class="section-number">+</span> Line Items</h5></div>
+                  <div id="po-items-container"></div>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="addPOItemRow()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Add Item</button>
+                  <div class="form-actions" style="margin-top:var(--space-3);">
+                    <strong style="font-size:var(--text-lg);">Total: <span id="po-total">₹0.00</span></strong>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePOModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="savePurchaseOrder()">Create Purchase Order</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vendor Payment Modal -->
+          <div class="modal" id="vp-modal">
+            <div class="modal-backdrop" onclick="closeVendorPaymentModal()"></div>
+            <div class="modal-content anim-scale-in">
+              <div class="modal-header"><h5>Record Vendor Payment</h5><button class="modal-close" onclick="closeVendorPaymentModal()">&times;</button></div>
+              <div class="modal-body">
+                <form id="vp-form">
+                  <div class="form-group"><label class="form-label">Purchase Order <span class="required">*</span></label><select class="input-premium" id="vp-po"></select></div>
+                  <div class="form-group"><label class="form-label">Amount <span class="required">*</span></label><input type="number" class="input-premium" id="vp-amount" min="0" step="0.01"></div>
+                  <div class="form-group"><label class="form-label">Payment Date</label><input type="date" class="input-premium" id="vp-date"></div>
+                  <div class="form-group"><label class="form-label">Method</label><select class="input-premium" id="vp-method"><option value="BANK_TRANSFER">Bank Transfer</option><option value="CASH">Cash</option><option value="CHEQUE">Cheque</option><option value="UPI">UPI</option></select></div>
+                  <div class="form-group"><label class="form-label">Reference</label><input type="text" class="input-premium" id="vp-reference" placeholder="UTR / cheque no."></div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeVendorPaymentModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveVendorPayment()">Record Payment</button>
+              </div>
+            </div>
+          </div>
+        </div>
+

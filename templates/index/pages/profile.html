@@ -1,0 +1,40 @@
+      <!-- ── Profile Page ── -->
+      <div class="page-container" id="page-profile" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">My Profile</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>My Profile</h2>
+            <p class="subtitle">Manage your account settings</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="profile-header" style="border:none;padding:0;margin-bottom:var(--space-6);">
+              <div class="profile-avatar" style="width:80px;height:80px;font-size:1.75rem;">AD</div>
+              <div class="profile-info">
+                <h3>Admin User</h3>
+                <p style="color:var(--ink-muted);font-size:var(--text-sm);">admin@dairy.com</p>
+                <div class="profile-meta">
+                  <span><span class="tag tag-green">SUPER_ADMIN</span></span>
+                  <span style="font-size:var(--text-sm);color:var(--ink-muted);">Last login: 19 Jul 2026, 08:00 AM</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="input-premium" value="Admin User"></div>
+              <div class="form-group"><label class="form-label">Email</label><input type="email" class="input-premium" value="admin@dairy.com"></div>
+              <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="input-premium" value="9876543000"></div>
+              <div class="form-group"><label class="form-label">Username</label><input type="text" class="input-premium" value="admin" disabled></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="updateProfile()">Update Profile</button>
+              <button class="btn btn-secondary" onclick="changePassword()">Change Password</button>
+            </div>
+          </div>
+        </div>
+      </div>
+

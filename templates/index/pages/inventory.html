@@ -1,0 +1,104 @@
+      <!-- ── Inventory Page ── -->        <div class="page-container" id="page-inventory" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Inventory</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Inventory Management</h2>
+            <p class="subtitle">Track stock levels, movements, and branch allocations</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="openInventoryItemModal()">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i>
+              Add Item
+            </button>
+            <button class="btn btn-secondary" onclick="toggleInventoryView()">
+              <i data-lucide="history" style="width:16px;height:16px;"></i>
+              <span id="inventory-view-label">Stock Movements</span>
+            </button>
+          </div>
+        </div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:var(--space-4);">
+          <div class="kpi-card kpi-blue" id="inv-kpi-total"><div class="kpi-value" style="font-size:var(--text-xl);">—</div><div class="kpi-label">Total Items</div></div>
+          <div class="kpi-card kpi-red" id="inv-kpi-low"><div class="kpi-value" style="font-size:var(--text-xl);">—</div><div class="kpi-label">Low Stock Alerts</div></div>
+        </div>
+        <div class="table-wrapper" id="inventory-items-view">
+          <div class="table-responsive">
+            <table class="table-premium" id="inventory-table" style="width:100%;">
+              <thead><tr><th>Code</th><th>Item</th><th>Category</th><th>Stock</th><th>Unit</th><th>Min Stock</th><th>Branch</th><th>Status</th><th>Updated</th><th style="width:150px;">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-wrapper" id="inventory-movements-view" style="display:none;">
+          <div class="table-responsive">
+            <table class="table-premium" id="inventory-movements-table" style="width:100%;">
+              <thead><tr><th>Date</th><th>Item</th><th>Type</th><th>Quantity</th><th>Branch</th><th>Reference</th><th>Note</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add/Edit Item Modal -->
+        <div class="modal" id="inventory-item-modal">
+          <div class="modal-backdrop" onclick="closeInventoryItemModal()"></div>
+          <div class="modal-content anim-scale-in">
+            <div class="modal-header">
+              <h5 id="inventory-item-modal-title">Add Inventory Item</h5>
+              <button class="modal-close" onclick="closeInventoryItemModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <form id="inventory-item-form">
+                <input type="hidden" id="inv-item-id">
+                <div class="form-grid">
+                  <div class="form-group"><label class="form-label">Item Name <span class="required">*</span></label><input type="text" class="input-premium" id="inv-item-name" required></div>
+                  <div class="form-group"><label class="form-label">Category</label><input type="text" class="input-premium" id="inv-item-category" placeholder="Dairy, Packaging..."></div>
+                  <div class="form-group"><label class="form-label">Opening Stock</label><input type="number" class="input-premium" id="inv-item-stock" min="0" value="0"></div>
+                  <div class="form-group"><label class="form-label">Unit</label><input type="text" class="input-premium" id="inv-item-unit" placeholder="Liters, kg, nos"></div>
+                  <div class="form-group"><label class="form-label">Min Stock (Alert)</label><input type="number" class="input-premium" id="inv-item-min" min="0" value="0"></div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" onclick="closeInventoryItemModal()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveInventoryItem()">Save Item</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Movement Modal -->
+        <div class="modal" id="inventory-movement-modal">
+          <div class="modal-backdrop" onclick="closeInventoryMovementModal()"></div>
+          <div class="modal-content anim-scale-in">
+            <div class="modal-header">
+              <h5 id="inventory-movement-title">Stock Movement</h5>
+              <button class="modal-close" onclick="closeInventoryMovementModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p style="font-size:var(--text-sm);color:var(--ink-muted);margin-bottom:var(--space-3);" id="inventory-movement-item-info"></p>
+              <form id="inventory-movement-form">
+                <input type="hidden" id="inv-move-item-id">
+                <div class="form-group">
+                  <label class="form-label">Movement Type</label>
+                  <select class="input-premium" id="inv-move-type">
+                    <option value="IN">Stock In</option>
+                    <option value="OUT">Stock Out</option>
+                    <option value="ALLOCATE">Allocate to Branch</option>
+                  </select>
+                </div>
+                <div class="form-group"><label class="form-label">Quantity <span class="required">*</span></label><input type="number" class="input-premium" id="inv-move-qty" min="0" step="0.5" required></div>
+                <div class="form-group" id="inv-move-branch-group" style="display:none;"><label class="form-label">Branch</label><select class="input-premium" id="inv-move-branch"></select></div>
+                <div class="form-group"><label class="form-label">Reference</label><input type="text" class="input-premium" id="inv-move-ref" placeholder="e.g. PO000001 / ALLOC-101"></div>
+                <div class="form-group"><label class="form-label">Note</label><input type="text" class="input-premium" id="inv-move-note" placeholder="Optional note"></div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" onclick="closeInventoryMovementModal()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveInventoryMovement()">Record Movement</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
