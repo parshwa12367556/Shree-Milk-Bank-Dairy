@@ -52,7 +52,17 @@ def login():
     if not username or not password:
         return jsonify({'error': 'Username and password are required'}), 400
 
-    user = User.query.filter_by(username=username).first()
+    # Farmers sign in with their registered EMAIL as the identifier and their
+    # MOBILE NUMBER as the password. Resolve by email first — case-insensitive
+    # and scoped to FARMER accounts so a farmer email can never resolve to a
+    # non-farmer user — then fall back to the farmer code / username.
+    if role_hint == 'FARMER':
+        user = User.query.filter(User.role == 'FARMER',
+                                 User.email.ilike(username.strip())).first()
+        if not user:
+            user = User.query.filter_by(username=username).first()
+    else:
+        user = User.query.filter_by(username=username).first()
 
     # TEMPORARY DEV BYPASS (see DEV_LOGIN_ENABLED in config.py) — while enabled,
     # the permanent credentials (admin / admin123) always work, regardless of
@@ -143,13 +153,26 @@ def login():
         'mustChangePassword': bool(user.must_change_password),
     }
 
+    # Farmers are linked to a Farmer record — carry it in the token so the
+    # farmer portal can render their own profile/passbook/payments.
+    if user.farmer_id:
+        identity['farmerId'] = user.farmer_id
+        identity['farmerCode'] = user.farmer.farmer_code if user.farmer else None
+
     token = create_access_token(identity=json.dumps(identity))
 
-    return jsonify({
+    # Also set an httpOnly cookie so server-rendered pages can resolve the
+    # current user (the multi-page template system reads `access_token`).
+    response = jsonify({
         'token': token,
         'user': identity,
         'mustChangePassword': bool(user.must_change_password),
     })
+    response.set_cookie(
+        'access_token', token,
+        max_age=24 * 60 * 60, httponly=True, samesite='Lax',
+    )
+    return response
 
 
 @auth_bp.route('/api/auth/logout', methods=['POST'])
@@ -159,7 +182,9 @@ def logout():
     log_audit('LOGOUT', 'Session', get_identity().get('username'),
               detail='User logged out')
     db.session.commit()
-    return jsonify({'message': 'Logged out successfully'})
+    response = jsonify({'message': 'Logged out successfully'})
+    response.delete_cookie('access_token')
+    return response
 
 
 @auth_bp.route('/api/auth/me', methods=['GET'])

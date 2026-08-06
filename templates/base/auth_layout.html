@@ -1,0 +1,33 @@
+{% extends 'base/base.html' %}
+
+{% block title %}{% block page_title %}Smart Dairy ERP{% endblock %} · Smart Dairy ERP{% endblock %}
+
+{% block body_class %}auth-page-body{% endblock %}
+
+{% block body %}
+<div class="login-page" id="page-login" style="display:flex;">
+  <div class="login-container anim-fade-up">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo anim-float">
+          <i data-lucide="milk"></i>
+        </div>
+        <h1>{% block auth_title %}Smart Dairy ERP{% endblock %}</h1>
+        <p>{% block auth_subtitle %}Sign in to your account to continue{% endblock %}</p>
+      </div>
+      {% block auth_content %}{% endblock %}
+      <div class="login-divider"></div>
+      <div class="login-footer">
+        <div class="login-language">
+          <button type="button" class="active" data-lang="en">English</button>
+          <button type="button" data-lang="mr">मराठी</button>
+          <button type="button" data-lang="hi">हिन्दी</button>
+        </div>
+        <p class="login-footer-text">&copy; 2026 Smart Dairy ERP. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

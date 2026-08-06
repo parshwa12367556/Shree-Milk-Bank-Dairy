@@ -51,6 +51,7 @@ def create_app(config_name=None):
         from backend import models  # noqa: F401 — ensures models are loaded
         db.create_all()
         run_schema_updates()
+        ensure_farmer_accounts()
         run_auto_backup()
 
     # Serve the main SPA shell
@@ -147,6 +148,7 @@ def run_schema_updates():
         ('users', 'locked_until', 'DATETIME'),
         ('users', 'recovery_email', 'VARCHAR(120)'),
         ('users', 'recovery_mobile', 'VARCHAR(15)'),
+        ('users', 'farmer_id', 'INTEGER'),
         ('bank_details', 'verification_status', 'VARCHAR(20)'),
         ('bank_details', 'verified_by', 'INTEGER'),
         ('bank_details', 'verified_at', 'DATETIME'),
@@ -164,6 +166,73 @@ def run_schema_updates():
                 print(f'[MIGRATE] Added column {table}.{column}')
             except Exception:
                 db.session.rollback()
+
+
+def ensure_farmer_accounts():
+    """
+    Create login accounts for farmers that don't have one yet.
+
+    Every Farmer gets a User row (role=FARMER) so they can sign in from the
+    farmer portal. Username = farmer code, password = registered mobile
+    number (same pattern as branch logins: code / phone). The account status
+    mirrors the farmer's status, so unverified/blocked farmers stay locked
+    out until Head Office activates them.
+
+    Each new account is flushed individually so a single username conflict
+    (e.g. a legacy user already using a farmer code) can't roll back the
+    whole batch — the conflicting farmer is skipped with a fallback username.
+
+    Farmers sign in with their EMAIL (identifier) + MOBILE (password), so
+    farmers without an email on file get a deterministic one generated
+    (<farmer code>@dairy.com) and the login account is kept in sync.
+    """
+    from sqlalchemy.exc import IntegrityError
+    from backend.models import Farmer, User
+    from backend.auth import hash_password
+    from backend.utils import generate_farmer_email
+
+    created = updated = email_filled = 0
+    for farmer in Farmer.query.all():
+        # Ensure every farmer has an email (their portal login identifier)
+        if not farmer.email:
+            farmer.email = generate_farmer_email(farmer.farmer_code)
+            email_filled += 1
+        user = User.query.filter_by(farmer_id=farmer.id).first()
+        if not user:
+            # Prefer the farmer code; fall back to farmer_<id> if taken by a
+            # non-farmer account (keeps the backfill non-fatal per row).
+            username = farmer.farmer_code
+            if User.query.filter_by(username=username).first():
+                username = f'farmer_{farmer.id}'
+            user = User(
+                username=username,
+                password_hash=hash_password(farmer.mobile or 'farmer@123'),
+                name=farmer.name,
+                role='FARMER',
+                branch_id=farmer.branch_id,
+                phone=farmer.mobile,
+                email=farmer.email,
+                farmer_id=farmer.id,
+            )
+            db.session.add(user)
+            try:
+                db.session.flush()
+                created += 1
+            except IntegrityError:
+                db.session.rollback()  # only this row — keep going
+                continue
+        # Keep the login in sync with the farmer's verification status
+        desired = 'ACTIVE' if farmer.status == 'ACTIVE' else 'INACTIVE'
+        if user.status != desired:
+            user.status = desired
+            updated += 1
+        # Keep the login email in sync with the farmer record
+        if user.email != farmer.email:
+            user.email = farmer.email
+            updated += 1
+    if created or updated or email_filled:
+        db.session.commit()
+        print(f'[FARMER-LOGIN] Created {created}, synced {updated} farmer login account(s)')
 
 
 def register_jwt_handlers(jwt_instance):
@@ -211,6 +280,9 @@ def register_blueprints(app):
     from backend.modules.shared.notifications import notification_bp
     from backend.modules.shared.health import health_bp
 
+    # ── Server-rendered pages (multi-page template system) ──
+    from backend.modules.pages import pages_bp
+
     app.register_blueprint(health_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(auth_bp)
@@ -230,3 +302,4 @@ def register_blueprints(app):
     app.register_blueprint(settings_bp)
     app.register_blueprint(notification_bp)
     app.register_blueprint(expense_bp)
+    app.register_blueprint(pages_bp)

@@ -111,6 +111,23 @@ def generate_farmer_code(branch_code, seq):
     return f'{branch_code}{seq:03d}'
 
 
+def generate_farmer_email(farmer_code):
+    """
+    Generate a deterministic email address for a farmer that has no email
+    on file. Used so every farmer can sign in with email + phone number.
+
+    Format: <farmer_code lowercased>@dairy.com  (e.g. BR01001 -> br01001@dairy.com)
+
+    Args:
+        farmer_code: Farmer code (e.g., BR01001)
+
+    Returns:
+        Email address string
+    """
+    code = (farmer_code or 'farmer').lower().strip()
+    return f'{code}@dairy.com'
+
+
 def generate_pay_code(seq):
     """
     Generate a sequential payment code.

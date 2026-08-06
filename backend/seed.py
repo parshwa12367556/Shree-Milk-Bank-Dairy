@@ -22,6 +22,7 @@ from backend.models import (
     Expense, Notification, AuditLog,
 )
 from backend.auth import hash_password
+from backend.utils import generate_farmer_email
 
 COMPANY_NAME = 'Shree Milk Bank Dairy'
 
@@ -37,6 +38,7 @@ def seed_database():
     _seed_branches()
     _seed_users()
     _seed_farmers()
+    _seed_farmer_users()
     _seed_bank_details()
     _seed_rates()
     _seed_collections()
@@ -58,6 +60,9 @@ def seed_database():
     print(f'  Head Office: admin / admin123 (SUPER_ADMIN)')
     for b in Branch.query.order_by(Branch.id).all():
         print(f'  Branch {b.code}: {b.code} / {b.phone} (BRANCH_MANAGER)')
+    sample = Farmer.query.filter_by(status='ACTIVE').order_by(Farmer.id).first()
+    if sample:
+        print(f'  Farmer: {sample.email} / {sample.mobile} (FARMER) — sign in with email, password is the mobile number')
 
 
 def _clear_data():
@@ -138,11 +143,13 @@ def _seed_farmers():
     for b in branches:
         for i in range(1, per_branch + 1):
             mtype = random.choice(['COW', 'BUFFALO', 'MIXED'])
+            code = f'{b.code}{i:03d}'
             farmer = Farmer(
-                farmer_code=f'{b.code}{i:03d}',
+                farmer_code=code,
                 name=f'{random.choice(first_names)} {random.choice(last_names)}',
                 father_name=f'{random.choice(first_names)} {random.choice(last_names)}',
                 mobile=f'9{random.randint(200000000, 999999999)}',
+                email=generate_farmer_email(code),
                 aadhaar=str(random.randint(100000000000, 999999999999)),
                 village=b.village,
                 taluka=random.choice(['Nippani', 'Chikkodi', 'Athani', 'Kagwad', 'Raybag']),
@@ -161,21 +168,24 @@ def _seed_farmers():
     # A few blocked / inactive farmers for demo purposes
     farmers.append(Farmer(
         farmer_code=f'BR01{per_branch + 1:03d}', name='Test Blocked', father_name='T Father',
-        mobile='9876543299', village='Nippani', milk_type='COW',
+        mobile='9876543299', email=generate_farmer_email(f'BR01{per_branch + 1:03d}'),
+        village='Nippani', milk_type='COW',
         cow_count=2, buffalo_count=0, branch_id=1,
         status='BLOCKED', status_reason='Quality violation',
         joined_at=date.today() - timedelta(days=90),
     ))
     farmers.append(Farmer(
         farmer_code=f'BR02{per_branch + 1:03d}', name='Test Inactive', father_name='T Father',
-        mobile='9876543298', village='Belagavi', milk_type='BUFFALO',
+        mobile='9876543298', email=generate_farmer_email(f'BR02{per_branch + 1:03d}'),
+        village='Belagavi', milk_type='BUFFALO',
         cow_count=0, buffalo_count=2, branch_id=2,
         status='INACTIVE',
         joined_at=date.today() - timedelta(days=60),
     ))
     farmers.append(Farmer(
         farmer_code=f'BR03{per_branch + 1:03d}', name='Test Pending Verify', father_name='P Father',
-        mobile='9876543297', village='Chikkodi', milk_type='COW',
+        mobile='9876543297', email=generate_farmer_email(f'BR03{per_branch + 1:03d}'),
+        village='Chikkodi', milk_type='COW',
         cow_count=3, buffalo_count=0, branch_id=3,
         status='PENDING_VERIFICATION',
         joined_at=date.today() - timedelta(days=5),
@@ -184,6 +194,30 @@ def _seed_farmers():
     db.session.add_all(farmers)
     db.session.commit()
     print(f'[SEED] {len(farmers)} Farmers created')
+
+
+def _seed_farmer_users():
+    """Create login accounts for farmers (username = farmer code, password = mobile).
+
+    Only ACTIVE farmers get ACTIVE logins — unverified/blocked farmers stay
+    locked out of the portal until Head Office activates them.
+    """
+    users = []
+    for farmer in Farmer.query.order_by(Farmer.id).all():
+        users.append(User(
+            username=farmer.farmer_code,
+            password_hash=hash_password(farmer.mobile or 'farmer@123'),
+            name=farmer.name,
+            role='FARMER',
+            branch_id=farmer.branch_id,
+            phone=farmer.mobile,
+            email=farmer.email,
+            farmer_id=farmer.id,
+            status='ACTIVE' if farmer.status == 'ACTIVE' else 'INACTIVE',
+        ))
+    db.session.add_all(users)
+    db.session.commit()
+    print(f'[SEED] {len(users)} Farmer login accounts created')
 
 
 def _seed_bank_details():

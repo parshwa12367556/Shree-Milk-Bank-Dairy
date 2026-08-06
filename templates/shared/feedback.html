@@ -1,0 +1,88 @@
+{% extends 'base/shared_layout.html' %}
+{% set active_page = 'feedback' %}
+{% set active_section = 'feedback' %}
+{% block page_title %}Feedback{% endblock %}
+{% block page_init %}{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/admin/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'Feedback'}]) }}
+<div class="page-header">
+  <div>
+    <h2>Feedback</h2>
+    <p class="subtitle">Share your feedback to help us improve.</p>
+  </div>
+  
+</div>
+{% endblock %}
+
+{% block content %}
+
+        <div class="card">
+          <div class="card-body">
+            <form id="form-feedback">
+
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">1</span>
+                  Feedback
+                </h5>
+                <div class="form-grid">
+
+                  <div class="form-group">
+                    <label class="form-label">Rating <span class="required">*</span></label>
+                    <select class="input-premium" name="rating">
+                      <option value="">Select</option>
+                      <option value="1 - POOR">1 - Poor</option><option value="5 - EXCELLENT">5 - Excellent</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="input-premium" name="category">
+                      <option value="">Select</option>
+                      <option value="APP">App</option><option value="COLLECTION">Collection</option><option value="PAYMENTS">Payments</option><option value="SUPPORT">Support</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">Feedback <span class="required">*</span></label>
+                    <textarea class="input-premium" name="feedback" placeholder="Your feedback" rows="2"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Would you recommend us?</label>
+                    <select class="input-premium" name="recommend">
+                      <option value="">Select</option>
+                      <option value="YES">Yes</option><option value="NO">No</option><option value="MAYBE">Maybe</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="history.back()">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i data-lucide="save" style="width:18px;height:18px;"></i>
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.Chart && document.getElementById('chart-trend')) {
+    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
+  }
+  if (window.Chart && document.getElementById('chart-breakdown')) {
+    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
+  }
+  if (window.Chart && document.getElementById('chart-report-1')) {
+    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
+  }
+  if (window.Chart && document.getElementById('chart-report-2')) {
+    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
+  }
+});
+</script>
+{% endblock %}

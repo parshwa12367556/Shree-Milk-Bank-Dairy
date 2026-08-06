@@ -236,11 +236,16 @@
   opacity: 0;
 }
 
-.sidebar-nav .nav-item .nav-chevron.open {
+.sidebar-nav .nav-item .nav-chevron.open,
+.sidebar-nav .nav-item.has-submenu.open .nav-chevron {
   transform: rotate(90deg);
 }
 
 /* ── Submenu ── */
+.sidebar-nav .nav-item.has-submenu {
+  cursor: pointer;
+}
+
 .sidebar-nav .nav-submenu {
   overflow: hidden;
   max-height: 0;

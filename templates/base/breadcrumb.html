@@ -1,0 +1,13 @@
+{% macro breadcrumb(items) -%}
+<div class="breadcrumb">
+  <a href="{{ items[0].url if items and items[0].url else '/admin/dashboard' }}"><i data-lucide="home" style="width:14px;height:14px;"></i></a>
+  {% for item in items[1:] %}
+  <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+  {% if item.url and not loop.last %}
+  <a href="{{ item.url }}">{{ item.label }}</a>
+  {% else %}
+  <span class="current">{{ item.label }}</span>
+  {% endif %}
+  {% endfor %}
+</div>
+{%- endmacro %}

@@ -16,8 +16,10 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(30), nullable=False, default='OPERATOR')
-    # Roles: SUPER_ADMIN, HEAD_OFFICE, BRANCH_MANAGER, OPERATOR, ACCOUNTANT
+    # Roles: SUPER_ADMIN, HEAD_OFFICE, BRANCH_MANAGER, OPERATOR, ACCOUNTANT, FARMER
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
+    # Farmers get a login account linked to their Farmer record (role=FARMER).
+    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=True)
     phone = db.Column(db.String(15))
     email = db.Column(db.String(120))
     status = db.Column(db.String(20), default='ACTIVE')
@@ -31,6 +33,11 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     branch = db.relationship('Branch', backref='users', lazy=True)
+    # Farmer has multiple FKs to users (verified_by, created_by) — pin the
+    # relationship to farmer_id explicitly and force the backref to be a
+    # single object (otherwise SQLAlchemy infers a one-to-many collection).
+    farmer = db.relationship('Farmer', backref=db.backref('user_account', uselist=False),
+                             uselist=False, lazy=True, foreign_keys=[farmer_id])
 
     def to_dict(self):
         return {
@@ -40,6 +47,8 @@ class User(db.Model):
             'role': self.role,
             'branchId': self.branch_id,
             'branchName': self.branch.name if self.branch else None,
+            'farmerId': self.farmer_id,
+            'farmerCode': self.farmer.farmer_code if self.farmer else None,
             'phone': self.phone,
             'email': self.email,
             'status': self.status,

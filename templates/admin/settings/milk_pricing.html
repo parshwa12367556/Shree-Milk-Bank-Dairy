@@ -1,0 +1,87 @@
+{% extends 'base/admin_layout.html' %}
+{% set active_page = 'settings' %}
+{% set active_section = 'settings' %}
+{% block page_title %}Milk Pricing{% endblock %}
+{% block page_init %}{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/admin/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'Milk Pricing'}]) }}
+<div class="page-header">
+  <div>
+    <h2>Milk Pricing</h2>
+    <p class="subtitle">Configure fat & SNF based milk rates.</p>
+  </div>
+  
+</div>
+{% endblock %}
+
+{% block content %}
+
+        <div class="card">
+          <div class="card-body">
+            <form id="form-milk-pricing">
+
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">1</span>
+                  Rate Configuration
+                </h5>
+                <div class="form-grid">
+
+                  <div class="form-group">
+                    <label class="form-label">Fat Rate <span class="required">*</span></label>
+                    <input type="number" class="input-premium" name="fat_rate" placeholder="₹ per fat %">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">SNF Rate <span class="required">*</span></label>
+                    <input type="number" class="input-premium" name="snf_rate" placeholder="₹ per SNF %">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Rate Effective From</label>
+                    <input type="date" class="input-premium" name="effective_from" placeholder="">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Minimum Rate</label>
+                    <input type="number" class="input-premium" name="min_rate" placeholder="₹ / L">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Cow Milk Rate (Default)</label>
+                    <input type="number" class="input-premium" name="cow_rate" placeholder="₹ / L">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Buffalo Milk Rate (Default)</label>
+                    <input type="number" class="input-premium" name="buffalo_rate" placeholder="₹ / L">
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="history.back()">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i data-lucide="save" style="width:18px;height:18px;"></i>
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.Chart && document.getElementById('chart-trend')) {
+    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
+  }
+  if (window.Chart && document.getElementById('chart-breakdown')) {
+    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
+  }
+  if (window.Chart && document.getElementById('chart-report-1')) {
+    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
+  }
+  if (window.Chart && document.getElementById('chart-report-2')) {
+    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
+  }
+});
+</script>
+{% endblock %}

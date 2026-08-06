@@ -201,12 +201,24 @@ const Auth = {
       });
     }
 
-    // Role selector tabs
+    // Role selector tabs — farmers sign in with registered email + mobile number
     const roleTabs = document.querySelectorAll('#login-role-tabs .role-tab');
+    const applyRoleUi = (role) => {
+      const isFarmer = role === 'FARMER';
+      const uInput = document.getElementById('login-username');
+      const pInput = document.getElementById('login-password');
+      const uLabel = document.querySelector('label[for="login-username"]');
+      const branchGroup = document.getElementById('login-branch')?.closest('.form-group');
+      if (uInput) uInput.placeholder = isFarmer ? 'Enter your registered email' : 'Enter your username';
+      if (uLabel) uLabel.textContent = isFarmer ? 'Email Address' : 'Username';
+      if (pInput) pInput.placeholder = isFarmer ? 'Enter your registered mobile number' : 'Enter your password';
+      if (branchGroup) branchGroup.style.display = isFarmer ? 'none' : '';
+    };
     roleTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         roleTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
+        applyRoleUi(tab.dataset.role);
       });
     });
 

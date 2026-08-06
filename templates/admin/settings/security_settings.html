@@ -1,0 +1,116 @@
+{% extends 'base/admin_layout.html' %}
+{% set active_page = 'settings' %}
+{% set active_section = 'settings' %}
+{% block page_title %}Security Settings{% endblock %}
+{% block page_init %}{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/admin/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'Security Settings'}]) }}
+<div class="page-header">
+  <div>
+    <h2>Security Settings</h2>
+    <p class="subtitle">Password policy and security controls.</p>
+  </div>
+  
+</div>
+{% endblock %}
+
+{% block content %}
+
+        <div class="card">
+          <div class="card-body">
+            <form id="form-security">
+
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">1</span>
+                  Password Policy
+                </h5>
+                <div class="form-grid">
+
+                  <div class="form-group">
+                    <label class="form-label">Min Password Length</label>
+                    <input type="number" class="input-premium" name="min_length" placeholder="6">
+                  </div>
+                  <div class="form-group" style="grid-column:span 1;">
+                    <label class="form-label">Require Special Character</label>
+                    <label class="switch">
+                      <input type="checkbox" name="special_char" checked>
+                      <span class="switch-slider"></span>
+                    </label>
+                  </div>
+                  <div class="form-group" style="grid-column:span 1;">
+                    <label class="form-label">Require Number</label>
+                    <label class="switch">
+                      <input type="checkbox" name="require_number" checked>
+                      <span class="switch-slider"></span>
+                    </label>
+                  </div>
+                  <div class="form-group" style="grid-column:span 1;">
+                    <label class="form-label">Force Change on First Login</label>
+                    <label class="switch">
+                      <input type="checkbox" name="force_change" checked>
+                      <span class="switch-slider"></span>
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Password Expiry (Days)</label>
+                    <input type="number" class="input-premium" name="expiry_days" placeholder="90">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Max Login Attempts</label>
+                    <input type="number" class="input-premium" name="max_attempts" placeholder="5">
+                  </div>
+                </div>
+              </div>
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">2</span>
+                  Session
+                </h5>
+                <div class="form-grid">
+
+                  <div class="form-group">
+                    <label class="form-label">Session Timeout (Minutes)</label>
+                    <input type="number" class="input-premium" name="session_timeout" placeholder="60">
+                  </div>
+                  <div class="form-group" style="grid-column:span 1;">
+                    <label class="form-label">Two-Factor Authentication</label>
+                    <label class="switch">
+                      <input type="checkbox" name="two_factor" checked>
+                      <span class="switch-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="history.back()">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i data-lucide="save" style="width:18px;height:18px;"></i>
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.Chart && document.getElementById('chart-trend')) {
+    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
+  }
+  if (window.Chart && document.getElementById('chart-breakdown')) {
+    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
+  }
+  if (window.Chart && document.getElementById('chart-report-1')) {
+    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
+  }
+  if (window.Chart && document.getElementById('chart-report-2')) {
+    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
+  }
+});
+</script>
+{% endblock %}

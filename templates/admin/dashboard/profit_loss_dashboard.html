@@ -1,0 +1,134 @@
+{% extends 'base/admin_layout.html' %}
+{% set active_page = 'profit_loss_dashboard' %}
+{% set active_section = 'dashboard' %}
+{% block page_title %}Profit & Loss Dashboard{% endblock %}
+{% block page_init %}{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/admin/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'Profit & Loss Dashboard'}]) }}
+<div class="page-header">
+  <div>
+    <h2>Profit & Loss Dashboard</h2>
+    <p class="subtitle">Profitability analysis for the current period.</p>
+  </div>
+  <div class="page-actions">
+            <button class="btn btn-secondary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
+              <i data-lucide="download" style="width:16px;height:16px;"></i>
+              Export
+            </button></div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+        <!-- Report Filters -->
+        <div class="card" style="padding:var(--space-5);margin-bottom:var(--space-5);">
+          <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+            <div class="form-group">
+              <label class="form-label">From Date</label>
+              <input type="date" class="input-premium">
+            </div>
+            <div class="form-group">
+              <label class="form-label">To Date</label>
+              <input type="date" class="input-premium">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Branch</label>
+              <select class="input-premium"><option>All Branches</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">&nbsp;</label>
+              <button class="btn btn-primary w-full"><i data-lucide="search" style="width:16px;height:16px;"></i> Generate</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Charts -->
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Summary Chart</h5>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="chart-report-1"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Trend</h5>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="chart-report-2"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Month</div>
+            <div class="table-toolbar">
+              <div class="segmented-control">
+                <button class="segmented-btn active">All</button>
+                <button class="segmented-btn">Recent</button>
+              </div>
+              <button class="btn btn-sm btn-ghost" title="Export CSV"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
+              <button class="btn btn-sm btn-ghost" title="Print"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="report-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                    <th>Revenue</th>
+                    <th>Expenses</th>
+                    <th>Profit</th>
+                    <th>Margin</th>
+                </tr>
+              </thead>
+                  <tbody>
+                    <tr><td><span class="skeleton skeleton-text"></span></td>
+                  <td><span class="skeleton skeleton-text"></span></td>
+                  <td><span class="skeleton skeleton-text"></span></td>
+                  <td><span class="skeleton skeleton-text"></span></td>
+                  <td><span class="skeleton skeleton-text"></span></td></tr>
+                    <tr><td><span class="skeleton skeleton-text"></span></td>
+                  <td><span class="skeleton skeleton-text"></span></td>
+                  <td><span class="skeleton skeleton-text"></span></td>
+                  <td><span class="skeleton skeleton-text"></span></td>
+                  <td><span class="skeleton skeleton-text"></span></td></tr>
+                  </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <div class="table-info">Showing 1-10 of 124 entries</div>
+            {% from 'base/pagination.html' import pagination %}
+            {{ pagination(1, 13, request.path) }}
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.Chart && document.getElementById('chart-trend')) {
+    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
+  }
+  if (window.Chart && document.getElementById('chart-breakdown')) {
+    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
+  }
+  if (window.Chart && document.getElementById('chart-report-1')) {
+    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
+  }
+  if (window.Chart && document.getElementById('chart-report-2')) {
+    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
+  }
+});
+</script>
+{% endblock %}

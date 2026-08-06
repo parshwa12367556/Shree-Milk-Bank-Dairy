@@ -1,0 +1,1073 @@
+{
+  "/admin/dashboard": {
+    "template": "admin/dashboard/dashboard.html",
+    "layout": "admin",
+    "title": "Dashboard",
+    "section": "dashboard",
+    "page": "dashboard"
+  },
+  "/admin/analytics": {
+    "template": "admin/dashboard/analytics.html",
+    "layout": "admin",
+    "title": "Analytics",
+    "section": "dashboard",
+    "page": "analytics"
+  },
+  "/admin/company-statistics": {
+    "template": "admin/dashboard/company_statistics.html",
+    "layout": "admin",
+    "title": "Company Statistics",
+    "section": "dashboard",
+    "page": "company_statistics"
+  },
+  "/admin/branch-comparison": {
+    "template": "admin/dashboard/branch_comparison.html",
+    "layout": "admin",
+    "title": "Branch Comparison",
+    "section": "dashboard",
+    "page": "branch_comparison"
+  },
+  "/admin/revenue-dashboard": {
+    "template": "admin/dashboard/revenue_dashboard.html",
+    "layout": "admin",
+    "title": "Revenue Dashboard",
+    "section": "dashboard",
+    "page": "revenue_dashboard"
+  },
+  "/admin/profit-loss-dashboard": {
+    "template": "admin/dashboard/profit_loss_dashboard.html",
+    "layout": "admin",
+    "title": "Profit & Loss Dashboard",
+    "section": "dashboard",
+    "page": "profit_loss_dashboard"
+  },
+  "/admin/notifications": {
+    "template": "admin/dashboard/notifications.html",
+    "layout": "admin",
+    "title": "Notifications",
+    "section": "dashboard",
+    "page": "notifications"
+  },
+  "/admin/branches": {
+    "template": "admin/branch_management/branch_list.html",
+    "layout": "admin",
+    "title": "Branch List",
+    "section": "branches",
+    "page": "branch_list"
+  },
+  "/admin/branches/create": {
+    "template": "admin/branch_management/create_branch.html",
+    "layout": "admin",
+    "title": "Create Branch",
+    "section": "branches",
+    "page": "branch_list"
+  },
+  "/admin/branches/edit": {
+    "template": "admin/branch_management/edit_branch.html",
+    "layout": "admin",
+    "title": "Edit Branch",
+    "section": "branches",
+    "page": "branch_list"
+  },
+  "/admin/branches/details": {
+    "template": "admin/branch_management/branch_details.html",
+    "layout": "admin",
+    "title": "Branch Details",
+    "section": "branches",
+    "page": "branch_list"
+  },
+  "/admin/branches/assign-manager": {
+    "template": "admin/branch_management/assign_branch_manager.html",
+    "layout": "admin",
+    "title": "Assign Branch Manager",
+    "section": "branches",
+    "page": "branch_list"
+  },
+  "/admin/branches/reset-password": {
+    "template": "admin/branch_management/reset_branch_password.html",
+    "layout": "admin",
+    "title": "Reset Branch Password",
+    "section": "branches",
+    "page": "branch_list"
+  },
+  "/admin/branches/activity": {
+    "template": "admin/branch_management/branch_activity.html",
+    "layout": "admin",
+    "title": "Branch Activity",
+    "section": "branches",
+    "page": "branch_list"
+  },
+  "/admin/farmers": {
+    "template": "admin/farmer_management/farmer_list.html",
+    "layout": "admin",
+    "title": "Farmer List",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/farmers/profile": {
+    "template": "admin/farmer_management/farmer_profile.html",
+    "layout": "admin",
+    "title": "Farmer Profile",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/farmers/verification": {
+    "template": "admin/farmer_management/farmer_verification.html",
+    "layout": "admin",
+    "title": "Farmer Verification",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/bank-verification": {
+    "template": "admin/farmer_management/bank_verification.html",
+    "layout": "admin",
+    "title": "Bank Verification",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/farmers/documents": {
+    "template": "admin/farmer_management/farmer_documents.html",
+    "layout": "admin",
+    "title": "Farmer Documents",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/farmers/payment-history": {
+    "template": "admin/farmer_management/payment_history.html",
+    "layout": "admin",
+    "title": "Farmer Payment History",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/farmers/milk-history": {
+    "template": "admin/farmer_management/milk_history.html",
+    "layout": "admin",
+    "title": "Farmer Milk History",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/farmers/block": {
+    "template": "admin/farmer_management/block_farmer.html",
+    "layout": "admin",
+    "title": "Block Farmer",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/farmers/activity": {
+    "template": "admin/farmer_management/farmer_activity.html",
+    "layout": "admin",
+    "title": "Farmer Activity",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/admin/payments/dashboard": {
+    "template": "admin/payments/payment_dashboard.html",
+    "layout": "admin",
+    "title": "Payment Dashboard",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/payments/sheet": {
+    "template": "admin/payments/payment_sheet.html",
+    "layout": "admin",
+    "title": "Payment Sheet",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/payments/pending": {
+    "template": "admin/payments/pending_payments.html",
+    "layout": "admin",
+    "title": "Pending Payments",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/payments/approved": {
+    "template": "admin/payments/approved_payments.html",
+    "layout": "admin",
+    "title": "Approved Payments",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/payments/paid": {
+    "template": "admin/payments/paid_payments.html",
+    "layout": "admin",
+    "title": "Paid Payments",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/payments/failed": {
+    "template": "admin/payments/failed_payments.html",
+    "layout": "admin",
+    "title": "Failed Payments",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/payments/history": {
+    "template": "admin/payments/payment_history.html",
+    "layout": "admin",
+    "title": "Payment History",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/payments/bank-transfer": {
+    "template": "admin/payments/bank_transfer.html",
+    "layout": "admin",
+    "title": "Bank Transfer",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/payments/reports": {
+    "template": "admin/payments/payment_reports.html",
+    "layout": "admin",
+    "title": "Payment Reports",
+    "section": "payments",
+    "page": "payment_dashboard"
+  },
+  "/admin/procurement/dashboard": {
+    "template": "admin/procurement/procurement_dashboard.html",
+    "layout": "admin",
+    "title": "Procurement Dashboard",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/suppliers": {
+    "template": "admin/procurement/supplier_list.html",
+    "layout": "admin",
+    "title": "Supplier List",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/suppliers/profile": {
+    "template": "admin/procurement/supplier_profile.html",
+    "layout": "admin",
+    "title": "Supplier Profile",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/suppliers/create": {
+    "template": "admin/procurement/create_supplier.html",
+    "layout": "admin",
+    "title": "Create Supplier",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/purchase-orders": {
+    "template": "admin/procurement/purchase_orders.html",
+    "layout": "admin",
+    "title": "Purchase Orders",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/purchase-orders/create": {
+    "template": "admin/procurement/create_purchase_order.html",
+    "layout": "admin",
+    "title": "Create Purchase Order",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/grn": {
+    "template": "admin/procurement/goods_receipt_note.html",
+    "layout": "admin",
+    "title": "Goods Receipt Notes",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/delivery-tracking": {
+    "template": "admin/procurement/delivery_tracking.html",
+    "layout": "admin",
+    "title": "Delivery Tracking",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/vendor-payments": {
+    "template": "admin/procurement/vendor_payments.html",
+    "layout": "admin",
+    "title": "Vendor Payments",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/procurement/reports": {
+    "template": "admin/procurement/procurement_reports.html",
+    "layout": "admin",
+    "title": "Procurement Reports",
+    "section": "procurement",
+    "page": "procurement_dashboard"
+  },
+  "/admin/inventory/dashboard": {
+    "template": "admin/inventory/inventory_dashboard.html",
+    "layout": "admin",
+    "title": "Inventory Dashboard",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/warehouse": {
+    "template": "admin/inventory/warehouse.html",
+    "layout": "admin",
+    "title": "Warehouse",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/items": {
+    "template": "admin/inventory/item_list.html",
+    "layout": "admin",
+    "title": "Item List",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/items/create": {
+    "template": "admin/inventory/create_item.html",
+    "layout": "admin",
+    "title": "Create Item",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/items/edit": {
+    "template": "admin/inventory/edit_item.html",
+    "layout": "admin",
+    "title": "Edit Item",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/stock/in": {
+    "template": "admin/inventory/stock_in.html",
+    "layout": "admin",
+    "title": "Stock In",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/stock/out": {
+    "template": "admin/inventory/stock_out.html",
+    "layout": "admin",
+    "title": "Stock Out",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/stock/transfer": {
+    "template": "admin/inventory/stock_transfer.html",
+    "layout": "admin",
+    "title": "Stock Transfer",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/stock/allocation": {
+    "template": "admin/inventory/branch_allocation.html",
+    "layout": "admin",
+    "title": "Branch Allocation",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/inventory/history": {
+    "template": "admin/inventory/inventory_history.html",
+    "layout": "admin",
+    "title": "Inventory History",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/low-stock": {
+    "template": "admin/inventory/low_stock.html",
+    "layout": "admin",
+    "title": "Low Stock",
+    "section": "inventory",
+    "page": "inventory_dashboard"
+  },
+  "/admin/vehicles/dashboard": {
+    "template": "admin/vehicles/vehicle_dashboard.html",
+    "layout": "admin",
+    "title": "Vehicle Dashboard",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/vehicles": {
+    "template": "admin/vehicles/vehicle_list.html",
+    "layout": "admin",
+    "title": "Vehicle List",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/vehicles/add": {
+    "template": "admin/vehicles/add_vehicle.html",
+    "layout": "admin",
+    "title": "Add Vehicle",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/vehicles/profile": {
+    "template": "admin/vehicles/vehicle_profile.html",
+    "layout": "admin",
+    "title": "Vehicle Profile",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/vehicles/assign": {
+    "template": "admin/vehicles/assign_vehicle.html",
+    "layout": "admin",
+    "title": "Assign Vehicle",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/vehicles/maintenance": {
+    "template": "admin/vehicles/maintenance.html",
+    "layout": "admin",
+    "title": "Maintenance",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/vehicles/insurance": {
+    "template": "admin/vehicles/insurance.html",
+    "layout": "admin",
+    "title": "Insurance",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/vehicles/fuel": {
+    "template": "admin/vehicles/fuel_log.html",
+    "layout": "admin",
+    "title": "Fuel Log",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/vehicles/service-history": {
+    "template": "admin/vehicles/service_history.html",
+    "layout": "admin",
+    "title": "Service History",
+    "section": "vehicles",
+    "page": "vehicle_dashboard"
+  },
+  "/admin/employees/dashboard": {
+    "template": "admin/employees/employee_dashboard.html",
+    "layout": "admin",
+    "title": "Employee Dashboard",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/employees": {
+    "template": "admin/employees/employee_list.html",
+    "layout": "admin",
+    "title": "Employee List",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/employees/add": {
+    "template": "admin/employees/add_employee.html",
+    "layout": "admin",
+    "title": "Add Employee",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/employees/profile": {
+    "template": "admin/employees/employee_profile.html",
+    "layout": "admin",
+    "title": "Employee Profile",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/attendance": {
+    "template": "admin/employees/attendance.html",
+    "layout": "admin",
+    "title": "Attendance",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/salary": {
+    "template": "admin/employees/salary.html",
+    "layout": "admin",
+    "title": "Salary",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/leave": {
+    "template": "admin/employees/leave_management.html",
+    "layout": "admin",
+    "title": "Leave Management",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/roles": {
+    "template": "admin/employees/role_management.html",
+    "layout": "admin",
+    "title": "Role Management",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/employees/reset-password": {
+    "template": "admin/employees/reset_password.html",
+    "layout": "admin",
+    "title": "Reset Employee Password",
+    "section": "employees",
+    "page": "employee_dashboard"
+  },
+  "/admin/reports/dashboard": {
+    "template": "admin/reports/reports_dashboard.html",
+    "layout": "admin",
+    "title": "Reports Dashboard",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/milk-collection": {
+    "template": "admin/reports/milk_collection_report.html",
+    "layout": "admin",
+    "title": "Milk Collection Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/farmers": {
+    "template": "admin/reports/farmer_report.html",
+    "layout": "admin",
+    "title": "Farmer Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/payments": {
+    "template": "admin/reports/payment_report.html",
+    "layout": "admin",
+    "title": "Payment Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/inventory": {
+    "template": "admin/reports/inventory_report.html",
+    "layout": "admin",
+    "title": "Inventory Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/procurement": {
+    "template": "admin/reports/procurement_report.html",
+    "layout": "admin",
+    "title": "Procurement Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/employees": {
+    "template": "admin/reports/employee_report.html",
+    "layout": "admin",
+    "title": "Employee Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/vehicles": {
+    "template": "admin/reports/vehicle_report.html",
+    "layout": "admin",
+    "title": "Vehicle Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/quality": {
+    "template": "admin/reports/quality_report.html",
+    "layout": "admin",
+    "title": "Quality Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/branches": {
+    "template": "admin/reports/branch_report.html",
+    "layout": "admin",
+    "title": "Branch Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/profit-loss": {
+    "template": "admin/reports/profit_loss_report.html",
+    "layout": "admin",
+    "title": "Profit & Loss Report",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/reports/export": {
+    "template": "admin/reports/export_reports.html",
+    "layout": "admin",
+    "title": "Export Reports",
+    "section": "reports",
+    "page": "reports_dashboard"
+  },
+  "/admin/audit/dashboard": {
+    "template": "admin/audit/audit_dashboard.html",
+    "layout": "admin",
+    "title": "Audit Dashboard",
+    "section": "audit",
+    "page": "audit_dashboard"
+  },
+  "/admin/audit/login-logs": {
+    "template": "admin/audit/login_logs.html",
+    "layout": "admin",
+    "title": "Login Logs",
+    "section": "audit",
+    "page": "audit_dashboard"
+  },
+  "/admin/audit/activity-logs": {
+    "template": "admin/audit/activity_logs.html",
+    "layout": "admin",
+    "title": "Activity Logs",
+    "section": "audit",
+    "page": "audit_dashboard"
+  },
+  "/admin/audit/payment-logs": {
+    "template": "admin/audit/payment_logs.html",
+    "layout": "admin",
+    "title": "Payment Logs",
+    "section": "audit",
+    "page": "audit_dashboard"
+  },
+  "/admin/audit/inventory-logs": {
+    "template": "admin/audit/inventory_logs.html",
+    "layout": "admin",
+    "title": "Inventory Logs",
+    "section": "audit",
+    "page": "audit_dashboard"
+  },
+  "/admin/audit/branch-logs": {
+    "template": "admin/audit/branch_logs.html",
+    "layout": "admin",
+    "title": "Branch Logs",
+    "section": "audit",
+    "page": "audit_dashboard"
+  },
+  "/admin/audit/security-logs": {
+    "template": "admin/audit/security_logs.html",
+    "layout": "admin",
+    "title": "Security Logs",
+    "section": "audit",
+    "page": "audit_dashboard"
+  },
+  "/admin/settings/company": {
+    "template": "admin/settings/company_profile.html",
+    "layout": "admin",
+    "title": "Company Profile",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/milk-pricing": {
+    "template": "admin/settings/milk_pricing.html",
+    "layout": "admin",
+    "title": "Milk Pricing",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/quality-parameters": {
+    "template": "admin/settings/quality_parameters.html",
+    "layout": "admin",
+    "title": "Quality Parameters",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/notifications": {
+    "template": "admin/settings/notification_settings.html",
+    "layout": "admin",
+    "title": "Notification Settings",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/sms": {
+    "template": "admin/settings/sms_settings.html",
+    "layout": "admin",
+    "title": "SMS Settings",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/email": {
+    "template": "admin/settings/email_settings.html",
+    "layout": "admin",
+    "title": "Email Settings",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/backup": {
+    "template": "admin/settings/backup_restore.html",
+    "layout": "admin",
+    "title": "Backup & Restore",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/users": {
+    "template": "admin/settings/user_management.html",
+    "layout": "admin",
+    "title": "User Management",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/security": {
+    "template": "admin/settings/security_settings.html",
+    "layout": "admin",
+    "title": "Security Settings",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/admin/settings/system": {
+    "template": "admin/settings/system_configuration.html",
+    "layout": "admin",
+    "title": "System Configuration",
+    "section": "settings",
+    "page": "settings"
+  },
+  "/branch/dashboard": {
+    "template": "branch/dashboard/dashboard.html",
+    "layout": "branch",
+    "title": "Branch Dashboard",
+    "section": "dashboard",
+    "page": "dashboard"
+  },
+  "/branch/daily-summary": {
+    "template": "branch/dashboard/daily_summary.html",
+    "layout": "branch",
+    "title": "Daily Summary",
+    "section": "dashboard",
+    "page": "daily_summary"
+  },
+  "/branch/collection-statistics": {
+    "template": "branch/dashboard/collection_statistics.html",
+    "layout": "branch",
+    "title": "Collection Statistics",
+    "section": "dashboard",
+    "page": "collection_statistics"
+  },
+  "/branch/recent-activity": {
+    "template": "branch/dashboard/recent_activity.html",
+    "layout": "branch",
+    "title": "Recent Activity",
+    "section": "dashboard",
+    "page": "recent_activity"
+  },
+  "/branch/farmers": {
+    "template": "branch/farmer/farmer_list.html",
+    "layout": "branch",
+    "title": "Farmer List",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/branch/farmers/register": {
+    "template": "branch/farmer/register_farmer.html",
+    "layout": "branch",
+    "title": "Register Farmer",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/branch/farmers/edit": {
+    "template": "branch/farmer/edit_farmer.html",
+    "layout": "branch",
+    "title": "Edit Farmer",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/branch/farmers/profile": {
+    "template": "branch/farmer/farmer_profile.html",
+    "layout": "branch",
+    "title": "Farmer Profile",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/branch/farmers/documents": {
+    "template": "branch/farmer/farmer_documents.html",
+    "layout": "branch",
+    "title": "Farmer Documents",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/branch/farmers/milk-history": {
+    "template": "branch/farmer/milk_history.html",
+    "layout": "branch",
+    "title": "Milk History",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/branch/farmers/payment-status": {
+    "template": "branch/farmer/payment_status.html",
+    "layout": "branch",
+    "title": "Payment Status",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/branch/farmers/passbook": {
+    "template": "branch/farmer/passbook.html",
+    "layout": "branch",
+    "title": "Passbook",
+    "section": "farmers",
+    "page": "farmer_list"
+  },
+  "/branch/collection/morning": {
+    "template": "branch/collection/morning_collection.html",
+    "layout": "branch",
+    "title": "Morning Collection",
+    "section": "collection",
+    "page": "morning_collection"
+  },
+  "/branch/collection/evening": {
+    "template": "branch/collection/evening_collection.html",
+    "layout": "branch",
+    "title": "Evening Collection",
+    "section": "collection",
+    "page": "morning_collection"
+  },
+  "/branch/collection/bulk": {
+    "template": "branch/collection/bulk_collection.html",
+    "layout": "branch",
+    "title": "Bulk Collection",
+    "section": "collection",
+    "page": "morning_collection"
+  },
+  "/branch/collection/history": {
+    "template": "branch/collection/collection_history.html",
+    "layout": "branch",
+    "title": "Collection History",
+    "section": "collection",
+    "page": "morning_collection"
+  },
+  "/branch/collection/receipt": {
+    "template": "branch/collection/receipt.html",
+    "layout": "branch",
+    "title": "Receipt",
+    "section": "collection",
+    "page": "morning_collection"
+  },
+  "/branch/quality/testing": {
+    "template": "branch/quality/quality_testing.html",
+    "layout": "branch",
+    "title": "Quality Testing",
+    "section": "quality",
+    "page": "quality"
+  },
+  "/branch/quality/rejected": {
+    "template": "branch/quality/rejected_milk.html",
+    "layout": "branch",
+    "title": "Rejected Milk",
+    "section": "quality",
+    "page": "quality"
+  },
+  "/branch/quality/history": {
+    "template": "branch/quality/quality_history.html",
+    "layout": "branch",
+    "title": "Quality History",
+    "section": "quality",
+    "page": "quality"
+  },
+  "/branch/quality/lab-reports": {
+    "template": "branch/quality/lab_reports.html",
+    "layout": "branch",
+    "title": "Lab Reports",
+    "section": "quality",
+    "page": "quality"
+  },
+  "/branch/inventory/allocated": {
+    "template": "branch/inventory/allocated_inventory.html",
+    "layout": "branch",
+    "title": "Allocated Inventory",
+    "section": "inventory",
+    "page": "inventory"
+  },
+  "/branch/inventory/usage": {
+    "template": "branch/inventory/stock_usage.html",
+    "layout": "branch",
+    "title": "Stock Usage",
+    "section": "inventory",
+    "page": "inventory"
+  },
+  "/branch/inventory/request": {
+    "template": "branch/inventory/stock_request.html",
+    "layout": "branch",
+    "title": "Stock Request",
+    "section": "inventory",
+    "page": "inventory"
+  },
+  "/branch/inventory/history": {
+    "template": "branch/inventory/inventory_history.html",
+    "layout": "branch",
+    "title": "Inventory History",
+    "section": "inventory",
+    "page": "inventory"
+  },
+  "/branch/reports/daily": {
+    "template": "branch/reports/daily_report.html",
+    "layout": "branch",
+    "title": "Daily Report",
+    "section": "reports",
+    "page": "reports"
+  },
+  "/branch/reports/weekly": {
+    "template": "branch/reports/weekly_report.html",
+    "layout": "branch",
+    "title": "Weekly Report",
+    "section": "reports",
+    "page": "reports"
+  },
+  "/branch/reports/monthly": {
+    "template": "branch/reports/monthly_report.html",
+    "layout": "branch",
+    "title": "Monthly Report",
+    "section": "reports",
+    "page": "reports"
+  },
+  "/branch/reports/farmers": {
+    "template": "branch/reports/farmer_report.html",
+    "layout": "branch",
+    "title": "Farmer Report",
+    "section": "reports",
+    "page": "reports"
+  },
+  "/branch/reports/collection": {
+    "template": "branch/reports/collection_report.html",
+    "layout": "branch",
+    "title": "Collection Report",
+    "section": "reports",
+    "page": "reports"
+  },
+  "/branch/reports/quality": {
+    "template": "branch/reports/quality_report.html",
+    "layout": "branch",
+    "title": "Quality Report",
+    "section": "reports",
+    "page": "reports"
+  },
+  "/branch/profile": {
+    "template": "branch/profile/branch_profile.html",
+    "layout": "branch",
+    "title": "Branch Profile",
+    "section": "profile",
+    "page": "profile"
+  },
+  "/branch/profile/manager": {
+    "template": "branch/profile/manager_profile.html",
+    "layout": "branch",
+    "title": "Manager Profile",
+    "section": "profile",
+    "page": "profile"
+  },
+  "/branch/profile/change-password": {
+    "template": "branch/profile/change_password.html",
+    "layout": "branch",
+    "title": "Change Password",
+    "section": "profile",
+    "page": "profile"
+  },
+  "/farmer/profile": {
+    "template": "farmer/profile.html",
+    "layout": "farmer",
+    "title": "My Profile",
+    "section": "profile",
+    "page": "profile"
+  },
+  "/farmer/passbook": {
+    "template": "farmer/passbook.html",
+    "layout": "farmer",
+    "title": "Passbook",
+    "section": "passbook",
+    "page": "passbook"
+  },
+  "/farmer/milk-history": {
+    "template": "farmer/milk_collection_history.html",
+    "layout": "farmer",
+    "title": "Milk Collection History",
+    "section": "milk_history",
+    "page": "milk_history"
+  },
+  "/farmer/payments": {
+    "template": "farmer/payment_history.html",
+    "layout": "farmer",
+    "title": "Payment History",
+    "section": "payments",
+    "page": "payments"
+  },
+  "/farmer/payment-status": {
+    "template": "farmer/payment_status.html",
+    "layout": "farmer",
+    "title": "Payment Status",
+    "section": "payment_status",
+    "page": "payment_status"
+  },
+  "/farmer/bank-details": {
+    "template": "farmer/bank_details.html",
+    "layout": "farmer",
+    "title": "Bank Details",
+    "section": "bank_details",
+    "page": "bank_details"
+  },
+  "/farmer/documents": {
+    "template": "farmer/documents.html",
+    "layout": "farmer",
+    "title": "My Documents",
+    "section": "documents",
+    "page": "documents"
+  },
+  "/farmer/notifications": {
+    "template": "farmer/notifications.html",
+    "layout": "farmer",
+    "title": "Notifications",
+    "section": "notifications",
+    "page": "notifications"
+  },
+  "/farmer/grievance": {
+    "template": "farmer/grievance.html",
+    "layout": "farmer",
+    "title": "Grievance",
+    "section": "grievance",
+    "page": "grievance"
+  },
+  "/shared/profile": {
+    "template": "shared/profile.html",
+    "layout": "shared",
+    "title": "My Profile",
+    "section": "profile",
+    "page": "profile"
+  },
+  "/shared/notifications": {
+    "template": "shared/notifications.html",
+    "layout": "shared",
+    "title": "Notifications",
+    "section": "notifications",
+    "page": "notifications"
+  },
+  "/shared/help": {
+    "template": "shared/help.html",
+    "layout": "shared",
+    "title": "Help Center",
+    "section": "help",
+    "page": "help"
+  },
+  "/shared/user-guide": {
+    "template": "shared/user_guide.html",
+    "layout": "shared",
+    "title": "User Guide",
+    "section": "user_guide",
+    "page": "user_guide"
+  },
+  "/shared/faq": {
+    "template": "shared/faq.html",
+    "layout": "shared",
+    "title": "FAQ",
+    "section": "faq",
+    "page": "faq"
+  },
+  "/shared/search": {
+    "template": "shared/search.html",
+    "layout": "shared",
+    "title": "Global Search",
+    "section": "search",
+    "page": "search"
+  },
+  "/shared/qr-scanner": {
+    "template": "shared/qr_scanner.html",
+    "layout": "shared",
+    "title": "QR Scanner",
+    "section": "qr_scanner",
+    "page": "qr_scanner"
+  },
+  "/shared/activity-timeline": {
+    "template": "shared/activity_timeline.html",
+    "layout": "shared",
+    "title": "Activity Timeline",
+    "section": "activity_timeline",
+    "page": "activity_timeline"
+  },
+  "/shared/contact-support": {
+    "template": "shared/contact_support.html",
+    "layout": "shared",
+    "title": "Contact Support",
+    "section": "contact_support",
+    "page": "contact_support"
+  },
+  "/shared/feedback": {
+    "template": "shared/feedback.html",
+    "layout": "shared",
+    "title": "Feedback",
+    "section": "feedback",
+    "page": "feedback"
+  }
+}

@@ -1,0 +1,26 @@
+{% extends 'base/auth_layout.html' %}
+{% block page_title %}Unauthorized{% endblock %}
+{% block auth_subtitle %}Access restricted{% endblock %}
+
+{% block auth_content %}
+<div class="login-form" style="text-align:center;">
+  <div class="login-logo anim-float" style="width:72px;height:72px;margin:0 auto var(--space-5);background:var(--warning-light);color:var(--warning-dark);">
+    <i data-lucide="shield-alert" style="width:32px;height:32px;"></i>
+  </div>
+  <h3 style="margin-bottom:var(--space-3);">Access Denied</h3>
+  <p style="color:var(--ink-secondary);font-size:var(--text-sm);line-height:1.6;margin-bottom:var(--space-4);">
+    Your account does not have permission to view this page. If you believe this
+    is a mistake, please contact the Head Office administrator.
+  </p>
+  <div class="error-actions" style="display:flex;gap:var(--space-3);justify-content:center;flex-wrap:wrap;">
+    <a class="btn btn-primary" href="/login">
+      <i data-lucide="log-in" style="width:16px;height:16px;"></i>
+      Back to Login
+    </a>
+    <a class="btn btn-secondary" href="/shared/help">
+      <i data-lucide="help-circle" style="width:16px;height:16px;"></i>
+      Help Center
+    </a>
+  </div>
+</div>
+{% endblock %}

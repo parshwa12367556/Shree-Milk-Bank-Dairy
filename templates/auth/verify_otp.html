@@ -1,0 +1,53 @@
+{% extends 'base/auth_layout.html' %}
+{% block page_title %}Verify OTP{% endblock %}
+{% block auth_subtitle %}Enter the 6-digit OTP sent to your registered contact{% endblock %}
+
+{% block auth_content %}
+<div class="login-form" id="otp-form">
+  <div class="login-error" id="login-error"></div>
+
+  <div class="form-group">
+    <label class="form-label" for="otp-input">OTP Code</label>
+    <div class="input-group">
+      <span class="input-icon"><i data-lucide="shield-check"></i></span>
+      <input type="text" class="input-premium input-with-icon input-premium-lg" id="otp-input" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" autocomplete="one-time-code" required>
+    </div>
+  </div>
+
+  <button type="button" class="btn-login" id="otp-submit">
+    <i data-lucide="check-circle"></i>
+    Verify OTP
+  </button>
+
+  <p style="text-align:center;margin-top:var(--space-4);font-size:var(--text-sm);color:var(--ink-muted);">
+    Didn't receive it? <a href="/forgot-password" class="forgot-link">Resend OTP</a>
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const identifier = params.get('u') || '';
+  const submit = document.getElementById('otp-submit');
+  const errEl = document.getElementById('login-error');
+  const showErr = (msg) => { errEl.textContent = msg; errEl.classList.add('visible'); };
+
+  submit.addEventListener('click', async () => {
+    const otp = document.getElementById('otp-input').value.trim();
+    if (!otp) { showErr('Please enter the OTP'); return; }
+    submit.disabled = true;
+    submit.innerHTML = '<span class="anim-spin" style="display:inline-flex;width:20px;height:20px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;margin-right:8px;"></span> Verifying...';
+    try {
+      // The API verifies the OTP together with the new password; pass it on.
+      window.location.href = '/reset-password?u=' + encodeURIComponent(identifier) + '&otp=' + encodeURIComponent(otp);
+    } catch (err) {
+      showErr(err.message || 'Verification failed');
+      submit.disabled = false;
+      submit.innerHTML = '<i data-lucide="check-circle"></i> Verify OTP';
+    }
+  });
+});
+</script>
+{% endblock %}

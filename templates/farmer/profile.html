@@ -1,0 +1,125 @@
+{% extends 'base/farmer_layout.html' %}
+{% set active_page = 'profile' %}
+{% set active_section = 'profile' %}
+{% set fname = farmer.name if farmer else (current_user.name if current_user else '') %}
+{% set fcode = farmer.farmer_code if farmer else (current_user.farmerCode if current_user and current_user.farmerCode else '') %}
+{% block page_title %}My Profile{% endblock %}
+{% block page_init %}{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/farmer/profile', 'label': 'My Profile'}, {'url': '', 'label': 'My Profile'}]) }}
+<div class="page-header">
+  <div>
+    <h2>My Profile</h2>
+    <p class="subtitle">Your personal and dairy account information.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+        <!-- Profile Header -->
+        <div class="card" style="padding:var(--space-6);margin-bottom:var(--space-5);">
+          <div style="display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap;">
+            <div style="width:72px;height:72px;border-radius:var(--radius-full);background:linear-gradient(135deg,var(--forest-light),var(--forest));display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:white;font-weight:700;flex-shrink:0;">
+              {{ fname[:2]|upper if fname else 'PR' }}
+            </div>
+            <div style="flex:1;min-width:220px;">
+              <h3 style="margin-bottom:var(--space-1);">{{ fname or 'Farmer' }}</h3>
+              <p style="color:var(--ink-muted);font-size:var(--text-sm);">
+                ID: <span class="font-mono">{{ fcode or '—' }}</span>
+                {% if farmer and farmer.branch %}
+                  · {{ farmer.branch.name }}
+                {% endif %}
+                · Status:
+                {% if farmer and farmer.status == 'ACTIVE' %}
+                  <span class="tag tag-green">Active</span>
+                {% else %}
+                  <span class="tag tag-amber">Pending / Inactive</span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" style="margin-bottom:var(--space-5);">
+          <button class="tab-btn active" data-tab="tab-overview">Profile</button>
+          <button class="tab-btn" data-tab="tab-livestock">Livestock</button>
+          <button class="tab-btn" data-tab="tab-bank">Bank Details</button>
+        </div>
+
+        <!-- Overview tab -->
+        <div class="card" id="tab-overview">
+          <div class="card-header">
+            <h5 class="section-title">Overview</h5>
+          </div>
+          <div class="card-body">
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Full Name</span><span class="info-value">{{ farmer.name if farmer and farmer.name else '—' }}</span></div>
+              <div class="info-item"><span class="info-label">Father's Name</span><span class="info-value">{{ farmer.father_name if farmer and farmer.father_name else '—' }}</span></div>
+              <div class="info-item"><span class="info-label">Mobile</span><span class="info-value">{{ farmer.mobile if farmer and farmer.mobile else '—' }}</span></div>
+              <div class="info-item"><span class="info-label">Email</span><span class="info-value">{{ farmer.email if farmer and farmer.email else '—' }}</span></div>
+              <div class="info-item"><span class="info-label">Village</span><span class="info-value">{{ farmer.village if farmer and farmer.village else '—' }}</span></div>
+              <div class="info-item"><span class="info-label">Taluka</span><span class="info-value">{{ farmer.taluka if farmer and farmer.taluka else '—' }}</span></div>
+              <div class="info-item"><span class="info-label">District</span><span class="info-value">{{ farmer.district if farmer and farmer.district else '—' }}</span></div>
+              <div class="info-item"><span class="info-label">Milk Type</span><span class="info-value">{{ farmer.milk_type if farmer and farmer.milk_type else '—' }}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Livestock tab -->
+        <div class="card" id="tab-livestock" style="display:none;">
+          <div class="card-header">
+            <h5 class="section-title">Livestock</h5>
+          </div>
+          <div class="card-body">
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Cows</span><span class="info-value">{{ farmer.cow_count if farmer and farmer.cow_count else 0 }}</span></div>
+              <div class="info-item"><span class="info-label">Buffaloes</span><span class="info-value">{{ farmer.buffalo_count if farmer and farmer.buffalo_count else 0 }}</span></div>
+              <div class="info-item"><span class="info-label">Breed</span><span class="info-value">{{ farmer.breed if farmer and farmer.breed else '—' }}</span></div>
+              <div class="info-item"><span class="info-label">Preferred Shift</span><span class="info-value">{{ farmer.preferred_shift if farmer and farmer.preferred_shift else '—' }}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank Details tab -->
+        <div class="card" id="tab-bank" style="display:none;">
+          <div class="card-header">
+            <h5 class="section-title">Bank Details</h5>
+          </div>
+          <div class="card-body">
+            {% set bank = farmer.bank_detail if farmer else none %}
+            {% if bank and bank.account_number %}
+              <div class="info-grid">
+                <div class="info-item"><span class="info-label">Account Holder</span><span class="info-value">{{ bank.account_holder or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">Bank Name</span><span class="info-value">{{ bank.bank_name or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">Branch</span><span class="info-value">{{ bank.branch_name or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">Account Number</span><span class="info-value font-mono">{{ bank.account_number or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">IFSC</span><span class="info-value font-mono">{{ bank.ifsc or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">UPI</span><span class="info-value">{{ bank.upi or '—' }}</span></div>
+              </div>
+            {% else %}
+              <p style="color:var(--ink-muted);padding:var(--space-3) 0;">No bank details on file. Please contact your branch to update them.</p>
+            {% endif %}
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Simple tab switching on the profile page
+  const tabs = document.querySelectorAll('.tabs .tab-btn');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('[id^="tab-"]').forEach(panel => {
+        panel.style.display = panel.id === tab.dataset.tab ? '' : 'none';
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

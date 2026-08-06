@@ -15,9 +15,9 @@ import io
 from flask import Blueprint, request, jsonify, Response
 from flask_jwt_extended import jwt_required
 from backend.app import db
-from backend.models import Farmer, BankDetail, Collection, Payment, Branch
-from backend.auth import role_required, get_identity
-from backend.utils import generate_farmer_code
+from backend.models import Farmer, BankDetail, Collection, Payment, Branch, User
+from backend.auth import role_required, get_identity, hash_password
+from backend.utils import generate_farmer_code, generate_farmer_email
 from backend.audit import log_audit
 from backend.notify import notify
 
@@ -164,13 +164,20 @@ def create_farmer():
 
     farmer_code = generate_farmer_code(prefix, seq)
 
+    # Farmers sign in with email + mobile, so an email is required. If the
+    # branch didn't provide one, generate a deterministic address from the
+    # farmer code (e.g. BR01011 -> br01011@dairy.com). Normalize to lowercase
+    # so lookups (which are case-insensitive) stay consistent with storage.
+    email = (data.get('email') or '').strip().lower()
+    email = email or generate_farmer_email(farmer_code)
+
     farmer = Farmer(
         farmer_code=farmer_code,
         name=name,
         father_name=data.get('fatherName', ''),
         mobile=mobile,
         alt_mobile=data.get('altMobile', ''),
-        email=data.get('email', ''),
+        email=email,
         aadhaar=data.get('aadhaar', ''),
         gender=data.get('gender', ''),
         address=data.get('address', ''),
@@ -192,6 +199,22 @@ def create_farmer():
     )
     db.session.add(farmer)
     db.session.flush()  # Get farmer ID
+
+    # Auto-create the farmer's login account — username = farmer code,
+    # password = registered mobile (same pattern as branch logins: code / phone).
+    # The account stays INACTIVE until Head Office verifies the farmer, so
+    # only approved farmers can sign in to the farmer portal.
+    db.session.add(User(
+        username=farmer_code,
+        password_hash=hash_password(mobile),
+        name=name,
+        role='FARMER',
+        branch_id=branch_id,
+        phone=mobile,
+        email=email,
+        status='INACTIVE',  # activated in verify_farmer on approval
+        farmer_id=farmer.id,
+    ))
 
     # Create bank detail if provided
     if data.get('accountNumber') or data.get('ifsc'):
@@ -246,6 +269,9 @@ def verify_farmer(code):
         farmer.status_reason = None
         farmer.verified_by = user.get('uid')
         farmer.verified_at = datetime.utcnow()
+        # Activate the farmer's login account on approval
+        if farmer.user_account:
+            farmer.user_account.status = 'ACTIVE'
         log_audit('VERIFY', 'Farmer', farmer.farmer_code,
                   detail=f'Farmer {farmer.name} verified and activated by Head Office')
         notify('farmer', 'Farmer Verified',
@@ -257,6 +283,9 @@ def verify_farmer(code):
             return jsonify({'error': 'A rejection reason is required'}), 400
         farmer.status = 'REJECTED'
         farmer.status_reason = reason
+        # Rejected farmers stay locked out of the portal
+        if farmer.user_account:
+            farmer.user_account.status = 'INACTIVE'
         log_audit('REJECT', 'Farmer', farmer.farmer_code,
                   detail=f'Farmer {farmer.name} rejected: {reason}')
         notify('farmer', 'Farmer Rejected',
@@ -461,6 +490,10 @@ def update_farmer(code):
     if 'status' in data and user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE'):
         return jsonify({'error': 'Only Head Office can change farmer status.'}), 403
 
+    # Keep the farmer's login account status in sync (ACTIVE ⇄ locked out)
+    if farmer.user_account:
+        farmer.user_account.status = 'ACTIVE' if farmer.status == 'ACTIVE' else 'INACTIVE'
+
     # Update / create bank details (Head Office authorized bank updates)
     bank_fields = ['accountHolder', 'bankName', 'bankBranch', 'accountNumber', 'ifsc', 'upi']
     if any(k in data for k in bank_fields):
@@ -483,5 +516,13 @@ def update_farmer(code):
 
     log_audit('UPDATE', 'Farmer', farmer.farmer_code,
               detail=f'Farmer {farmer.name} updated')
+
+    # Keep the login account email in sync (farmers log in with email).
+    if 'email' in data:
+        if farmer.email:
+            farmer.email = farmer.email.strip().lower()
+        if farmer.user_account:
+            farmer.user_account.email = farmer.email or generate_farmer_email(farmer.farmer_code)
+
     db.session.commit()
     return jsonify({'farmer': farmer.to_dict(), 'message': 'Farmer updated successfully'})

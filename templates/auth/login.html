@@ -1,0 +1,171 @@
+{% extends 'base/auth_layout.html' %}
+{% block page_title %}Login{% endblock %}
+
+{% block auth_content %}
+<form class="login-form" id="login-form">
+  <div class="login-error" id="login-error"></div>
+
+  <div class="form-group">
+    <label class="form-label">Login As</label>
+    <div class="login-role-tabs" id="login-role-tabs">
+      <button type="button" class="role-tab active" data-role="SUPER_ADMIN">Super Admin</button>
+      <button type="button" class="role-tab" data-role="BRANCH_MANAGER">Branch Manager</button>
+      <button type="button" class="role-tab" data-role="FARMER">Farmer</button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label" for="login-branch">Branch</label>
+    <div class="input-group">
+      <span class="input-icon"><i data-lucide="building-2"></i></span>
+      <select class="input-premium input-with-icon" id="login-branch">
+        <option value="">Select Branch</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label" for="login-username">Username</label>
+    <div class="input-group">
+      <span class="input-icon"><i data-lucide="user"></i></span>
+      <input type="text" class="input-premium input-with-icon input-premium-lg" id="login-username" placeholder="Enter your username" autocomplete="username" required>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label" for="login-password">Password</label>
+    <div class="input-group">
+      <span class="input-icon"><i data-lucide="lock"></i></span>
+      <input type="password" class="input-premium input-with-icon input-premium-lg" id="login-password" placeholder="Enter your password" autocomplete="current-password" required>
+      <span class="input-icon right" id="toggle-password"><i data-lucide="eye"></i></span>
+    </div>
+  </div>
+
+  <div class="form-options">
+    <label class="form-check">
+      <input type="checkbox" id="remember-me">
+      <span class="form-check-label">Remember me</span>
+    </label>
+    <a href="/forgot-password" class="forgot-link">Forgot password?</a>
+  </div>
+
+  <button type="submit" class="btn-login">
+    <i data-lucide="log-in"></i>
+    Sign In
+  </button>
+</form>
+
+<div class="login-dev-hint" title="Demo logins">
+  <i data-lucide="info" style="width:14px;height:14px;"></i>
+  <span>Head Office: <strong>admin</strong> / <strong>admin123</strong> · Branch: <strong>Branch Code</strong> / <strong>Branch Phone</strong> · Farmer: <strong>Registered Email</strong> / <strong>Mobile Number</strong></span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/** Server-rendered login — posts to the API, stores the token, redirects by role. */
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('login-form');
+  if (!form) return;
+  const submitBtn = form.querySelector('.btn-login');
+  const errorDiv = document.querySelector('.login-error');
+  const showErr = (msg) => { errorDiv.textContent = msg; errorDiv.classList.add('visible'); setTimeout(() => errorDiv.classList.remove('visible'), 5000); };
+
+  // Load branches for the dropdown (textContent — XSS-safe)
+  (async () => {
+    try {
+      const result = await API.getBranches();
+      const branches = result.branches || result.data || result || [];
+      const select = document.getElementById('login-branch');
+      if (branches.length && select) {
+        select.innerHTML = '<option value="">Select Branch</option>';
+        branches.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b.id;
+          opt.textContent = `${b.name} (${b.code})`;
+          select.appendChild(opt);
+        });
+      }
+    } catch (e) { /* keep fallback */ }
+  })();
+
+  // Password visibility toggle
+  const toggleBtn = document.getElementById('toggle-password');
+  const pwInput = document.getElementById('login-password');
+  if (toggleBtn && pwInput) {
+    toggleBtn.addEventListener('click', () => {
+      const type = pwInput.type === 'password' ? 'text' : 'password';
+      pwInput.type = type;
+      toggleBtn.innerHTML = type === 'password' ? '<i data-lucide="eye"></i>' : '<i data-lucide="eye-off"></i>';
+      if (window.lucide) lucide.createIcons();
+    });
+  }
+
+  // Role selector tabs — farmers sign in with registered email + mobile number
+  const roleTabs = document.querySelectorAll('#login-role-tabs .role-tab');
+  const usernameInput = document.getElementById('login-username');
+  const passwordInput = document.getElementById('login-password');
+  const usernameLabel = document.querySelector('label[for="login-username"]');
+  const branchGroup = document.getElementById('login-branch')?.closest('.form-group');
+  const applyRoleUi = (role) => {
+    const isFarmer = role === 'FARMER';
+    if (usernameInput) usernameInput.placeholder = isFarmer ? 'Enter your registered email' : 'Enter your username';
+    if (usernameLabel) usernameLabel.textContent = isFarmer ? 'Email Address' : 'Username';
+    if (passwordInput) passwordInput.placeholder = isFarmer ? 'Enter your registered mobile number' : 'Enter your password';
+    if (branchGroup) branchGroup.style.display = isFarmer ? 'none' : '';
+  };
+  roleTabs.forEach(tab => tab.addEventListener('click', () => {
+    roleTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    applyRoleUi(tab.dataset.role);
+  }));
+
+  // Language selector
+  document.querySelectorAll('.login-language button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.login-language button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Remember me
+  const rememberMe = document.getElementById('remember-me');
+  if (rememberMe) {
+    const saved = localStorage.getItem('sd_remember_user');
+    if (saved) { document.getElementById('login-username').value = saved; rememberMe.checked = true; }
+    rememberMe.addEventListener('change', () => {
+      const u = document.getElementById('login-username').value;
+      if (rememberMe.checked && u) localStorage.setItem('sd_remember_user', u);
+      else localStorage.removeItem('sd_remember_user');
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const branchId = document.getElementById('login-branch').value || null;
+    const active = document.querySelector('#login-role-tabs .role-tab.active');
+    const role = active ? active.dataset.role : null;
+    if (!username || !password) { showErr('Please enter username and password'); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="anim-spin" style="display:inline-flex;width:20px;height:20px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;margin-right:8px;"></span> Signing in...';
+    try {
+      const result = await API.login(username, password, branchId, role);
+      Storage.setToken(result.token);
+      const user = result.user || {};
+      user.mustChangePassword = !!result.mustChangePassword;
+      Storage.setUser(user);
+      if (user.mustChangePassword) { window.location.href = '/change-password'; return; }
+      const roleMap = { 'BRANCH_MANAGER': '/branch/dashboard', 'OPERATOR': '/branch/dashboard', 'FARMER': '/farmer/profile' };
+      window.location.href = roleMap[user.role] || '/admin/dashboard';
+    } catch (err) {
+      showErr(err.message || 'Invalid username or password');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i data-lucide="log-in"></i> Sign In';
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <i data-lucide="milk"></i>
+    </div>
+    <div class="sidebar-brand">
+      <span class="brand-name">Smart Dairy</span>
+      <span class="brand-sub">ERP System v2.0</span>
+    </div>
+  </div>
+
+  <div class="sidebar-search">
+    <span class="search-icon"><i data-lucide="search"></i></span>
+    <input type="text" placeholder="Search menu..." onkeyup="filterSidebar(this.value)">
+  </div>
+
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <!-- Dashboard -->
+    <a class="nav-item {{ 'active' if active_page == 'dashboard' }}" href="/admin/dashboard">
+      <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a class="nav-item {{ 'active' if active_page == 'analytics' }}" href="/admin/analytics">
+      <span class="nav-icon"><i data-lucide="chart-line"></i></span>
+      <span class="nav-label">Analytics</span>
+    </a>
+
+    <!-- Branch Management -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'branches' }}">
+      <span class="nav-icon"><i data-lucide="building-2"></i></span>
+      <span class="nav-label">Branch Management</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'branches' }}">
+      <a class="nav-item {{ 'active' if active_page == 'branch_list' }}" href="/admin/branches"><span class="nav-icon"><i data-lucide="list"></i></span><span class="nav-label">Branch List</span></a>
+      <a class="nav-item" href="/admin/branches/create"><span class="nav-icon"><i data-lucide="plus-circle"></i></span><span class="nav-label">Create Branch</span></a>
+      <a class="nav-item" href="/admin/branches/details"><span class="nav-icon"><i data-lucide="info"></i></span><span class="nav-label">Branch Details</span></a>
+      <a class="nav-item" href="/admin/branches/assign-manager"><span class="nav-icon"><i data-lucide="user-cog"></i></span><span class="nav-label">Assign Manager</span></a>
+      <a class="nav-item" href="/admin/branches/activity"><span class="nav-icon"><i data-lucide="activity"></i></span><span class="nav-label">Branch Activity</span></a>
+    </div>
+
+    <!-- Farmer Management -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'farmers' }}">
+      <span class="nav-icon"><i data-lucide="users"></i></span>
+      <span class="nav-label">Farmer Management</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'farmers' }}">
+      <a class="nav-item" href="/admin/farmers"><span class="nav-icon"><i data-lucide="list"></i></span><span class="nav-label">Farmer List</span></a>
+      <a class="nav-item" href="/admin/farmers/profile"><span class="nav-icon"><i data-lucide="user"></i></span><span class="nav-label">Farmer Profile</span></a>
+      <a class="nav-item" href="/admin/farmers/verification"><span class="nav-icon"><i data-lucide="badge-check"></i></span><span class="nav-label">Verification</span></a>
+      <a class="nav-item" href="/admin/bank-verification"><span class="nav-icon"><i data-lucide="landmark"></i></span><span class="nav-label">Bank Verification</span></a>
+      <a class="nav-item" href="/admin/farmers/documents"><span class="nav-icon"><i data-lucide="file-text"></i></span><span class="nav-label">Documents</span></a>
+      <a class="nav-item" href="/admin/farmers/payment-history"><span class="nav-icon"><i data-lucide="wallet"></i></span><span class="nav-label">Payment History</span></a>
+      <a class="nav-item" href="/admin/farmers/milk-history"><span class="nav-icon"><i data-lucide="milk"></i></span><span class="nav-label">Milk History</span></a>
+    </div>
+
+    <!-- Payments -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'payments' }}">
+      <span class="nav-icon"><i data-lucide="wallet"></i></span>
+      <span class="nav-label">Payments</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'payments' }}">
+      <a class="nav-item" href="/admin/payments/dashboard"><span class="nav-icon"><i data-lucide="gauge"></i></span><span class="nav-label">Payment Dashboard</span></a>
+      <a class="nav-item" href="/admin/payments/sheet"><span class="nav-icon"><i data-lucide="table"></i></span><span class="nav-label">Payment Sheet</span></a>
+      <a class="nav-item" href="/admin/payments/pending"><span class="nav-icon"><i data-lucide="clock"></i></span><span class="nav-label">Pending</span></a>
+      <a class="nav-item" href="/admin/payments/approved"><span class="nav-icon"><i data-lucide="check-circle"></i></span><span class="nav-label">Approved</span></a>
+      <a class="nav-item" href="/admin/payments/paid"><span class="nav-icon"><i data-lucide="check-check"></i></span><span class="nav-label">Paid</span></a>
+      <a class="nav-item" href="/admin/payments/failed"><span class="nav-icon"><i data-lucide="x-circle"></i></span><span class="nav-label">Failed</span></a>
+      <a class="nav-item" href="/admin/payments/history"><span class="nav-icon"><i data-lucide="history"></i></span><span class="nav-label">Payment History</span></a>
+      <a class="nav-item" href="/admin/payments/bank-transfer"><span class="nav-icon"><i data-lucide="landmark"></i></span><span class="nav-label">Bank Transfer</span></a>
+    </div>
+
+    <!-- Procurement -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'procurement' }}">
+      <span class="nav-icon"><i data-lucide="truck"></i></span>
+      <span class="nav-label">Procurement</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'procurement' }}">
+      <a class="nav-item" href="/admin/procurement/dashboard"><span class="nav-icon"><i data-lucide="gauge"></i></span><span class="nav-label">Dashboard</span></a>
+      <a class="nav-item" href="/admin/suppliers"><span class="nav-icon"><i data-lucide="factory"></i></span><span class="nav-label">Supplier List</span></a>
+      <a class="nav-item" href="/admin/purchase-orders"><span class="nav-icon"><i data-lucide="file-text"></i></span><span class="nav-label">Purchase Orders</span></a>
+      <a class="nav-item" href="/admin/grn"><span class="nav-icon"><i data-lucide="clipboard-check"></i></span><span class="nav-label">Goods Receipt</span></a>
+      <a class="nav-item" href="/admin/delivery-tracking"><span class="nav-icon"><i data-lucide="map-pin"></i></span><span class="nav-label">Delivery Tracking</span></a>
+      <a class="nav-item" href="/admin/vendor-payments"><span class="nav-icon"><i data-lucide="banknote"></i></span><span class="nav-label">Vendor Payments</span></a>
+    </div>
+
+    <!-- Inventory -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'inventory' }}">
+      <span class="nav-icon"><i data-lucide="package"></i></span>
+      <span class="nav-label">Inventory</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'inventory' }}">
+      <a class="nav-item" href="/admin/inventory/dashboard"><span class="nav-icon"><i data-lucide="gauge"></i></span><span class="nav-label">Inventory Dashboard</span></a>
+      <a class="nav-item" href="/admin/warehouse"><span class="nav-icon"><i data-lucide="warehouse"></i></span><span class="nav-label">Warehouse</span></a>
+      <a class="nav-item" href="/admin/items"><span class="nav-icon"><i data-lucide="boxes"></i></span><span class="nav-label">Item List</span></a>
+      <a class="nav-item" href="/admin/stock/in"><span class="nav-icon"><i data-lucide="arrow-down-circle"></i></span><span class="nav-label">Stock In</span></a>
+      <a class="nav-item" href="/admin/stock/out"><span class="nav-icon"><i data-lucide="arrow-up-circle"></i></span><span class="nav-label">Stock Out</span></a>
+      <a class="nav-item" href="/admin/stock/transfer"><span class="nav-icon"><i data-lucide="shuffle"></i></span><span class="nav-label">Stock Transfer</span></a>
+      <a class="nav-item" href="/admin/stock/allocation"><span class="nav-icon"><i data-lucide="building"></i></span><span class="nav-label">Branch Allocation</span></a>
+      <a class="nav-item" href="/admin/low-stock"><span class="nav-icon"><i data-lucide="alert-triangle"></i></span><span class="nav-label">Low Stock</span></a>
+    </div>
+
+    <!-- Vehicles -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'vehicles' }}">
+      <span class="nav-icon"><i data-lucide="car"></i></span>
+      <span class="nav-label">Vehicles</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'vehicles' }}">
+      <a class="nav-item" href="/admin/vehicles/dashboard"><span class="nav-icon"><i data-lucide="gauge"></i></span><span class="nav-label">Vehicle Dashboard</span></a>
+      <a class="nav-item" href="/admin/vehicles"><span class="nav-icon"><i data-lucide="car-front"></i></span><span class="nav-label">Vehicle List</span></a>
+      <a class="nav-item" href="/admin/vehicles/add"><span class="nav-icon"><i data-lucide="plus-circle"></i></span><span class="nav-label">Add Vehicle</span></a>
+      <a class="nav-item" href="/admin/vehicles/maintenance"><span class="nav-icon"><i data-lucide="wrench"></i></span><span class="nav-label">Maintenance</span></a>
+      <a class="nav-item" href="/admin/vehicles/insurance"><span class="nav-icon"><i data-lucide="shield-check"></i></span><span class="nav-label">Insurance</span></a>
+      <a class="nav-item" href="/admin/vehicles/fuel"><span class="nav-icon"><i data-lucide="fuel"></i></span><span class="nav-label">Fuel Log</span></a>
+    </div>
+
+    <!-- Employees -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'employees' }}">
+      <span class="nav-icon"><i data-lucide="briefcase"></i></span>
+      <span class="nav-label">Employees</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'employees' }}">
+      <a class="nav-item" href="/admin/employees/dashboard"><span class="nav-icon"><i data-lucide="gauge"></i></span><span class="nav-label">Employee Dashboard</span></a>
+      <a class="nav-item" href="/admin/employees"><span class="nav-icon"><i data-lucide="users"></i></span><span class="nav-label">Employee List</span></a>
+      <a class="nav-item" href="/admin/attendance"><span class="nav-icon"><i data-lucide="calendar-check"></i></span><span class="nav-label">Attendance</span></a>
+      <a class="nav-item" href="/admin/salary"><span class="nav-icon"><i data-lucide="banknote"></i></span><span class="nav-label">Salary</span></a>
+      <a class="nav-item" href="/admin/leave"><span class="nav-icon"><i data-lucide="calendar-off"></i></span><span class="nav-label">Leave Management</span></a>
+      <a class="nav-item" href="/admin/roles"><span class="nav-icon"><i data-lucide="shield"></i></span><span class="nav-label">Role Management</span></a>
+    </div>
+
+    <!-- Reports -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'reports' }}">
+      <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
+      <span class="nav-label">Reports</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'reports' }}">
+      <a class="nav-item" href="/admin/reports/dashboard"><span class="nav-icon"><i data-lucide="gauge"></i></span><span class="nav-label">Reports Dashboard</span></a>
+      <a class="nav-item" href="/admin/reports/milk-collection"><span class="nav-icon"><i data-lucide="milk"></i></span><span class="nav-label">Milk Collection</span></a>
+      <a class="nav-item" href="/admin/reports/farmers"><span class="nav-icon"><i data-lucide="users"></i></span><span class="nav-label">Farmer Report</span></a>
+      <a class="nav-item" href="/admin/reports/payments"><span class="nav-icon"><i data-lucide="wallet"></i></span><span class="nav-label">Payment Report</span></a>
+      <a class="nav-item" href="/admin/reports/inventory"><span class="nav-icon"><i data-lucide="package"></i></span><span class="nav-label">Inventory Report</span></a>
+      <a class="nav-item" href="/admin/reports/procurement"><span class="nav-icon"><i data-lucide="truck"></i></span><span class="nav-label">Procurement Report</span></a>
+      <a class="nav-item" href="/admin/reports/employees"><span class="nav-icon"><i data-lucide="briefcase"></i></span><span class="nav-label">Employee Report</span></a>
+      <a class="nav-item" href="/admin/reports/vehicles"><span class="nav-icon"><i data-lucide="car"></i></span><span class="nav-label">Vehicle Report</span></a>
+      <a class="nav-item" href="/admin/reports/quality"><span class="nav-icon"><i data-lucide="flask-conical"></i></span><span class="nav-label">Quality Report</span></a>
+      <a class="nav-item" href="/admin/reports/branches"><span class="nav-icon"><i data-lucide="building-2"></i></span><span class="nav-label">Branch Report</span></a>
+      <a class="nav-item" href="/admin/reports/profit-loss"><span class="nav-icon"><i data-lucide="trending-down"></i></span><span class="nav-label">Profit &amp; Loss</span></a>
+    </div>
+
+    <!-- Audit -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'audit' }}">
+      <span class="nav-icon"><i data-lucide="scroll-text"></i></span>
+      <span class="nav-label">Audit Logs</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'audit' }}">
+      <a class="nav-item" href="/admin/audit/dashboard"><span class="nav-icon"><i data-lucide="gauge"></i></span><span class="nav-label">Audit Dashboard</span></a>
+      <a class="nav-item" href="/admin/audit/login-logs"><span class="nav-icon"><i data-lucide="log-in"></i></span><span class="nav-label">Login Logs</span></a>
+      <a class="nav-item" href="/admin/audit/activity-logs"><span class="nav-icon"><i data-lucide="activity"></i></span><span class="nav-label">Activity Logs</span></a>
+      <a class="nav-item" href="/admin/audit/payment-logs"><span class="nav-icon"><i data-lucide="wallet"></i></span><span class="nav-label">Payment Logs</span></a>
+      <a class="nav-item" href="/admin/audit/inventory-logs"><span class="nav-icon"><i data-lucide="package"></i></span><span class="nav-label">Inventory Logs</span></a>
+      <a class="nav-item" href="/admin/audit/security-logs"><span class="nav-icon"><i data-lucide="shield"></i></span><span class="nav-label">Security Logs</span></a>
+    </div>
+
+    <!-- Settings -->
+    <a class="nav-item has-submenu {{ 'open' if active_section == 'settings' }}">
+      <span class="nav-icon"><i data-lucide="settings"></i></span>
+      <span class="nav-label">Settings</span>
+      <span class="nav-chevron"><i data-lucide="chevron-right"></i></span>
+    </a>
+    <div class="nav-submenu {{ 'open' if active_section == 'settings' }}">
+      <a class="nav-item" href="/admin/settings/company"><span class="nav-icon"><i data-lucide="building"></i></span><span class="nav-label">Company Profile</span></a>
+      <a class="nav-item" href="/admin/settings/milk-pricing"><span class="nav-icon"><i data-lucide="dollar-sign"></i></span><span class="nav-label">Milk Pricing</span></a>
+      <a class="nav-item" href="/admin/settings/quality-parameters"><span class="nav-icon"><i data-lucide="flask-conical"></i></span><span class="nav-label">Quality Parameters</span></a>
+      <a class="nav-item" href="/admin/settings/notifications"><span class="nav-icon"><i data-lucide="bell"></i></span><span class="nav-label">Notifications</span></a>
+      <a class="nav-item" href="/admin/settings/sms"><span class="nav-icon"><i data-lucide="message-square"></i></span><span class="nav-label">SMS Settings</span></a>
+      <a class="nav-item" href="/admin/settings/email"><span class="nav-icon"><i data-lucide="mail"></i></span><span class="nav-label">Email Settings</span></a>
+      <a class="nav-item" href="/admin/settings/backup"><span class="nav-icon"><i data-lucide="database-backup"></i></span><span class="nav-label">Backup &amp; Restore</span></a>
+      <a class="nav-item" href="/admin/settings/users"><span class="nav-icon"><i data-lucide="user-cog"></i></span><span class="nav-label">User Management</span></a>
+      <a class="nav-item" href="/admin/settings/security"><span class="nav-icon"><i data-lucide="shield-check"></i></span><span class="nav-label">Security</span></a>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+
+    <!-- Shared -->
+    <a class="nav-item {{ 'active' if active_page == 'profile' }}" href="/shared/profile"><span class="nav-icon"><i data-lucide="user-circle"></i></span><span class="nav-label">My Profile</span></a>
+    <a class="nav-item" href="/shared/notifications"><span class="nav-icon"><i data-lucide="bell"></i></span><span class="nav-label">Notifications</span></a>
+    <a class="nav-item" href="/shared/user-guide"><span class="nav-icon"><i data-lucide="book-open"></i></span><span class="nav-label">User Guide</span></a>
+    <a class="nav-item" href="/shared/help"><span class="nav-icon"><i data-lucide="help-circle"></i></span><span class="nav-label">Help Center</span></a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user" onclick="window.location.href='/shared/profile'">
+      <div class="user-avatar">{{ current_user.name[:2]|upper if current_user and current_user.name else 'AD' }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ current_user.name if current_user else 'Admin User' }}</div>
+        <div class="user-role">{{ current_user.role|replace('_', ' ') if current_user else 'Super Admin' }}</div>
+      </div>
+    </div>
+  </div>
+</aside>

@@ -1,0 +1,96 @@
+{% extends 'base/farmer_layout.html' %}
+{% set active_page = 'grievance' %}
+{% set active_section = 'grievance' %}
+{% block page_title %}Grievance{% endblock %}
+{% block page_init %}{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/farmer/profile', 'label': 'My Profile'}, {'url': '', 'label': 'Grievance'}]) }}
+<div class="page-header">
+  <div>
+    <h2>Grievance</h2>
+    <p class="subtitle">Raise a complaint or request with the dairy.</p>
+  </div>
+  
+</div>
+{% endblock %}
+
+{% block content %}
+
+        <div class="card">
+          <div class="card-body">
+            <form id="form-grievance">
+
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">1</span>
+                  New Grievance
+                </h5>
+                <div class="form-grid">
+
+                  <div class="form-group">
+                    <label class="form-label">Subject <span class="required">*</span></label>
+                    <input type="text" class="input-premium" name="subject" placeholder="Brief subject">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Category <span class="required">*</span></label>
+                    <select class="input-premium" name="category">
+                      <option value="">Select</option>
+                      <option value="PAYMENT">Payment</option><option value="QUALITY">Quality</option><option value="COLLECTION">Collection</option><option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="grid-column:span 2;">
+                    <label class="form-label">Description <span class="required">*</span></label>
+                    <textarea class="input-premium" name="description" placeholder="Describe your issue" rows="2"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Related Receipt</label>
+                    <input type="text" class="input-premium" name="receipt" placeholder="Optional receipt number">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Attach File</label>
+                    <input type="file" class="input-premium" name="attachment" placeholder="">
+                  </div>
+                </div>
+              </div>
+              <div class="form-section">
+                <h5 class="form-section-title">
+                  <span class="section-number">2</span>
+                  Previous Grievances
+                </h5>
+                <div class="empty-state" style="padding:var(--space-6);">
+                  <div class="empty-icon"><i data-lucide="inbox"></i></div>
+                  <p style="font-size:var(--text-sm);color:var(--ink-muted);">No items yet. Manage from the list view.</p>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="history.back()">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i data-lucide="save" style="width:18px;height:18px;"></i>
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.Chart && document.getElementById('chart-trend')) {
+    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
+  }
+  if (window.Chart && document.getElementById('chart-breakdown')) {
+    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
+  }
+  if (window.Chart && document.getElementById('chart-report-1')) {
+    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
+  }
+  if (window.Chart && document.getElementById('chart-report-2')) {
+    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
+  }
+});
+</script>
+{% endblock %}
