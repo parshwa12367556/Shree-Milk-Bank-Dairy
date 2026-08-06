@@ -2,7 +2,7 @@
 Smart Dairy ERP — Flask Application Factory
 """
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
@@ -58,10 +58,29 @@ def create_app(config_name=None):
     def index():
         return render_template('index.html')
 
-    # Catch-all for SPA routes
+    # ── Error pages ──────────────────────────────────────────────
+    # API calls get JSON errors; browser navigations get styled HTML
+    # pages (templates/errors/) consistent with the app design.
+    def _is_api_request():
+        return request.path.startswith('/api/')
+
     @app.errorhandler(404)
     def not_found(e):
-        return {'error': 'Not found'}, 404
+        if _is_api_request():
+            return {'error': 'Not found'}, 404
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        if _is_api_request():
+            return {'error': 'Access denied'}, 403
+        return render_template('errors/403.html'), 403
+
+    @app.errorhandler(500)
+    def server_error(e):
+        if _is_api_request():
+            return {'error': 'Internal server error'}, 500
+        return render_template('errors/500.html'), 500
 
     return app
 
@@ -123,6 +142,11 @@ def run_schema_updates():
         ('vehicles', 'mileage', 'FLOAT'),
         ('audit_logs', 'role', 'VARCHAR(30)'),
         ('audit_logs', 'branch_code', 'VARCHAR(20)'),
+        ('users', 'must_change_password', 'BOOLEAN'),
+        ('users', 'failed_attempts', 'INTEGER'),
+        ('users', 'locked_until', 'DATETIME'),
+        ('users', 'recovery_email', 'VARCHAR(120)'),
+        ('users', 'recovery_mobile', 'VARCHAR(15)'),
         ('bank_details', 'verification_status', 'VARCHAR(20)'),
         ('bank_details', 'verified_by', 'INTEGER'),
         ('bank_details', 'verified_at', 'DATETIME'),

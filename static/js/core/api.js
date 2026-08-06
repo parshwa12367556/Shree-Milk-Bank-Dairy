@@ -86,8 +86,8 @@ const API = {
   },
 
   // ── Auth ──
-  login(username, password, branchId) {
-    return this.post('/api/auth/login', { username, password, branch_id: branchId });
+  login(username, password, branchId, role) {
+    return this.post('/api/auth/login', { username, password, branch_id: branchId, role });
   },
 
   logout() {
@@ -96,6 +96,18 @@ const API = {
 
   getMe() {
     return this.get('/api/auth/me');
+  },
+
+  changePassword(currentPassword, newPassword) {
+    return this.post('/api/auth/change-password', { current_password: currentPassword, new_password: newPassword });
+  },
+
+  forgotPassword(identifier) {
+    return this.post('/api/auth/forgot-password', { username: identifier });
+  },
+
+  resetPassword(username, otp, newPassword) {
+    return this.post('/api/auth/reset-password', { username, otp, new_password: newPassword });
   },
 
   // ── Branches ──

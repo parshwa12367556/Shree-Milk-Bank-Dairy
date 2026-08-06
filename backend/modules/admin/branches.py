@@ -78,6 +78,8 @@ def create_branch():
             branch_id=branch.id,
             phone=phone,
             status='ACTIVE',
+            # First login uses the phone number as password — force a change.
+            must_change_password=True,
         )
         db.session.add(branch_user)
 
@@ -167,6 +169,10 @@ def reset_branch_password(branch_id):
     else:
         branch_user.password_hash = hash_password(branch.phone)
         branch_user.phone = branch.phone
+    # A reset returns the account to its default phone password → force a change.
+    branch_user.must_change_password = True
+    branch_user.failed_attempts = 0
+    branch_user.locked_until = None
 
     log_audit('UPDATE', 'Branch', branch.code, detail=f'Branch login password reset')
     db.session.commit()

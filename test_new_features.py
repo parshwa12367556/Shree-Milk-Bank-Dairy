@@ -470,5 +470,68 @@ with app.test_client() as c:
     check('admin: pnl report still ok', c.get('/api/reports?type=pnl&from=2026-07-01&to=2026-08-03',
                                               headers=auth(admin_token)).status_code == 200)
 
+# ═══════════════ Phase 4 — Login hardening (first-login, lockout, OTP reset) ═══════════════
+
+    # ── Role hint validation (login-screen role tabs) ──
+    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210', 'role': 'SUPER_ADMIN'})
+    check('role hint: mismatch rejected', r.status_code == 401)
+    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210', 'role': 'BRANCH_MANAGER'})
+    check('role hint: match accepted', r.status_code == 200)
+    check('login response has mustChangePassword flag',
+          r.get_json().get('mustChangePassword') is False)
+
+    # ── Brute-force lockout (BR01) ──
+    for _ in range(5):
+        c.post('/api/auth/login', json={'username': 'BR01', 'password': 'wrongpass'})
+    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': 'wrongpass'})
+    check('account locked after 5 failed attempts', r.status_code == 429,
+          f"(status={r.status_code})")
+    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210'})
+    check('correct password rejected while locked', r.status_code == 429)
+
+    # Failed logins are audit-logged
+    r = c.get('/api/audit', headers=auth(admin_token))
+    audit_actions = {l['action'] for l in r.get_json()['logs']}
+    check('audit: LOGIN_FAILED recorded', 'LOGIN_FAILED' in audit_actions)
+    check('audit: LOCK recorded', 'LOCK' in audit_actions)
+
+    # ── OTP reset (also unlocks the account) ──
+    r = c.post('/api/auth/forgot-password', json={'username': 'BR01'})
+    otp = r.get_json().get('dev_otp')
+    check('forgot-password returns dev OTP', bool(otp), f"(otp={otp})")
+    r = c.post('/api/auth/reset-password', json={'username': 'BR01', 'otp': '000000', 'new_password': 'br01newpass'})
+    check('reset rejects wrong OTP', r.status_code == 400)
+    r = c.post('/api/auth/reset-password', json={'username': 'BR01', 'otp': otp, 'new_password': 'br01newpass'})
+    check('correct OTP still valid after wrong guess', r.status_code == 200)
+    check('reset password via OTP', r.status_code == 200)
+    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': 'br01newpass'})
+    check('login with new password works', r.status_code == 200)
+    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210'})
+    check('old phone password no longer works', r.status_code == 401)
+
+    # ── First-login must-change-password flow (new branch manager) ──
+    r = c.post('/api/branches', json={'name': 'Login Test Branch', 'code': 'BR99', 'phone': '9999999999'},
+               headers=auth(admin_token))
+    check('create branch for login test', r.status_code == 201, f"({r.get_json().get('message', '')[:45]})")
+    r = c.post('/api/auth/login', json={'username': 'BR99', 'password': '9999999999'})
+    br99 = r.get_json()
+    check('new manager: first login forces password change',
+          r.status_code == 200 and br99.get('mustChangePassword') is True)
+    r = c.post('/api/auth/change-password', json={'current_password': '9999999999', 'new_password': 'br99secure'},
+               headers=auth(br99['token']))
+    check('change default password', r.status_code == 200)
+    r = c.post('/api/auth/login', json={'username': 'BR99', 'password': 'br99secure'})
+    check('new manager: login after change (flag cleared)',
+          r.status_code == 200 and r.get_json().get('mustChangePassword') is False)
+
+    # ── Production config must not leak the OTP in the response ──
+    from backend.app import create_app as _create_app
+    prod_app = _create_app('production')
+    with prod_app.test_client() as pc:
+        r = pc.post('/api/auth/forgot-password', json={'username': 'BR99'})
+        body = r.get_json()
+        check('production: dev_otp not leaked', r.status_code == 200 and 'dev_otp' not in body,
+              f"(keys={sorted(body.keys())})")
+
 print(f"\n=== RESULT: {PASS} passed, {FAIL} failed ===")
 sys.exit(1 if FAIL else 0)

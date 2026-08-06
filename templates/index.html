@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Dairy ERP</title>
+  <link rel="icon" href="/static/assets/images/favicon.svg" type="image/svg+xml">
   
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,6 +55,15 @@
 
       <form class="login-form" id="login-form">
         <div class="login-error" id="login-error"></div>
+
+        <div class="form-group">
+          <label class="form-label">Login As</label>
+          <div class="login-role-tabs" id="login-role-tabs">
+            <button type="button" class="role-tab active" data-role="SUPER_ADMIN">Super Admin</button>
+            <button type="button" class="role-tab" data-role="BRANCH_MANAGER">Branch Manager</button>
+            <button type="button" class="role-tab" data-role="FARMER">Farmer</button>
+          </div>
+        </div>
 
         <div class="form-group">
           <label class="form-label" for="login-branch">Branch</label>
@@ -111,6 +121,90 @@
         </div>
         <p class="login-footer-text">&copy; 2026 Smart Dairy ERP. All rights reserved.</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CHANGE PASSWORD MODAL (forced after first login)
+     ══════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-change-password" data-force>
+  <div class="modal-backdrop"></div>
+  <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-header">
+      <h5>Set a New Password</h5>
+    </div>
+    <div class="modal-body">
+      <p class="modal-subtitle" style="font-size:var(--text-sm);color:var(--ink-secondary);margin-bottom:var(--space-4);">
+        For security, you must replace your default password before continuing.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Current Password</label>
+        <input type="password" class="input-premium" id="cp-current" placeholder="Your current password" autocomplete="current-password">
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <input type="password" class="input-premium" id="cp-new" placeholder="Minimum 6 characters" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm New Password</label>
+        <input type="password" class="input-premium" id="cp-confirm" placeholder="Repeat new password" autocomplete="new-password">
+      </div>
+      <div class="modal-form-error" id="cp-error" style="display:none;color:var(--danger);font-size:var(--text-sm);margin-bottom:var(--space-3);"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary w-full" id="cp-submit">
+        <i data-lucide="shield-check" style="width:16px;height:16px;"></i>
+        Update Password
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     FORGOT PASSWORD MODAL (OTP flow)
+     ══════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-forgot-password">
+  <div class="modal-backdrop"></div>
+  <div class="modal-content" style="max-width: 420px;">
+    <div class="modal-header">
+      <h5>Forgot Password</h5>
+      <button class="modal-close" onclick="Modal.close('modal-forgot-password')">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: request OTP -->
+      <div id="fp-step-1">
+        <p class="modal-subtitle" style="font-size:var(--text-sm);color:var(--ink-secondary);margin-bottom:var(--space-4);">
+          Enter your username or registered email to receive a reset OTP.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Username / Email</label>
+          <input type="text" class="input-premium" id="fp-identifier" placeholder="e.g. BR01 or admin@dairy.com">
+        </div>
+        <div class="modal-form-error" id="fp-error1" style="display:none;color:var(--danger);font-size:var(--text-sm);margin-bottom:var(--space-3);"></div>
+        <div class="modal-subtitle" id="fp-dev-otp" style="display:none;background:var(--accent-light);border:1px dashed var(--accent);border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:var(--accent-dark);margin-bottom:var(--space-4);"></div>
+      </div>
+      <!-- Step 2: verify OTP + set new password -->
+      <div id="fp-step-2" style="display:none;">
+        <p class="modal-subtitle" style="font-size:var(--text-sm);color:var(--ink-secondary);margin-bottom:var(--space-4);">
+          Enter the OTP sent to you, then choose a new password.
+        </p>
+        <div class="form-group">
+          <label class="form-label">OTP</label>
+          <input type="text" class="input-premium" id="fp-otp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" class="input-premium" id="fp-new" placeholder="Minimum 6 characters" autocomplete="new-password">
+        </div>
+        <div class="modal-form-error" id="fp-error2" style="display:none;color:var(--danger);font-size:var(--text-sm);margin-bottom:var(--space-3);"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="fp-back" style="display:none;">Back</button>
+      <button class="btn btn-primary" id="fp-submit" style="width:100%;">Send OTP</button>
     </div>
   </div>
 </div>

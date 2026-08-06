@@ -122,6 +122,7 @@ Built with a **Flask REST API backend** and a **vanilla JavaScript single-page a
 - Dark & light theme toggle, mobile-responsive sidebar, global search, breadcrumbs, live clock.
 - Multi-language login screen (English / मराठी / हिंदी).
 - CSV export and print support on all major tables.
+- Brand favicon (`static/assets/images/favicon.svg`) and **styled standalone error pages** (`templates/errors/`) — 403 / 404 / 500, shown for browser navigations while API calls still get JSON errors.
 
 ---
 
@@ -279,7 +280,7 @@ shree-milk-bank-dairy/
 ├── config.py                   # Environment-based configuration classes
 ├── requirements.txt            # Python dependencies
 ├── smart_dairy.db              # SQLite database (auto-created)
-├── test_new_features.py        # 116-test feature suite (audit, verification, procurement, P&L, exports, RBAC, …)
+├── test_new_features.py        # 134-test feature suite (audit, verification, procurement, P&L, exports, RBAC, login hardening, …)
 ├── test_check.py               # Smoke test — verifies the app serves correctly
 ├── test_seed.py                # Verifies database seeding
 ├── backend/
@@ -316,9 +317,11 @@ shree-milk-bank-dairy/
 │           ├── notifications.py#     In-app notifications
 │           └── health.py       #     /api/health
 ├── templates/
-│   └── index.html              # SPA shell — contains ALL page views
-│   # (other *.html files in this folder are legacy/unused — only
-│   #  index.html is rendered by the app; pages load inside the SPA)
+│   ├── index.html              # SPA shell — contains ALL page views
+│   ├── errors/                 # Standalone error pages: 403, 404, 500
+│   └── emails/                 # HTML email templates (password-reset OTP)
+├── static/
+│   └── assets/images/          # Brand assets (favicon.svg)
 ├── static/
 │   ├── css/                    # Design system & page styles (variables.css, style.css, …)
 │   └── js/                     # Vanilla JS modules, grouped by role
@@ -625,11 +628,12 @@ The frontend is a **single-page application without any framework** — all view
 Three verification scripts are included:
 
 ```bash
-# 1. Full feature suite (116 assertions) — audit logging, farmer verification &
+# 1. Full feature suite (134 assertions) — audit logging, farmer verification &
 #    bank verification, procurement (PO/GRN/vendor payments), inventory
 #    movements & allocation, expenses/P&L, CSV/XLSX/PDF exports, vehicle service
 #    records, employee attendance, auto-notifications, backups, dashboard KPIs,
-#    cross-branch isolation, role gating, and RBAC hardening.
+#    cross-branch isolation, role gating, RBAC hardening, and login hardening
+#    (lockout, first-login password change, OTP reset).
 #    ⚠️ WARNING: Deletes smart_dairy.db (or TEST_DB_PATH) first, then re-seeds
 python test_new_features.py
 
@@ -641,7 +645,7 @@ python test_check.py
 python test_seed.py
 ```
 
-Expected result: `=== RESULT: 116 passed, 0 failed ===` for the feature suite.
+Expected result: `=== RESULT: 134 passed, 0 failed ===` for the feature suite.
 
 ---
 
@@ -654,7 +658,7 @@ Expected result: `=== RESULT: 116 passed, 0 failed ===` for the feature suite.
 3. **Run behind a production WSGI server** — use Gunicorn / Waitress / uWSGI instead of the built-in development server.
 4. **Use a production-grade database** — the default SQLite setup is fine for a single-instance deployment; switch `DATABASE_URL` to PostgreSQL or MySQL for multi-instance/high-availability setups.
 5. **Enable HTTPS** — all traffic should be TLS-encrypted, since authentication uses Bearer tokens.
-6. **Password reset** — `POST /api/auth/forgot-password` currently returns the reset email in the response (dev-mode behavior). Wire it to a real email-sending service (e.g., SMTP, SendGrid, Resend) before production.
+6. **Password reset** — `POST /api/auth/forgot-password` generates a 6-digit OTP and renders `templates/emails/password_reset.html`, but delivery isn't wired yet — in dev the OTP is returned in the response as `dev_otp`. Connect a real email-sending service (e.g., SMTP, SendGrid, Resend) to `backend/modules/shared/auth.py` before production.
 7. **Remove the dev login bypass** — `backend/modules/shared/auth.py` contains a temporary development bypass (`admin` / `admin123` always authenticates while `DEV_LOGIN_ENABLED` is on). Disable it before any production release.
 8. **SMS/Email sending** — the settings store SMTP/MSG91 configuration; wire up actual delivery (e.g., via SMTP or MSG91 API) before relying on automatic notifications externally.
 9. **Audit & backups** — backups are stored on the local filesystem (`backups/`); for production, ship them to durable object storage and enforce a retention policy.

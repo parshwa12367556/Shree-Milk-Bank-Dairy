@@ -273,18 +273,18 @@ const Modal = {
   }
 };
 
-// Close modal on Escape key
+// Close modal on Escape key (data-force modals cannot be dismissed)
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    Modal.closeAll();
+    document.querySelectorAll('.modal.open:not([data-force])').forEach(m => Modal.close(m.id));
   }
 });
 
-// Close modal on backdrop click
+// Close modal on backdrop click (data-force modals cannot be dismissed)
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal-backdrop')) {
     const modal = e.target.closest('.modal');
-    if (modal) Modal.close(modal.id);
+    if (modal && !modal.hasAttribute('data-force')) Modal.close(modal.id);
   }
 });
 

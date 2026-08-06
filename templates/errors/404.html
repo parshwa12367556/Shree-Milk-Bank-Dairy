@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Page Not Found · Smart Dairy ERP</title>
+  <link rel="icon" href="/static/assets/images/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/variables.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/login.css">
+  <link rel="stylesheet" href="/static/css/responsive.css">
+  <style>
+    .error-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .error-card { max-width: 520px; text-align: center; }
+    .error-code {
+      font-family: var(--font-display); font-size: clamp(5rem, 14vw, 8rem);
+      line-height: 1; font-weight: 700;
+      background: linear-gradient(135deg, var(--forest), var(--accent-dark));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .error-icon { width: 72px; height: 72px; border-radius: var(--radius-full);
+      background: var(--accent-light); color: var(--accent-dark);
+      display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); }
+    .error-actions { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; margin-top: var(--space-6); }
+  </style>
+</head>
+<body>
+  <div class="error-page">
+    <div class="login-card error-card" style="padding:var(--space-8);">
+      <div class="error-icon"><i data-lucide="file-question" style="width:36px;height:36px;"></i></div>
+      <div class="error-code">404</div>
+      <h1 style="font-size:var(--text-2xl);margin-bottom:var(--space-3);">Page Not Found</h1>
+      <p style="color:var(--ink-secondary);margin:0 auto;max-width:380px;">
+        The page you're looking for doesn't exist or has been moved.
+        Check the address, or head back to the dashboard.
+      </p>
+      <div class="error-actions">
+        <a class="btn btn-primary" href="/">
+          <i data-lucide="home" style="width:16px;height:16px;"></i>
+          Back to Dashboard
+        </a>
+        <button class="btn btn-secondary" onclick="history.back()">
+          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+          Go Back
+        </button>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

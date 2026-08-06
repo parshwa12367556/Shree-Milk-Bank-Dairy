@@ -22,6 +22,12 @@ class User(db.Model):
     email = db.Column(db.String(120))
     status = db.Column(db.String(20), default='ACTIVE')
     last_login_at = db.Column(db.DateTime, nullable=True)
+    # Login hardening (first-login enforcement + brute-force protection)
+    must_change_password = db.Column(db.Boolean, default=False)
+    failed_attempts = db.Column(db.Integer, default=0)
+    locked_until = db.Column(db.DateTime, nullable=True)
+    recovery_email = db.Column(db.String(120))
+    recovery_mobile = db.Column(db.String(15))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     branch = db.relationship('Branch', backref='users', lazy=True)
@@ -37,6 +43,7 @@ class User(db.Model):
             'phone': self.phone,
             'email': self.email,
             'status': self.status,
+            'mustChangePassword': bool(self.must_change_password),
         }
 
 
