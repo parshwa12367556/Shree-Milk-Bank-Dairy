@@ -515,11 +515,11 @@ function openHelpGuide(section) {
   const guides = {
     'getting-started': {
       title: 'Getting Started Guide',
-      message: 'Learn the basics of Smart Dairy ERP - managing farmers, recording collections, processing payments, and generating reports.'
+      message: 'Learn the basics of Shree Milk Bank - managing farmers, recording collections, processing payments, and generating reports.'
     },
     'video-tutorials': {
       title: 'Video Tutorials',
-      message: 'Watch step-by-step video guides on how to use each feature of the Smart Dairy ERP system.'
+      message: 'Watch step-by-step video guides on how to use each feature of the Shree Milk Bank system.'
     },
     'contact-support': {
       title: 'Contact Support',

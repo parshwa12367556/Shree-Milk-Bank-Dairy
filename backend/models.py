@@ -248,6 +248,9 @@ class Collection(db.Model):
     shift = db.Column(db.String(20), nullable=False)  # MORNING, EVENING
     milk_type = db.Column(db.String(20), nullable=False)
     quantity = db.Column(db.Float, nullable=False)
+    # Idempotency key — lets the operator retry a save safely (duplicate
+    # submissions with the same key are rejected instead of double-recorded).
+    idempotency_key = db.Column(db.String(64), nullable=True, index=True)
     fat = db.Column(db.Float)
     snf = db.Column(db.Float)
     clr = db.Column(db.Float)
@@ -979,6 +982,49 @@ class EmployeeAttendance(db.Model):
             'status': self.status,
             'shift': self.shift,
             'notes': self.notes,
+        }
+
+
+class Grievance(db.Model):
+    """Farmer complaints/requests raised through the farmer portal."""
+    __tablename__ = 'grievances'
+
+    id = db.Column(db.Integer, primary_key=True)
+    grievance_code = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=False)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(30), nullable=False)
+    # PAYMENT, QUALITY, COLLECTION, OTHER
+    description = db.Column(db.Text)
+    receipt_no = db.Column(db.String(20))
+    attachment = db.Column(db.String(500))
+    status = db.Column(db.String(20), default='OPEN')
+    # OPEN, IN_PROGRESS, RESOLVED, CLOSED
+    response = db.Column(db.Text)
+    responded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    responded_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    farmer = db.relationship('Farmer', backref='grievances', lazy=True)
+    branch = db.relationship('Branch', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'grievanceCode': self.grievance_code,
+            'farmerId': self.farmer_id,
+            'farmerCode': self.farmer.farmer_code if self.farmer else None,
+            'farmerName': self.farmer.name if self.farmer else None,
+            'branchId': self.branch_id,
+            'subject': self.subject,
+            'category': self.category,
+            'description': self.description,
+            'receiptNo': self.receipt_no,
+            'status': self.status,
+            'response': self.response,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'respondedAt': self.responded_at.isoformat() if self.responded_at else None,
         }
 
 

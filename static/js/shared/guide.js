@@ -79,11 +79,11 @@ const Guide = {
       id: 'getting-started',
       icon: 'rocket',
       title: 'Getting Started',
-      desc: 'What Smart Dairy ERP does, how milk flows through the system, and your first login.',
+      desc: 'What Shree Milk Bank does, how milk flows through the system, and your first login.',
       keywords: 'login first login overview introduction system how it works milk flow',
       sections: [
-        this._sec('introduction', 'book-open', 'Welcome to Smart Dairy ERP', `
-          <p>Smart Dairy ERP is a complete management system for a dairy business. It digitizes the
+        this._sec('introduction', 'book-open', 'Welcome to Shree Milk Bank', `
+          <p>Shree Milk Bank is a complete management system for a dairy business. It digitizes the
           entire milk cycle — from registering farmers, to recording daily milk collections with
           lab-quality readings, to automatically pricing each collection, paying farmers, and
           generating reports for management.</p>

@@ -7,7 +7,7 @@
       <div class="brand-logo">
         <i data-lucide="milk" style="width:20px;height:20px;"></i>
       </div>
-      <span class="brand-text">Smart Dairy</span>
+      <span class="brand-text">Shree Milk Bank</span>
       <span class="brand-badge">ERP</span>
     </a>
   </div>
@@ -43,7 +43,7 @@
       <div class="notif-dropdown" id="notif-dropdown">
         <div class="notif-header">
           <h6>Notifications</h6>
-          <a href="/shared/notifications">View All</a>
+          <a href="{{ '/farmer/notifications' if current_user and current_user.role == 'FARMER' else '/shared/notifications' }}">View All</a>
         </div>
         <div class="notif-list">
           <div class="empty-state" style="padding: var(--space-8);">

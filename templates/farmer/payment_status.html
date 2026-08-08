@@ -1,54 +1,60 @@
 {% extends 'base/farmer_layout.html' %}
 {% set active_page = 'payment_status' %}
 {% set active_section = 'payment_status' %}
-{% block page_title %}Payment Status{% endblock %}
-{% block page_init %}{% endblock %}
+{% block page_title %}My Payments{% endblock %}
+{% block page_init %}initFarmerPayments{% endblock %}
 
 {% block page_header %}
 {% from 'base/breadcrumb.html' import breadcrumb %}
-{{ breadcrumb([{'url': '/farmer/profile', 'label': 'My Profile'}, {'url': '', 'label': 'Payment Status'}]) }}
+{{ breadcrumb([{'url': '/farmer/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'My Payments'}]) }}
 <div class="page-header">
   <div>
-    <h2>Payment Status</h2>
-    <p class="subtitle">Current status of your pending payments.</p>
+    <h2>My Payments</h2>
+    <p class="subtitle">Current and pending payments for your milk supply.</p>
   </div>
-  
+  <div class="page-actions">
+    <button class="btn btn-secondary" onclick="window.refreshFarmerPayments && refreshFarmerPayments()">
+      <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+      Refresh
+    </button>
+  </div>
 </div>
 {% endblock %}
 
 {% block content %}
 
-        <!-- Toolbar -->
-        <div class="toolbar">
-          <div class="toolbar-left">
-            <div class="search-bar" style="width:280px;">
-              <span class="search-icon"><i data-lucide="search"></i></span>
-              <input type="text" placeholder="Search...">
-            </div>
+        <!-- Summary -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-amber" id="ph-pending-amount">
+            <div class="kpi-icon"><i data-lucide="clock" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Pending Amount</div>
+            <div class="kpi-value">—</div>
           </div>
-          <div class="toolbar-right">
-            <select style="padding:var(--space-1) var(--space-6) var(--space-1) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
-              <option>All Status</option>
-              <option>Active</option>
-              <option>Inactive</option>
-              <option>Pending</option>
-            </select>
-            <button class="btn btn-sm btn-ghost" title="Export"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
-            <button class="btn btn-sm btn-ghost" title="Print"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
-            <button class="btn btn-sm btn-ghost" title="Refresh"><i data-lucide="refresh-cw" style="width:16px;height:16px;"></i></button>
+          <div class="kpi-card kpi-blue" id="ph-pending-count">
+            <div class="kpi-icon"><i data-lucide="hourglass" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Pending Payments</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-teal" id="ph-paid-amount">
+            <div class="kpi-icon"><i data-lucide="badge-check" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Total Paid</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-green" id="ph-paid-count">
+            <div class="kpi-icon"><i data-lucide="receipt" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Payments Received</div>
+            <div class="kpi-value">—</div>
           </div>
         </div>
 
+        <div style="height:var(--space-5);"></div>
+
+        <!-- Pending payments table (default view) -->
         <div class="table-wrapper">
           <div class="table-header">
-            <div class="table-title">Period</div>
+            <div class="table-title">Payment Status</div>
             <div class="table-toolbar">
-              <div class="segmented-control">
-                <button class="segmented-btn active">All</button>
-                <button class="segmented-btn">Recent</button>
-              </div>
-              <button class="btn btn-sm btn-ghost" title="Export CSV"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
-              <button class="btn btn-sm btn-ghost" title="Print"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+              <span class="table-info" id="payments-total" style="font-size:var(--text-xs);color:var(--ink-muted);">Loading…</span>
             </div>
           </div>
           <div class="table-responsive">
@@ -56,49 +62,28 @@
               <thead>
                 <tr>
                   <th>Period</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Expected On</th>
-                    <th>Remarks</th>
+                  <th>Milk Qty</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Reference</th>
+                  <th>Paid On</th>
                 </tr>
               </thead>
-                  <tbody>
-                    <tr><td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td></tr>
-                    <tr><td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td></tr>
-                  </tbody>
+              <tbody id="payments-body">
+                <tr><td colspan="6" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading payments…</td></tr>
+              </tbody>
             </table>
           </div>
           <div class="table-footer">
-            <div class="table-info">Showing 1-10 of 124 entries</div>
-            {% from 'base/pagination.html' import pagination %}
-            {{ pagination(1, 13, request.path) }}
+            <div class="table-info" id="payments-pager-info">—</div>
+            <div class="pagination-controls">
+              <button class="btn btn-sm btn-ghost" id="payments-prev" onclick="window.pageFarmerPayments && pageFarmerPayments(-1)" disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Prev</button>
+              <button class="btn btn-sm btn-ghost" id="payments-next" onclick="window.pageFarmerPayments && pageFarmerPayments(1)" disabled>Next <i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+            </div>
           </div>
         </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.Chart && document.getElementById('chart-trend')) {
-    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
-  }
-  if (window.Chart && document.getElementById('chart-breakdown')) {
-    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
-  }
-  if (window.Chart && document.getElementById('chart-report-1')) {
-    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
-  }
-  if (window.Chart && document.getElementById('chart-report-2')) {
-    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
-  }
-});
-</script>
+<script src="/static/js/farmer/payments.js"></script>
 {% endblock %}

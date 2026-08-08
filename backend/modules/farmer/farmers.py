@@ -16,7 +16,7 @@ from flask import Blueprint, request, jsonify, Response
 from flask_jwt_extended import jwt_required
 from backend.app import db
 from backend.models import Farmer, BankDetail, Collection, Payment, Branch, User
-from backend.auth import role_required, get_identity, hash_password
+from backend.auth import role_required, get_identity, hash_password, reject_farmer
 from backend.utils import generate_farmer_code, generate_farmer_email
 from backend.audit import log_audit
 from backend.notify import notify
@@ -28,6 +28,7 @@ farmer_bp = Blueprint('farmers', __name__)
 @jwt_required()
 def get_farmers():
     """List farmers with pagination and filtering."""
+    reject_farmer()  # farmers use /api/farmer/me only
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     q = request.args.get('q', '').strip()
@@ -84,6 +85,7 @@ def get_farmers():
 @jwt_required()
 def get_farmer_stats():
     """Get farmer statistics (respects user's branch scope)."""
+    reject_farmer()
     user = get_identity()
     user_branch_id = user.get('branchId')
     scoped = user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id
@@ -369,6 +371,7 @@ def verify_farmer_bank(code):
 @jwt_required()
 def export_farmers():
     """Export farmers as CSV (branch-scoped)."""
+    reject_farmer()
     query = Farmer.query
 
     user = get_identity()
@@ -418,6 +421,7 @@ def export_farmers():
 @jwt_required()
 def get_farmer(code):
     """Get detailed farmer information including bank detail and stats."""
+    reject_farmer()
     farmer = Farmer.query.filter_by(farmer_code=code).first()
     if not farmer:
         return jsonify({'error': 'Farmer not found'}), 404
@@ -455,6 +459,7 @@ def get_farmer(code):
 @jwt_required()
 def update_farmer(code):
     """Update farmer information."""
+    reject_farmer()
     farmer = Farmer.query.filter_by(farmer_code=code).first()
     if not farmer:
         return jsonify({'error': 'Farmer not found'}), 404

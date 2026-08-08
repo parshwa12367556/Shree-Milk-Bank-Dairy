@@ -944,6 +944,13 @@
     "section": "profile",
     "page": "profile"
   },
+  "/farmer/dashboard": {
+    "template": "farmer/dashboard.html",
+    "layout": "farmer",
+    "title": "Farmer Dashboard",
+    "section": "dashboard",
+    "page": "dashboard"
+  },
   "/farmer/passbook": {
     "template": "farmer/passbook.html",
     "layout": "farmer",

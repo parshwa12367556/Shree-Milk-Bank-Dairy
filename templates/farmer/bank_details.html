@@ -6,86 +6,54 @@
 
 {% block page_header %}
 {% from 'base/breadcrumb.html' import breadcrumb %}
-{{ breadcrumb([{'url': '/farmer/profile', 'label': 'My Profile'}, {'url': '', 'label': 'Bank Details'}]) }}
+{{ breadcrumb([{'url': '/farmer/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'Bank Details'}]) }}
 <div class="page-header">
   <div>
     <h2>Bank Details</h2>
-    <p class="subtitle">Your bank account information for payments.</p>
+    <p class="subtitle">Your bank account information used for milk payments.</p>
   </div>
-  
 </div>
 {% endblock %}
 
 {% block content %}
 
-        <div class="card">
+        {% set bank = farmer.bank_detail if farmer else none %}
+        <div class="card" style="margin-bottom:var(--space-5);">
+          <div class="card-header">
+            <h5 class="section-title">Bank Account</h5>
+            {% if bank and bank.verification_status == 'VERIFIED' %}
+              <span class="tag tag-green">Verified</span>
+            {% elif bank and bank.verification_status == 'REJECTED' %}
+              <span class="tag tag-red">Rejected</span>
+            {% else %}
+              <span class="tag tag-amber">Pending Verification</span>
+            {% endif %}
+          </div>
           <div class="card-body">
-            <form id="form-bank-details">
-
-              <div class="form-section">
-                <h5 class="form-section-title">
-                  <span class="section-number">1</span>
-                  Bank Account
-                </h5>
-                <div class="form-grid">
-
-                  <div class="form-group">
-                    <label class="form-label">Account Holder Name <span class="required">*</span></label>
-                    <input type="text" class="input-premium" name="account_holder" placeholder="As per bank records">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Bank Name <span class="required">*</span></label>
-                    <input type="text" class="input-premium" name="bank_name" placeholder="">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Branch Name <span class="required">*</span></label>
-                    <input type="text" class="input-premium" name="branch_name" placeholder="">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Account Number <span class="required">*</span></label>
-                    <input type="text" class="input-premium" name="account_number" placeholder="">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">IFSC Code <span class="required">*</span></label>
-                    <input type="text" class="input-premium" name="ifsc" placeholder="">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">UPI ID</label>
-                    <input type="text" class="input-premium" name="upi" placeholder="">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Verified</label>
-                    <input type="text" class="input-premium" name="verified" placeholder="Pending verification">
-                  </div>
-                </div>
+            {% if bank and bank.account_number %}
+              <div class="info-grid">
+                <div class="info-item"><span class="info-label">Account Holder</span><span class="info-value">{{ bank.account_holder or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">Bank Name</span><span class="info-value">{{ bank.bank_name or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">Branch</span><span class="info-value">{{ bank.branch_name or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">Account Number</span><span class="info-value font-mono">{{ bank.account_number or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">IFSC</span><span class="info-value font-mono">{{ bank.ifsc or '—' }}</span></div>
+                <div class="info-item"><span class="info-label">UPI ID</span><span class="info-value">{{ bank.upi or '—' }}</span></div>
               </div>
-              <div class="form-actions">
-                <button type="button" class="btn btn-secondary" onclick="history.back()">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-lg">
-                  <i data-lucide="save" style="width:18px;height:18px;"></i>
-                  Save
-                </button>
+              <div style="margin-top:var(--space-4);padding:var(--space-3);background:var(--bg-subtle);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--ink-muted);">
+                {% if bank.verification_status == 'VERIFIED' %}
+                  Your bank details have been verified by the head office. Payments will be transferred to this account.
+                {% elif bank.verification_status == 'REJECTED' %}
+                  Your bank details were rejected. Please contact your branch with the correct details so they can be updated.
+                {% else %}
+                  Your bank details are awaiting verification by the head office. You can continue supplying milk while this is in progress.
+                {% endif %}
               </div>
-            </form>
+            {% else %}
+              <div class="empty-state" style="padding:var(--space-8);text-align:center;">
+                <div class="empty-icon" style="margin:0 auto var(--space-3);"><i data-lucide="landmark" style="width:36px;height:36px;"></i></div>
+                <p style="color:var(--ink-muted);">No bank details on file. Please contact your branch to register them for payments.</p>
+              </div>
+            {% endif %}
           </div>
         </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.Chart && document.getElementById('chart-trend')) {
-    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
-  }
-  if (window.Chart && document.getElementById('chart-breakdown')) {
-    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
-  }
-  if (window.Chart && document.getElementById('chart-report-1')) {
-    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
-  }
-  if (window.Chart && document.getElementById('chart-report-2')) {
-    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
-  }
-});
-</script>
 {% endblock %}

@@ -1,5 +1,5 @@
 """
-Smart Dairy ERP — Settings Routes
+Shree Milk Bank — Settings Routes
 
 GET   /api/settings       — Get system settings
 PATCH /api/settings       — Update system settings
@@ -25,7 +25,7 @@ settings_bp = Blueprint('settings', __name__)
 
 # In-memory settings store (in production, use a DB table)
 _system_settings = {
-    'dairy_name': 'Smart Dairy ERP',
+    'dairy_name': 'Shree Milk Bank',
     'currency': 'INR',
     'timezone': 'Asia/Kolkata',
     'language': 'en',

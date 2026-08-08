@@ -12,7 +12,7 @@ from backend.models import (
     Collection, Farmer, Payment, MilkRejection, Branch, Expense, VendorPayment,
     PurchaseOrder, InventoryItem, Vehicle,
 )
-from backend.auth import get_identity
+from backend.auth import get_identity, reject_farmer
 from backend.notify import notify_low_stock, notify_service_due
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -22,6 +22,7 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @jwt_required()
 def get_dashboard():
     """Return aggregated dashboard data computed from the database."""
+    reject_farmer()  # farmers use /api/farmer/me/dashboard
     today = date.today()
     days = request.args.get('days', 14, type=int)
     if days not in (14, 30):

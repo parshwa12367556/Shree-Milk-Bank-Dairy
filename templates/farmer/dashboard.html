@@ -1,0 +1,167 @@
+{% extends 'base/farmer_layout.html' %}
+{% set active_page = 'dashboard' %}
+{% set active_section = 'dashboard' %}
+{% set fname = farmer.name if farmer else (current_user.name if current_user else '') %}
+{% set fcode = farmer.farmer_code if farmer else (current_user.farmerCode if current_user and current_user.farmerCode else '') %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block page_init %}initFarmerDashboard{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/farmer/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'My Dashboard'}]) }}
+<div class="page-header">
+  <div>
+    <h2>Welcome, {{ fname or 'Farmer' }}</h2>
+    <p class="subtitle">Farmer ID: <span class="font-mono">{{ fcode or '—' }}</span>{% if farmer and farmer.branch %} · {{ farmer.branch.name }}{% endif %} — your milk supply at a glance. Updates automatically.</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-secondary" onclick="window.refreshFarmerDashboard && refreshFarmerDashboard(true)">
+      <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+      Refresh Now
+    </button>
+    <a class="btn btn-primary" href="/farmer/milk-history">
+      <i data-lucide="milk" style="width:16px;height:16px;"></i>
+      My Milk Collection
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+        <!-- Auto-refresh indicator -->
+        <div class="auto-refresh-bar" style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4);font-size:var(--text-xs);color:var(--ink-muted);">
+          <span class="status-dot online"></span>
+          <span id="refresh-status">Live — updates automatically every 30 seconds</span>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+
+          <div class="kpi-card kpi-green" id="kpi-today-qty">
+            <div class="kpi-icon"><i data-lucide="milk" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Today's Milk</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-gold" id="kpi-today-amount">
+            <div class="kpi-icon"><i data-lucide="indian-rupee" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Today's Amount</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-blue" id="kpi-total-qty">
+            <div class="kpi-icon"><i data-lucide="database" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Total Milk Supplied</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-purple" id="kpi-avg-fat">
+            <div class="kpi-icon"><i data-lucide="droplets" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Average Fat</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-amber" id="kpi-pending">
+            <div class="kpi-icon"><i data-lucide="clock" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Pending Payment</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-teal" id="kpi-paid">
+            <div class="kpi-icon"><i data-lucide="badge-check" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Payments Received</div>
+            <div class="kpi-value">—</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Today's collection summary -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Today's Collection</h5>
+              <span class="tag tag-green" id="today-count-tag">0 entries</span>
+            </div>
+            <div class="card-body">
+              <div id="today-shifts" style="display:flex;flex-direction:column;gap:var(--space-3);">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text short"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent collection -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Recent Collection</h5>
+              <a href="/farmer/milk-history" style="font-size:var(--text-xs);color:var(--forest);">View all</a>
+            </div>
+            <div class="card-body" id="recent-collection">
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text short"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:var(--space-5);"></div>
+
+        <div class="dashboard-grid">
+          <!-- Recent collections table -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Latest Milk Collections</h5>
+              <a href="/farmer/milk-history" style="font-size:var(--text-xs);color:var(--forest);">View all</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table-premium" style="width:100%;">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Shift</th>
+                    <th>Qty</th>
+                    <th>Fat</th>
+                    <th>SNF</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-collections-body">
+                  <tr><td colspan="8" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading milk collections…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recent notifications -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="section-title">Milk Messages / Notifications</h5>
+              <span class="tag tag-gold" id="unread-tag">0 unread</span>
+            </div>
+            <div class="card-body" id="recent-notifications">
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text short"></div>
+            </div>
+            <div class="card-footer" style="padding:var(--space-3) var(--space-5);border-top:1px solid var(--line);">
+              <a href="/farmer/notifications" style="font-size:var(--text-xs);color:var(--forest);">View all notifications</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick links -->
+        <div style="height:var(--space-5);"></div>
+        <div class="card">
+          <div class="card-header">
+            <h5 class="section-title">Quick Links</h5>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;flex-wrap:wrap;gap:var(--space-3);">
+              <a class="btn btn-secondary" href="/farmer/passbook"><i data-lucide="book-open" style="width:16px;height:16px;"></i> My Passbook</a>
+              <a class="btn btn-secondary" href="/farmer/payments"><i data-lucide="wallet" style="width:16px;height:16px;"></i> Payment History</a>
+              <a class="btn btn-secondary" href="/farmer/payment-status"><i data-lucide="clock" style="width:16px;height:16px;"></i> Payment Status</a>
+              <a class="btn btn-secondary" href="/farmer/profile"><i data-lucide="user-circle" style="width:16px;height:16px;"></i> My Profile</a>
+              <a class="btn btn-secondary" href="/farmer/grievance"><i data-lucide="message-square" style="width:16px;height:16px;"></i> Raise Grievance</a>
+            </div>
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/farmer/dashboard.js"></script>
+{% endblock %}

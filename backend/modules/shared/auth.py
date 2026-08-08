@@ -314,9 +314,19 @@ def forgot_password():
             otp=otp,
             expiry_minutes=OTP_TTL_SECONDS // 60,
         )
-        current_app.logger.info(
-            'Password reset email prepared for %s (%d chars) — delivery not wired yet',
-            user.username, len(html_body))
+        # Deliver via SMTP when configured (see Settings → Email Settings).
+        # Delivery is best-effort — the OTP flow never depends on it.
+        from backend.mailer import send_email, is_email_configured
+        if user.email and is_email_configured():
+            sent, reason = send_email(
+                user.email, 'Password Reset OTP - Shree Milk Bank', html_body)
+            current_app.logger.info(
+                'Password reset email for %s: %s',
+                user.username, 'sent' if sent else f'skipped ({reason})')
+        else:
+            current_app.logger.info(
+                'Password reset email prepared for %s (%d chars) — SMTP not configured, delivery skipped',
+                user.username, len(html_body))
     except Exception as exc:  # never break the OTP flow if the template fails
         current_app.logger.warning('Could not render password reset email: %s', exc)
 

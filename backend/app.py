@@ -157,6 +157,7 @@ def run_schema_updates():
         ('suppliers', 'gstin', 'VARCHAR(20)'),
         ('purchase_orders', 'delivery_status', 'VARCHAR(20)'),
         ('purchase_orders', 'grn_no', 'VARCHAR(20)'),
+        ('collections', 'idempotency_key', 'VARCHAR(64)'),
     ]
     for table, column, col_type in additions:
         if table in existing and column not in existing[table]:
@@ -166,6 +167,17 @@ def run_schema_updates():
                 print(f'[MIGRATE] Added column {table}.{column}')
             except Exception:
                 db.session.rollback()
+
+    # Unique index on collections.idempotency_key — the final database-level
+    # guard against duplicate milk collection submissions. SQLite unique
+    # indexes allow multiple NULLs, so legacy rows are unaffected.
+    try:
+        db.session.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_collections_idempotency_key "
+            "ON collections (idempotency_key)"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 def ensure_farmer_accounts():
@@ -272,6 +284,7 @@ def register_blueprints(app):
 
     # ── Farmer module ──
     from backend.modules.farmer.farmers import farmer_bp
+    from backend.modules.farmer.me import farmer_me_bp
 
     # ── Shared modules (all roles) ──
     from backend.modules.shared.auth import auth_bp
@@ -288,6 +301,7 @@ def register_blueprints(app):
     app.register_blueprint(auth_bp)
     app.register_blueprint(branch_bp)
     app.register_blueprint(farmer_bp)
+    app.register_blueprint(farmer_me_bp)
     app.register_blueprint(collection_bp)
     app.register_blueprint(payment_bp)
     app.register_blueprint(pricing_bp)

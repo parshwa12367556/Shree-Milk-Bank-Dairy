@@ -10,7 +10,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from backend.app import db
 from backend.models import Payment, Collection, Farmer
-from backend.auth import can_pay, get_identity
+from backend.auth import can_pay, get_identity, reject_farmer
 from backend.utils import generate_pay_code
 from backend.audit import log_audit
 from backend.notify import notify
@@ -22,6 +22,7 @@ payment_bp = Blueprint('payments', __name__)
 @jwt_required()
 def get_payments():
     """List payment records."""
+    reject_farmer()  # farmers use /api/farmer/me/payments
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     status = request.args.get('status', '')

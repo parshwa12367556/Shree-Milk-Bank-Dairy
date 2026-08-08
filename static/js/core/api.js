@@ -246,6 +246,47 @@ const API = {
     return this.delete('/api/notifications', data);
   },
 
+  // ── Farmer self-service (scoped to the authenticated farmer) ──
+  getMyProfile() {
+    return this.get('/api/farmer/me');
+  },
+
+  getMyDashboard() {
+    return this.get('/api/farmer/me/dashboard');
+  },
+
+  getMyCollections(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/farmer/me/collections${query ? '?' + query : ''}`);
+  },
+
+  getMyPassbook(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/farmer/me/passbook${query ? '?' + query : ''}`);
+  },
+
+  getMyPayments(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/farmer/me/payments${query ? '?' + query : ''}`);
+  },
+
+  getMyNotifications(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/farmer/me/notifications${query ? '?' + query : ''}`);
+  },
+
+  markMyNotificationsRead(data) {
+    return this.patch('/api/farmer/me/notifications/read', data || {});
+  },
+
+  getMyGrievances() {
+    return this.get('/api/farmer/me/grievances');
+  },
+
+  createMyGrievance(data) {
+    return this.post('/api/farmer/me/grievances', data);
+  },
+
   // ── Reports ──
   getReports(params = {}) {
     const query = new URLSearchParams(params).toString();

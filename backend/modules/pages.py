@@ -90,7 +90,7 @@ def _home_for(user):
     if role in ('BRANCH_MANAGER', 'OPERATOR'):
         return '/branch/dashboard'
     if role == 'FARMER':
-        return '/farmer/profile'
+        return '/farmer/dashboard'
     return '/admin/dashboard'
 
 

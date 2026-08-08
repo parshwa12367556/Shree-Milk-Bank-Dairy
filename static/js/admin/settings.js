@@ -45,7 +45,7 @@ async function loadSettings() {
 }
 
 async function saveSettings() {
-  const dairyName = document.querySelector('#settings-general input[type="text"]')?.value || 'Smart Dairy ERP';
+  const dairyName = document.querySelector('#settings-general input[type="text"]')?.value || 'Shree Milk Bank';
   const payload = { dairy_name: dairyName };
 
   // Collect SMS / Email config if the section is present

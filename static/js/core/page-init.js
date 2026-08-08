@@ -18,7 +18,7 @@ const ROUTE_MAP = {
   dashboard: () => {
     const role = window.Auth && Auth.getUser() ? Auth.getUser().role : null;
     if (role === 'BRANCH_MANAGER' || role === 'OPERATOR') return '/branch/dashboard';
-    if (role === 'FARMER') return '/farmer/profile';
+    if (role === 'FARMER') return '/farmer/dashboard';
     return '/admin/dashboard';
   },
   login: () => '/login',
@@ -42,8 +42,14 @@ const ROUTE_MAP = {
   reports: () => '/admin/reports/dashboard',
   audit: () => '/admin/audit/dashboard',
   settings: () => '/admin/settings/company',
-  notifications: () => '/shared/notifications',
-  profile: () => '/shared/profile',
+  notifications: () => {
+    const role = window.Auth && Auth.getUser() ? Auth.getUser().role : null;
+    return role === 'FARMER' ? '/farmer/notifications' : '/shared/notifications';
+  },
+  profile: () => {
+    const role = window.Auth && Auth.getUser() ? Auth.getUser().role : null;
+    return role === 'FARMER' ? '/farmer/profile' : '/shared/profile';
+  },
   guide: () => '/shared/user-guide',
   help: () => '/shared/help',
 };
@@ -157,12 +163,45 @@ document.addEventListener('DOMContentLoaded', () => {
     notifTrigger.addEventListener('click', (e) => {
       e.stopPropagation();
       notifDropdown.classList.toggle('open');
+      if (notifDropdown.classList.contains('open')) loadNotifDropdown();
     });
   }
+  loadNotifDropdown();
   document.addEventListener('click', () => {
     if (userDropdown) userDropdown.classList.remove('open');
     if (notifDropdown) notifDropdown.classList.remove('open');
   });
+
+  // ── Notification dropdown: load the current user's latest messages ──
+  async function loadNotifDropdown() {
+    const list = document.querySelector('.notif-list');
+    const countEl = document.querySelector('.notif-count');
+    if (!list) return;
+    try {
+      const data = await API.getNotifications({ limit: 6 });
+      const notifs = data.notifications || [];
+      const unread = notifs.filter(n => !n.read).length;
+      if (countEl) {
+        countEl.textContent = String(unread);
+        countEl.style.display = unread > 0 ? '' : 'none';
+      }
+      if (!notifs.length) {
+        list.innerHTML = '<div class="empty-state" style="padding: var(--space-8);"><div class="empty-icon"><i data-lucide="bell-off"></i></div><p style="font-size: var(--text-sm); color: var(--ink-muted);">No notifications</p></div>';
+      } else {
+        list.innerHTML = notifs.map(n => `
+          <div style="display:flex;gap:var(--space-2);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--line);${n.read ? 'opacity:0.7;' : ''}">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:var(--text-xs);">${n.title || ''}</div>
+              <div style="color:var(--ink-muted);font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.message || ''}</div>
+            </div>
+            ${n.read ? '' : '<span class="status-dot online" style="flex-shrink:0;margin-top:4px;"></span>'}
+          </div>`).join('');
+      }
+      if (window.lucide) lucide.createIcons();
+    } catch (err) {
+      console.warn('Failed to load notifications:', err);
+    }
+  }
 
   // ── Logout ──
   const logoutBtn = document.getElementById('logout-btn');

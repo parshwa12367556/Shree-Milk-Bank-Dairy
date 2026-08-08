@@ -1,5 +1,5 @@
 """
-Smart Dairy ERP — Report Routes
+Shree Milk Bank — Report Routes
 
 GET  /api/reports?type=collection|payment|farmer|quality|rejection|branch|expense|pnl&from=&to=&branchId=
 GET  /api/reports/export?type=...&format=csv — CSV export of any report
@@ -515,7 +515,7 @@ def _build_xlsx(data, report_type, filename):
     header_fill = PatternFill(start_color='2E7D32', end_color='2E7D32', fill_type='solid')
 
     # Header row: report title + period
-    ws.append([f'Smart Dairy ERP — {report_type.title()} Report'])
+    ws.append([f'Shree Milk Bank — {report_type.title()} Report'])
     ws['A1'].font = Font(bold=True, size=14)
     period = data.get('period', {})
     ws.append([f'Period: {period.get("from", "")} to {period.get("to", "")}'])
@@ -568,11 +568,11 @@ def _build_pdf(data, report_type, filename):
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
     output = io.BytesIO()
-    doc = SimpleDocTemplate(output, pagesize=A4, title=f'Smart Dairy ERP - {report_type} Report')
+    doc = SimpleDocTemplate(output, pagesize=A4, title=f'Shree Milk Bank - {report_type} Report')
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle('TitleX', parent=styles['Title'], fontSize=16, textColor=colors.HexColor('#1B4332'))
     elements = []
-    elements.append(Paragraph(f'Smart Dairy ERP — {report_type.title()} Report', title_style))
+    elements.append(Paragraph(f'Shree Milk Bank — {report_type.title()} Report', title_style))
     period = data.get('period', {})
     elements.append(Paragraph(f'Period: {period.get("from", "")} to {period.get("to", "")}', styles['Normal']))
     elements.append(Spacer(1, 12))

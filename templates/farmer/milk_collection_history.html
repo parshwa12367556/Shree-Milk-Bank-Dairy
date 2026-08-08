@@ -1,54 +1,61 @@
 {% extends 'base/farmer_layout.html' %}
 {% set active_page = 'milk_history' %}
 {% set active_section = 'milk_history' %}
-{% block page_title %}Milk Collection History{% endblock %}
-{% block page_init %}{% endblock %}
+{% block page_title %}My Milk Collection{% endblock %}
+{% block page_init %}initFarmerCollections{% endblock %}
 
 {% block page_header %}
 {% from 'base/breadcrumb.html' import breadcrumb %}
-{{ breadcrumb([{'url': '/farmer/profile', 'label': 'My Profile'}, {'url': '', 'label': 'Milk Collection History'}]) }}
+{{ breadcrumb([{'url': '/farmer/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'My Milk Collection'}]) }}
 <div class="page-header">
   <div>
-    <h2>Milk Collection History</h2>
-    <p class="subtitle">All your milk collections.</p>
+    <h2>My Milk Collection</h2>
+    <p class="subtitle">All your milk collection records — recorded by the branch operator.</p>
   </div>
-  
+  <div class="page-actions">
+    <button class="btn btn-secondary" onclick="window.refreshFarmerCollections && refreshFarmerCollections()">
+      <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+      Refresh
+    </button>
+  </div>
 </div>
 {% endblock %}
 
 {% block content %}
 
-        <!-- Toolbar -->
-        <div class="toolbar">
-          <div class="toolbar-left">
-            <div class="search-bar" style="width:280px;">
-              <span class="search-icon"><i data-lucide="search"></i></span>
-              <input type="text" placeholder="Search...">
+        <!-- Filters -->
+        <div class="card" style="padding:var(--space-5);margin-bottom:var(--space-5);">
+          <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+            <div class="form-group">
+              <label class="form-label">From Date</label>
+              <input type="date" class="input-premium" id="filter-from">
             </div>
-          </div>
-          <div class="toolbar-right">
-            <select style="padding:var(--space-1) var(--space-6) var(--space-1) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
-              <option>All Status</option>
-              <option>Active</option>
-              <option>Inactive</option>
-              <option>Pending</option>
-            </select>
-            <button class="btn btn-sm btn-ghost" title="Export"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
-            <button class="btn btn-sm btn-ghost" title="Print"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
-            <button class="btn btn-sm btn-ghost" title="Refresh"><i data-lucide="refresh-cw" style="width:16px;height:16px;"></i></button>
+            <div class="form-group">
+              <label class="form-label">To Date</label>
+              <input type="date" class="input-premium" id="filter-to">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Shift</label>
+              <select class="input-premium" id="filter-shift">
+                <option value="">All Shifts</option>
+                <option value="MORNING">Morning</option>
+                <option value="EVENING">Evening</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">&nbsp;</label>
+              <button class="btn btn-primary w-full" onclick="window.refreshFarmerCollections && refreshFarmerCollections()">
+                <i data-lucide="search" style="width:16px;height:16px;"></i> Apply
+              </button>
+            </div>
           </div>
         </div>
 
         <div class="table-wrapper">
           <div class="table-header">
-            <div class="table-title">Receipt</div>
+            <div class="table-title">Collection Records</div>
             <div class="table-toolbar">
-              <div class="segmented-control">
-                <button class="segmented-btn active">All</button>
-                <button class="segmented-btn">Recent</button>
-              </div>
-              <button class="btn btn-sm btn-ghost" title="Export CSV"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
-              <button class="btn btn-sm btn-ghost" title="Print"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+              <span class="table-info" id="collections-total" style="font-size:var(--text-xs);color:var(--ink-muted);">Loading…</span>
             </div>
           </div>
           <div class="table-responsive">
@@ -56,58 +63,32 @@
               <thead>
                 <tr>
                   <th>Receipt</th>
-                    <th>Date</th>
-                    <th>Shift</th>
-                    <th>Qty</th>
-                    <th>Fat</th>
-                    <th>SNF</th>
-                    <th>Rate</th>
-                    <th>Amount</th>
+                  <th>Date</th>
+                  <th>Shift</th>
+                  <th>Milk Type</th>
+                  <th>Qty</th>
+                  <th>Fat</th>
+                  <th>SNF</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  <th>Status</th>
                 </tr>
               </thead>
-                  <tbody>
-                    <tr><td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td></tr>
-                    <tr><td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td></tr>
-                  </tbody>
+              <tbody id="collections-body">
+                <tr><td colspan="10" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading milk collections…</td></tr>
+              </tbody>
             </table>
           </div>
           <div class="table-footer">
-            <div class="table-info">Showing 1-10 of 124 entries</div>
-            {% from 'base/pagination.html' import pagination %}
-            {{ pagination(1, 13, request.path) }}
+            <div class="table-info" id="collections-pager-info">—</div>
+            <div class="pagination-controls">
+              <button class="btn btn-sm btn-ghost" id="collections-prev" onclick="window.pageFarmerCollections && pageFarmerCollections(-1)" disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Prev</button>
+              <button class="btn btn-sm btn-ghost" id="collections-next" onclick="window.pageFarmerCollections && pageFarmerCollections(1)" disabled>Next <i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+            </div>
           </div>
         </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.Chart && document.getElementById('chart-trend')) {
-    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
-  }
-  if (window.Chart && document.getElementById('chart-breakdown')) {
-    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
-  }
-  if (window.Chart && document.getElementById('chart-report-1')) {
-    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
-  }
-  if (window.Chart && document.getElementById('chart-report-2')) {
-    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
-  }
-});
-</script>
+<script src="/static/js/farmer/milk-collection.js"></script>
 {% endblock %}

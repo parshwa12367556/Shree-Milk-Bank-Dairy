@@ -151,7 +151,7 @@ const Router = {
       this._updateSidebar(page);
       
       // Update document title
-      document.title = route ? `${route.title} - Smart Dairy ERP` : 'Smart Dairy ERP';
+      document.title = route ? `${route.title} - Shree Milk Bank` : 'Shree Milk Bank';
       
       // Call page-specific init
       if (route && route.init && typeof window[route.init] === 'function') {

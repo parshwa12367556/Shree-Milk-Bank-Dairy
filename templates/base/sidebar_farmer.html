@@ -4,7 +4,7 @@
       <i data-lucide="milk"></i>
     </div>
     <div class="sidebar-brand">
-      <span class="brand-name">Smart Dairy</span>
+      <span class="brand-name">Shree Milk Bank</span>
       <span class="brand-sub">Farmer Portal</span>
     </div>
   </div>
@@ -15,25 +15,36 @@
   </div>
 
   <nav class="sidebar-nav" id="sidebar-nav">
-    <a class="nav-item {{ 'active' if active_page == 'profile' }}" href="/farmer/profile">
-      <span class="nav-icon"><i data-lucide="user-circle"></i></span>
-      <span class="nav-label">My Profile</span>
-    </a>
-    <a class="nav-item {{ 'active' if active_page == 'passbook' }}" href="/farmer/passbook">
-      <span class="nav-icon"><i data-lucide="book-open"></i></span>
-      <span class="nav-label">Passbook</span>
+    <a class="nav-item {{ 'active' if active_page == 'dashboard' }}" href="/farmer/dashboard">
+      <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+      <span class="nav-label">Dashboard</span>
     </a>
     <a class="nav-item {{ 'active' if active_page == 'milk_history' }}" href="/farmer/milk-history">
       <span class="nav-icon"><i data-lucide="milk"></i></span>
-      <span class="nav-label">Milk Collection History</span>
+      <span class="nav-label">My Milk Collection</span>
+    </a>
+    <a class="nav-item {{ 'active' if active_page == 'payment_status' }}" href="/farmer/payment-status">
+      <span class="nav-icon"><i data-lucide="clock"></i></span>
+      <span class="nav-label">My Payments</span>
     </a>
     <a class="nav-item {{ 'active' if active_page == 'payments' }}" href="/farmer/payments">
       <span class="nav-icon"><i data-lucide="wallet"></i></span>
       <span class="nav-label">Payment History</span>
     </a>
-    <a class="nav-item {{ 'active' if active_page == 'payment_status' }}" href="/farmer/payment-status">
-      <span class="nav-icon"><i data-lucide="clock"></i></span>
-      <span class="nav-label">Payment Status</span>
+    <a class="nav-item {{ 'active' if active_page == 'passbook' }}" href="/farmer/passbook">
+      <span class="nav-icon"><i data-lucide="book-open"></i></span>
+      <span class="nav-label">My Passbook</span>
+    </a>
+    <a class="nav-item {{ 'active' if active_page == 'notifications' }}" href="/farmer/notifications">
+      <span class="nav-icon"><i data-lucide="bell"></i></span>
+      <span class="nav-label">Milk Messages / Notifications</span>
+    </a>
+
+    <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+
+    <a class="nav-item {{ 'active' if active_page == 'profile' }}" href="/farmer/profile">
+      <span class="nav-icon"><i data-lucide="user-circle"></i></span>
+      <span class="nav-label">My Profile</span>
     </a>
     <a class="nav-item {{ 'active' if active_page == 'bank_details' }}" href="/farmer/bank-details">
       <span class="nav-icon"><i data-lucide="landmark"></i></span>
@@ -42,10 +53,6 @@
     <a class="nav-item {{ 'active' if active_page == 'documents' }}" href="/farmer/documents">
       <span class="nav-icon"><i data-lucide="file-text"></i></span>
       <span class="nav-label">My Documents</span>
-    </a>
-    <a class="nav-item {{ 'active' if active_page == 'notifications' }}" href="/farmer/notifications">
-      <span class="nav-icon"><i data-lucide="bell"></i></span>
-      <span class="nav-label">Notifications</span>
     </a>
     <a class="nav-item {{ 'active' if active_page == 'grievance' }}" href="/farmer/grievance">
       <span class="nav-icon"><i data-lucide="message-square"></i></span>

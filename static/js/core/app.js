@@ -38,7 +38,7 @@ const App = {
     this._updateDateTime();
     setInterval(() => this._updateDateTime(), 60000);
 
-    console.log('🐄 Smart Dairy ERP initialized');
+    console.log('🐄 Shree Milk Bank initialized');
   },
 
   /**

@@ -132,6 +132,21 @@ def is_global_role():
     return role_required('SUPER_ADMIN', 'HEAD_OFFICE')
 
 
+def reject_farmer():
+    """
+    Deny requests from FARMER accounts on shared/staff endpoints.
+
+    Farmers have their own self-service endpoints (/api/farmer/me/*) that are
+    scoped to their own record. The shared list endpoints (farmers, collections,
+    payments, dashboard, ...) must reject them outright — a farmer must never
+    be able to enumerate or view other farmers' / the branch's data, even if
+    a branch_id filter would narrow the rows.
+    """
+    user = get_identity()
+    if user and user.get('role') == 'FARMER':
+        _deny('Access denied. Farmer accounts can only access their own portal.')
+
+
 def get_current_user():
     """
     Get the current authenticated user's identity.

@@ -55,10 +55,6 @@
   </button>
 </form>
 
-<div class="login-dev-hint" title="Demo logins">
-  <i data-lucide="info" style="width:14px;height:14px;"></i>
-  <span>Head Office: <strong>admin</strong> / <strong>admin123</strong> · Branch: <strong>Branch Code</strong> / <strong>Branch Phone</strong> · Farmer: <strong>Registered Email</strong> / <strong>Mobile Number</strong></span>
-</div>
 {% endblock %}
 
 {% block scripts %}
@@ -158,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
       user.mustChangePassword = !!result.mustChangePassword;
       Storage.setUser(user);
       if (user.mustChangePassword) { window.location.href = '/change-password'; return; }
-      const roleMap = { 'BRANCH_MANAGER': '/branch/dashboard', 'OPERATOR': '/branch/dashboard', 'FARMER': '/farmer/profile' };
+      const roleMap = { 'BRANCH_MANAGER': '/branch/dashboard', 'OPERATOR': '/branch/dashboard', 'FARMER': '/farmer/dashboard' };
       window.location.href = roleMap[user.role] || '/admin/dashboard';
     } catch (err) {
       showErr(err.message || 'Invalid username or password');
