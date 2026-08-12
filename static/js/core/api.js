@@ -85,9 +85,9 @@ const API = {
     return this.get(`/api/dashboard${query ? '?' + query : ''}`);
   },
 
-  // ── Auth ──
-  login(username, password, branchId, role) {
-    return this.post('/api/auth/login', { username, password, branch_id: branchId, role });
+  // ── Auth (common login: Login ID + password; role is detected by the backend) ──
+  login(loginId, password, rememberMe = false) {
+    return this.post('/api/auth/login', { login_id: loginId, password, remember_me: rememberMe });
   },
 
   logout() {
@@ -103,11 +103,11 @@ const API = {
   },
 
   forgotPassword(identifier) {
-    return this.post('/api/auth/forgot-password', { username: identifier });
+    return this.post('/api/auth/forgot-password', { login_id: identifier });
   },
 
-  resetPassword(username, otp, newPassword) {
-    return this.post('/api/auth/reset-password', { username, otp, new_password: newPassword });
+  resetPassword(identifier, otp, newPassword) {
+    return this.post('/api/auth/reset-password', { login_id: identifier, otp, new_password: newPassword });
   },
 
   // ── Branches ──
@@ -251,8 +251,44 @@ const API = {
     return this.get('/api/farmer/me');
   },
 
+  updateMyProfile(data) {
+    return this.patch('/api/farmer/me/profile', data);
+  },
+
   getMyDashboard() {
     return this.get('/api/farmer/me/dashboard');
+  },
+
+  getMyDailyCollection() {
+    return this.get('/api/farmer/me/daily-collection');
+  },
+
+  getMyBankDetails() {
+    return this.get('/api/farmer/me/bank-details');
+  },
+
+  saveMyBankDetails(data) {
+    return this.post('/api/farmer/me/bank-details', data);
+  },
+
+  getMyDocuments() {
+    return this.get('/api/farmer/me/documents');
+  },
+
+  uploadMyDocument(formData) {
+    return this.upload('/api/farmer/me/documents', formData);
+  },
+
+  deleteMyDocument(id) {
+    return this.delete(`/api/farmer/me/documents/${id}`);
+  },
+
+  getMySettings() {
+    return this.get('/api/farmer/me/settings');
+  },
+
+  updateMySettings(data) {
+    return this.patch('/api/farmer/me/settings', data);
   },
 
   getMyCollections(params = {}) {
@@ -283,8 +319,26 @@ const API = {
     return this.get('/api/farmer/me/grievances');
   },
 
+  getMyGrievance(id) {
+    return this.get(`/api/farmer/me/grievances/${id}`);
+  },
+
   createMyGrievance(data) {
     return this.post('/api/farmer/me/grievances', data);
+  },
+
+  // ── Admin: Grievances ──
+  getAdminGrievances(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.get(`/api/admin/grievances${query ? '?' + query : ''}`);
+  },
+
+  getAdminGrievance(id) {
+    return this.get(`/api/admin/grievances/${id}`);
+  },
+
+  respondAdminGrievance(id, data) {
+    return this.patch(`/api/admin/grievances/${id}`, data);
   },
 
   // ── Reports ──
@@ -435,6 +489,24 @@ const API = {
 
   updateSettings(data) {
     return this.patch('/api/settings', data);
+  },
+
+  /**
+   * Upload a file (multipart/form-data) with JWT auth
+   * @param {string} path - API endpoint path
+   * @param {FormData} formData - Multipart body
+   * @returns {Promise<*>} Response data
+   */
+  async upload(path, formData) {
+    const token = localStorage.getItem('sd_token');
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(this.base + path, { method: 'POST', headers, body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || data.message || 'Upload failed');
+    }
+    return data;
   },
 
   /**

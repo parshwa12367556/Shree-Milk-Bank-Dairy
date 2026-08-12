@@ -40,26 +40,39 @@ r = c.post('/api/auth/login', json={
     'username': email.upper(), 'password': phone, 'role': 'FARMER'})
 results.append(('uppercase email login 200', r.status_code == 200, str(r.status_code)))
 
-# 1d) A farmer email never resolves to a non-farmer account
+# 1d) The role sent by the client is NEVER trusted — the backend detects it
+# from the database. Logging in with a farmer email returns the FARMER role.
 r = c.post('/api/auth/login', json={
-    'username': email, 'password': phone, 'role': 'BRANCH_MANAGER'})
-results.append(('email as wrong role rejected', r.status_code == 401, str(r.status_code)))
+    'username': email, 'password': phone, 'role': 'BRANCH_OPERATOR'})
+role_body = r.get_json() or {}
+results.append(('client role ignored (login succeeds)', r.status_code == 200, str(r.status_code)))
+results.append(('role detected from DB = FARMER',
+                role_body.get('user', {}).get('role') == 'FARMER',
+                role_body.get('user', {}).get('role')))
 token = body.get('token')
 ident = body.get('user') or {}
 results.append(('identity has farmerCode', bool(ident.get('farmerCode')), ident.get('farmerCode')))
 results.append(('identity role FARMER', ident.get('role') == 'FARMER', ident.get('role')))
 c.set_cookie('access_token', token)
 
-# 2) Farmer portal pages render with the farmer's data
+# 2) Farmer portal pages serve the SPA shell (the farmer's data is rendered
+#    client-side from /api/farmer/me — verified below).
 r = c.get('/farmer/profile')
 html = r.get_data(as_text=True)
 results.append(('farmer profile 200', r.status_code == 200, str(r.status_code)))
-results.append(('profile shows farmer code', farmer.farmer_code in html, farmer.farmer_code))
-results.append(('profile shows farmer name', farmer.name in html, farmer.name))
+results.append(('profile serves SPA shell', 'Shree Milk Bank' in html, 'SPA shell'))
+results.append(('profile page container present', 'id="page-my-profile"' in html, 'page-my-profile'))
 for path in ['/farmer/passbook', '/farmer/milk-history', '/farmer/payments',
              '/farmer/bank-details', '/farmer/notifications']:
     r = c.get(path)
     results.append((f'{path} 200', r.status_code == 200, str(r.status_code)))
+
+# 2b) The self-service API returns the farmer's real identity (client-rendered)
+r = c.get('/api/farmer/me', headers={'Authorization': f'Bearer {token}'})
+me = r.get_json().get('farmer', {}) if r.status_code == 200 else {}
+results.append(('farmer/me 200', r.status_code == 200, str(r.status_code)))
+results.append(('farmer/me shows farmer code', me.get('farmerCode') == farmer.farmer_code, me.get('farmerCode')))
+results.append(('farmer/me shows farmer name', me.get('name') == farmer.name, me.get('name')))
 
 # 3) RBAC: farmer blocked from admin/branch pages
 r = c.get('/admin/branches')
@@ -67,23 +80,22 @@ results.append(('farmer blocked from admin (302)', r.status_code == 302, str(r.s
 r = c.get('/branch/dashboard')
 results.append(('farmer blocked from branch (302)', r.status_code == 302, str(r.status_code)))
 
-# 4) Wrong role hint rejected, wrong password rejected
+# 4) Wrong password rejected, unknown account rejected (generic error)
 r = c.post('/api/auth/login', json={
-    'username': email, 'password': phone, 'role': 'BRANCH_MANAGER'})
-results.append(('role mismatch rejected 401', r.status_code == 401, str(r.status_code)))
-r = c.post('/api/auth/login', json={
-    'username': email, 'password': 'wrongpass', 'role': 'FARMER'})
+    'username': email, 'password': 'wrongpass'})
 results.append(('wrong password rejected 401', r.status_code == 401, str(r.status_code)))
 r = c.post('/api/auth/login', json={
-    'username': 'no.such.farmer@dairy.com', 'password': phone, 'role': 'FARMER'})
+    'username': 'no.such.farmer@dairy.com', 'password': phone})
 results.append(('unknown email rejected 401', r.status_code == 401, str(r.status_code)))
 
-# 5) Admin can still log in + hit farmer portal (global view)
-r = c.post('/api/auth/login', json={'username': 'admin', 'password': 'admin123', 'role': 'SUPER_ADMIN'})
+# 5) Admin can still log in; farmer portal pages are FARMER-only (spec 11)
+r = c.post('/api/auth/login', json={'username': 'admin', 'password': 'admin123', 'role': 'ADMIN'})
 results.append(('admin login 200', r.status_code == 200, str(r.status_code)))
 c.set_cookie('access_token', r.get_json()['token'])
 r = c.get('/farmer/profile')
-results.append(('admin sees farmer portal 200', r.status_code == 200, str(r.status_code)))
+results.append(('admin farmer portal blocked (302)', r.status_code == 302, str(r.status_code)))
+r = c.get('/admin/dashboard')
+results.append(('admin dashboard 200', r.status_code == 200, str(r.status_code)))
 
 print('=== FARMER LOGIN VALIDATION ===')
 ok = True

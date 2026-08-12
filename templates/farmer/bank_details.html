@@ -2,7 +2,7 @@
 {% set active_page = 'bank_details' %}
 {% set active_section = 'bank_details' %}
 {% block page_title %}Bank Details{% endblock %}
-{% block page_init %}{% endblock %}
+{% block page_init %}initFarmerBankDetails{% endblock %}
 
 {% block page_header %}
 {% from 'base/breadcrumb.html' import breadcrumb %}
@@ -51,9 +51,79 @@
             {% else %}
               <div class="empty-state" style="padding:var(--space-8);text-align:center;">
                 <div class="empty-icon" style="margin:0 auto var(--space-3);"><i data-lucide="landmark" style="width:36px;height:36px;"></i></div>
-                <p style="color:var(--ink-muted);">No bank details on file. Please contact your branch to register them for payments.</p>
+                <p style="color:var(--ink-muted);">No bank details on file. Use the form below to register them for payments.</p>
               </div>
             {% endif %}
           </div>
         </div>
+
+        <!-- Update / register bank details -->
+        <div class="card" style="padding:var(--space-6);margin-top:var(--space-5);">
+          <div class="card-header" style="margin-bottom:var(--space-4);">
+            <h5 class="section-title">{% if bank and bank.account_number %}Update{% else %}Register{% endif %} Bank Details</h5>
+            <span style="font-size:var(--text-xs);color:var(--ink-muted);">Any change resets verification to Pending — the dairy re-verifies before payments.</span>
+          </div>
+          <form id="form-bank-edit" class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+            <div class="form-group">
+              <label class="form-label">Account Holder Name</label>
+              <input type="text" class="input-premium" id="bk-holder" value="{{ bank.account_holder if bank and bank.account_holder else (farmer.name if farmer else '') }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bank Name</label>
+              <input type="text" class="input-premium" id="bk-name" value="{{ bank.bank_name if bank and bank.bank_name else '' }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Branch Name</label>
+              <input type="text" class="input-premium" id="bk-branch" value="{{ bank.branch_name if bank and bank.branch_name else '' }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Account Number</label>
+              <input type="text" class="input-premium font-mono" id="bk-account" value="{{ bank.account_number if bank and bank.account_number else '' }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">IFSC Code</label>
+              <input type="text" class="input-premium font-mono" id="bk-ifsc" value="{{ bank.ifsc if bank and bank.ifsc else '' }}" maxlength="11" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">UPI ID (optional)</label>
+              <input type="text" class="input-premium" id="bk-upi" value="{{ bank.upi if bank and bank.upi else '' }}">
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;">
+              <button type="submit" class="btn btn-primary w-full">
+                <i data-lucide="save" style="width:16px;height:16px;"></i> Save Bank Details
+              </button>
+            </div>
+          </form>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('form-bank-edit');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const show = (t, m, ty) => { if (window.Modal && Modal.toast) Modal.toast({ title: t, message: m, type: ty }); };
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="anim-spin" style="display:inline-flex;width:16px;height:16px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;margin-right:8px;"></span> Saving…'; }
+    try {
+      const payload = {
+        accountHolder: document.getElementById('bk-holder').value.trim(),
+        bankName: document.getElementById('bk-name').value.trim(),
+        branchName: document.getElementById('bk-branch').value.trim(),
+        accountNumber: document.getElementById('bk-account').value.trim(),
+        ifsc: document.getElementById('bk-ifsc').value.trim().toUpperCase(),
+        upi: document.getElementById('bk-upi').value.trim(),
+      };
+      const result = await API.saveMyBankDetails(payload);
+      show('Saved', result.message || 'Bank details saved.', 'success');
+    } catch (err) {
+      show('Error', err.message || 'Could not save bank details.', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="save" style="width:16px;height:16px;"></i> Save Bank Details'; if (window.lucide) lucide.createIcons(); }
+    }
+  });
+});
+</script>
 {% endblock %}

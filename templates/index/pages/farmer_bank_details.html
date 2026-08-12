@@ -1,0 +1,87 @@
+      <!-- ── Bank Details (farmer portal) ── -->
+      <div class="page-container" id="page-farmer-bank-details" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#farmer-dashboard"><i data-lucide="home" style="width:14px;height:14px;"></i></a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Bank Details</span>
+        </div>
+
+        <div class="card" style="margin-bottom:var(--space-5);">
+          <div class="card-header">
+            <h5 class="section-title">Bank Account</h5>
+            
+              <span class="tag tag-green">Verified</span>
+            
+              <span class="tag tag-red">Rejected</span>
+            
+              <span class="tag tag-amber">Pending Verification</span>
+            
+          </div>
+          <div class="card-body">
+            
+              <div class="info-grid">
+                <div class="info-item"><span class="info-label">Account Holder</span><span class="info-value">—</span></div>
+                <div class="info-item"><span class="info-label">Bank Name</span><span class="info-value">—</span></div>
+                <div class="info-item"><span class="info-label">Branch</span><span class="info-value">—</span></div>
+                <div class="info-item"><span class="info-label">Account Number</span><span class="info-value font-mono">—</span></div>
+                <div class="info-item"><span class="info-label">IFSC</span><span class="info-value font-mono">—</span></div>
+                <div class="info-item"><span class="info-label">UPI ID</span><span class="info-value">—</span></div>
+              </div>
+              <div style="margin-top:var(--space-4);padding:var(--space-3);background:var(--bg-subtle);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--ink-muted);">
+                
+                  Your bank details have been verified by the head office. Payments will be transferred to this account.
+                
+                  Your bank details were rejected. Please contact your branch with the correct details so they can be updated.
+                
+                  Your bank details are awaiting verification by the head office. You can continue supplying milk while this is in progress.
+                
+              </div>
+            
+              <div class="empty-state" style="padding:var(--space-8);text-align:center;">
+                <div class="empty-icon" style="margin:0 auto var(--space-3);"><i data-lucide="landmark" style="width:36px;height:36px;"></i></div>
+                <p style="color:var(--ink-muted);">No bank details on file. Use the form below to register them for payments.</p>
+              </div>
+            
+          </div>
+        </div>
+
+        <!-- Update / register bank details -->
+        <div class="card" style="padding:var(--space-6);margin-top:var(--space-5);">
+          <div class="card-header" style="margin-bottom:var(--space-4);">
+            <h5 class="section-title">UpdateRegister Bank Details</h5>
+            <span style="font-size:var(--text-xs);color:var(--ink-muted);">Any change resets verification to Pending — the dairy re-verifies before payments.</span>
+          </div>
+          <form id="form-bank-edit" class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+            <div class="form-group">
+              <label class="form-label">Account Holder Name</label>
+              <input type="text" class="input-premium" id="bk-holder" value="—" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bank Name</label>
+              <input type="text" class="input-premium" id="bk-name" value="—" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Branch Name</label>
+              <input type="text" class="input-premium" id="bk-branch" value="—">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Account Number</label>
+              <input type="text" class="input-premium font-mono" id="bk-account" value="—" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">IFSC Code</label>
+              <input type="text" class="input-premium font-mono" id="bk-ifsc" value="—" maxlength="11" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">UPI ID (optional)</label>
+              <input type="text" class="input-premium" id="bk-upi" value="—">
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;">
+              <button type="submit" class="btn btn-primary w-full">
+                <i data-lucide="save" style="width:16px;height:16px;"></i> Save Bank Details
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>

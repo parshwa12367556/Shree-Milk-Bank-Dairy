@@ -37,7 +37,7 @@ def get_expenses():
 
     user = get_identity()
     user_branch_id = user.get('branchId')
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id:
+    if user.get('role') not in ('ADMIN',) and user_branch_id:
         query = query.filter_by(branch_id=user_branch_id)
     elif branch_id:
         query = query.filter_by(branch_id=branch_id)
@@ -60,7 +60,7 @@ def get_expenses():
 
     # Summary
     scoped = Expense.query
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id:
+    if user.get('role') not in ('ADMIN',) and user_branch_id:
         scoped = scoped.filter_by(branch_id=user_branch_id)
     all_expenses = scoped.all()
     by_category = {}
@@ -99,7 +99,7 @@ def create_expense():
 
     user = get_identity()
     branch_id = data.get('branchId')
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE'):
+    if user.get('role') not in ('ADMIN',):
         branch_id = user.get('branchId')  # branch managers: own branch only
         if not branch_id:
             return jsonify({'error': 'No branch assigned to this user. Contact Head Office.'}), 400
@@ -127,7 +127,7 @@ def create_expense():
 
 @expense_bp.route('/api/expenses/<int:expense_id>', methods=['PATCH'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def update_expense(expense_id):
     """Update an expense (Head Office only)."""
     expense = Expense.query.get_or_404(expense_id)
@@ -163,7 +163,7 @@ def update_expense(expense_id):
 
 @expense_bp.route('/api/expenses/<int:expense_id>', methods=['DELETE'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def delete_expense(expense_id):
     """Delete an expense (Head Office only)."""
     expense = Expense.query.get_or_404(expense_id)

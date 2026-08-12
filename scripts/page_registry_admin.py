@@ -33,53 +33,11 @@ ADMIN_PAGES = [
          ],
          actions=[('Refresh', 'refresh-cw', 'primary'), ('New Collection', 'plus', 'secondary')]),
 
-    dict(route='/admin/analytics', file='admin/dashboard/analytics.html', layout='admin',
-         title='Analytics', subtitle='Deep-dive analytics across all branches and products.',
-         icon='chart-line', section='dashboard', page='analytics', type='dashboard',
-         kpis=[
-             ('anl-collection', 'Total Collection (30d)', '86,430 L', 'milk', 'green'),
-             ('anl-revenue', 'Gross Revenue', '₹48.2L', 'indian-rupee', 'gold'),
-             ('anl-avg-fat', 'Average Fat', '4.18%', 'droplets', 'purple'),
-             ('anl-growth', 'YoY Growth', '+12.5%', 'trending-up', 'cyan'),
-         ],
-         actions=[('Export', 'download', 'secondary'), ('Refresh', 'refresh-cw', 'primary')]),
-
-    dict(route='/admin/company-statistics', file='admin/dashboard/company_statistics.html', layout='admin',
-         title='Company Statistics', subtitle='Overall company-wide performance indicators.',
-         icon='building-2', section='dashboard', page='company_statistics', type='dashboard',
-         kpis=[
-             ('st-branches', 'Branches', '12', 'building-2', 'blue'),
-             ('st-farmers', 'Registered Farmers', '8,432', 'users', 'green'),
-             ('st-employees', 'Employees', '96', 'briefcase', 'purple'),
-             ('st-collection', 'Annual Collection', '1.24 Cr L', 'milk', 'gold'),
-             ('st-revenue', 'Annual Revenue', '₹6.8 Cr', 'indian-rupee', 'cyan'),
-             ('st-vehicles', 'Fleet Size', '24', 'car', 'teal'),
-         ],
-         actions=[('Refresh', 'refresh-cw', 'primary')]),
-
-    dict(route='/admin/branch-comparison', file='admin/dashboard/branch_comparison.html', layout='admin',
-         title='Branch Comparison', subtitle='Compare performance across branches side-by-side.',
-         icon='git-compare', section='dashboard', page='branch_comparison', type='report',
-         cols=['Branch', 'Farmers', 'Collection', 'Revenue', 'Avg Fat', 'Efficiency'],
-         actions=[('Export', 'download', 'secondary'), ('Compare', 'git-compare', 'primary')]),
-
-    dict(route='/admin/revenue-dashboard', file='admin/dashboard/revenue_dashboard.html', layout='admin',
-         title='Revenue Dashboard', subtitle='Revenue streams, trends and forecasts.',
-         icon='indian-rupee', section='dashboard', page='revenue_dashboard', type='dashboard',
-         kpis=[
-             ('rev-total', 'Total Revenue', '₹48.2L', 'indian-rupee', 'gold'),
-             ('rev-milk', 'Milk Sales', '₹38.6L', 'milk', 'green'),
-             ('rev-products', 'Product Sales', '₹7.1L', 'package', 'blue'),
-             ('rev-other', 'Other Income', '₹2.5L', 'coins', 'purple'),
-         ],
-         actions=[('Export', 'download', 'secondary'), ('Refresh', 'refresh-cw', 'primary')]),
-
-    dict(route='/admin/profit-loss-dashboard', file='admin/dashboard/profit_loss_dashboard.html', layout='admin',
-         title='Profit & Loss Dashboard', subtitle='Profitability analysis for the current period.',
-         icon='trending-up', section='dashboard', page='profit_loss_dashboard', type='report',
-         cols=['Month', 'Revenue', 'Expenses', 'Profit', 'Margin'],
-         actions=[('Export', 'download', 'secondary')]),
-
+    
+    
+    
+    
+    
     dict(route='/admin/notifications', file='admin/dashboard/notifications.html', layout='admin',
          title='Notifications', subtitle='System-wide alerts and announcements.',
          icon='bell', section='dashboard', page='notifications', type='simple',

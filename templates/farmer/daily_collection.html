@@ -1,0 +1,123 @@
+{% extends 'base/farmer_layout.html' %}
+{% set active_page = 'daily_collection' %}
+{% set active_section = 'daily_collection' %}
+{% block page_title %}Daily Collection{% endblock %}
+{% block page_init %}initFarmerDailyCollection{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/farmer/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'Daily Collection'}]) }}
+<div class="page-header">
+  <div>
+    <h2>Daily Collection</h2>
+    <p class="subtitle" id="dc-subtitle">Your milk submission for today — refreshed automatically from the branch records.</p>
+  </div>
+  <div class="page-actions">
+    <span class="tag tag-green" id="dc-live" style="font-size:11px;"><span class="status-dot online" style="margin-right:6px;"></span>Live</span>
+    <button class="btn btn-secondary" onclick="window.refreshFarmerDailyCollection && refreshFarmerDailyCollection()">
+      <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+      Refresh
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+        <!-- Daily summary cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-green" id="dc-total-qty">
+            <div class="kpi-icon"><i data-lucide="milk" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Total Quantity (Today)</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-gold" id="dc-total-amount">
+            <div class="kpi-icon"><i data-lucide="indian-rupee" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Total Amount (Today)</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-teal" id="dc-count">
+            <div class="kpi-icon"><i data-lucide="layers" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Collections Today</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-amber" id="dc-avg-fat">
+            <div class="kpi-icon"><i data-lucide="percent" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Avg Fat</div>
+            <div class="kpi-value">—</div>
+          </div>
+        </div>
+
+        <div style="height:var(--space-5);"></div>
+
+        <!-- Morning / Evening split -->
+        <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--space-5);">
+          <!-- Morning -->
+          <div class="card" style="padding:var(--space-5);">
+            <div class="card-header" style="margin-bottom:var(--space-4);">
+              <h5 class="section-title"><i data-lucide="sunrise" style="width:18px;height:18px;color:var(--amber);vertical-align:middle;margin-right:6px;"></i> Morning Collection</h5>
+              <span class="tag tag-gold" id="dc-morning-status">No entry yet</span>
+            </div>
+            <div id="dc-morning-body" class="info-grid" style="grid-template-columns:1fr 1fr;">
+              <div class="info-item"><span class="info-label">Quantity</span><span class="info-value" id="dc-morning-qty">—</span></div>
+              <div class="info-item"><span class="info-label">Fat</span><span class="info-value" id="dc-morning-fat">—</span></div>
+              <div class="info-item"><span class="info-label">SNF</span><span class="info-value" id="dc-morning-snf">—</span></div>
+              <div class="info-item"><span class="info-label">Rate</span><span class="info-value" id="dc-morning-rate">—</span></div>
+              <div class="info-item"><span class="info-label">Amount</span><span class="info-value" id="dc-morning-amount">—</span></div>
+              <div class="info-item"><span class="info-label">Receipts</span><span class="info-value" id="dc-morning-receipts">—</span></div>
+            </div>
+          </div>
+
+          <!-- Evening -->
+          <div class="card" style="padding:var(--space-5);">
+            <div class="card-header" style="margin-bottom:var(--space-4);">
+              <h5 class="section-title"><i data-lucide="sunset" style="width:18px;height:18px;color:var(--forest);vertical-align:middle;margin-right:6px;"></i> Evening Collection</h5>
+              <span class="tag tag-blue" id="dc-evening-status">No entry yet</span>
+            </div>
+            <div id="dc-evening-body" class="info-grid" style="grid-template-columns:1fr 1fr;">
+              <div class="info-item"><span class="info-label">Quantity</span><span class="info-value" id="dc-evening-qty">—</span></div>
+              <div class="info-item"><span class="info-label">Fat</span><span class="info-value" id="dc-evening-fat">—</span></div>
+              <div class="info-item"><span class="info-label">SNF</span><span class="info-value" id="dc-evening-snf">—</span></div>
+              <div class="info-item"><span class="info-label">Rate</span><span class="info-value" id="dc-evening-rate">—</span></div>
+              <div class="info-item"><span class="info-label">Amount</span><span class="info-value" id="dc-evening-amount">—</span></div>
+              <div class="info-item"><span class="info-label">Receipts</span><span class="info-value" id="dc-evening-receipts">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:var(--space-5);"></div>
+
+        <!-- Detailed entries -->
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Today's Collection Entries</div>
+            <div class="table-toolbar">
+              <span class="table-info" id="dc-entries-info" style="font-size:var(--text-xs);color:var(--ink-muted);">Loading…</span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="dc-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Shift</th>
+                  <th>Milk Type</th>
+                  <th>Quantity</th>
+                  <th>Fat</th>
+                  <th>SNF</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="dc-body">
+                <tr><td colspan="9" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading today's collection…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/farmer/daily-collection.js"></script>
+{% endblock %}

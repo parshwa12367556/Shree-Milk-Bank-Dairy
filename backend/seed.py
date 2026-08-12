@@ -19,7 +19,7 @@ from backend.models import (
     CollectionCenter, CollectionRoute, ChillingCenter,
     InventoryItem, StockMovement, Employee, Vehicle,
     Supplier, PurchaseOrder, PurchaseOrderItem, VendorPayment,
-    Expense, Notification, AuditLog,
+    Expense, Notification, AuditLog, FarmerLedgerEntry,
 )
 from backend.auth import hash_password
 from backend.utils import generate_farmer_email
@@ -55,24 +55,29 @@ def seed_database():
     _seed_notifications()
     _seed_audit_logs()
 
+    # Farmer ledger: one row per accepted collection + settled payment, so the
+    # passbook is fully populated from real transactions.
+    from backend.services import ledger_service
+    ledger_service.backfill_ledger()
+
     print('[SEED] Database seeded successfully!')
-    print('[SEED] Login credentials:')
-    print(f'  Head Office: admin / admin123 (SUPER_ADMIN)')
-    for b in Branch.query.order_by(Branch.id).all():
-        print(f'  Branch {b.code}: {b.code} / {b.phone} (BRANCH_MANAGER)')
+    print('[SEED] Login credentials (Login ID / temporary password):')
+    print(f'  Admin: ADMIN001 / admin123 (ADMIN)')
+    for u in User.query.filter_by(role='BRANCH_OPERATOR').order_by(User.id).all():
+        print(f'  Branch {u.branch.code}: {u.login_id} / {u.phone} (BRANCH_OPERATOR)')
     sample = Farmer.query.filter_by(status='ACTIVE').order_by(Farmer.id).first()
     if sample:
-        print(f'  Farmer: {sample.email} / {sample.mobile} (FARMER) — sign in with email, password is the mobile number')
+        print(f'  Farmer: {sample.farmer_code} / {sample.mobile} (FARMER) — password is the mobile number, change on first login')
 
 
 def _clear_data():
     """Clear all existing data."""
     models = [
-        AuditLog, Notification, VendorPayment, PurchaseOrderItem, PurchaseOrder,
-        Supplier, Expense, StockMovement, Vehicle, Employee, InventoryItem,
-        CollectionCenter, ChillingCenter, CollectionRoute, MilkRejection,
-        QualityTest, Payment, Collection, RateMaster, BankDetail, Farmer,
-        Branch, User,
+        AuditLog, Notification, FarmerLedgerEntry, VendorPayment, PurchaseOrderItem,
+        PurchaseOrder, Supplier, Expense, StockMovement, Vehicle, Employee,
+        InventoryItem, CollectionCenter, ChillingCenter, CollectionRoute,
+        MilkRejection, QualityTest, Payment, Collection, RateMaster, BankDetail,
+        Farmer, Branch, User,
     ]
     for model in models:
         model.query.delete()
@@ -103,19 +108,24 @@ def _seed_branches():
 
 
 def _seed_users():
-    """One login per branch: username = branch code, password = branch phone."""
+    """One login per branch: login_id = {code}OP001, username = branch code,
+    password = branch phone (temporary — must_change_password)."""
     branches = Branch.query.order_by(Branch.id).all()
     users = [
-        User(username='admin', password_hash=hash_password('admin123'),
-             name='Admin User', role='SUPER_ADMIN', phone='9876543000',
+        User(login_id='ADMIN001', username='admin', password_hash=hash_password('admin123'),
+             name='Admin User', role='ADMIN', phone='9876543000',
              email='admin@dairy.com', status='ACTIVE'),
     ]
+    serial = {}  # branch_code -> next operator serial
     for b in branches:
+        nxt = serial.get(b.code, 0) + 1
+        serial[b.code] = nxt
         users.append(User(
+            login_id=f'{b.code}OP{nxt:03d}',
             username=b.code,
             password_hash=hash_password(b.phone),
             name=b.manager_name or f'{b.name} Manager',
-            role='BRANCH_MANAGER',
+            role='BRANCH_OPERATOR',
             branch_id=b.id,
             phone=b.phone,
             email=f'manager{b.code.lower()}@dairy.com',
@@ -205,6 +215,7 @@ def _seed_farmer_users():
     users = []
     for farmer in Farmer.query.order_by(Farmer.id).all():
         users.append(User(
+            login_id=farmer.farmer_code,  # Farmer Code IS the Login ID (spec §3)
             username=farmer.farmer_code,
             password_hash=hash_password(farmer.mobile or 'farmer@123'),
             name=farmer.name,
@@ -264,7 +275,7 @@ def _seed_collections():
     farmers = Farmer.query.filter_by(status='ACTIVE').all()
     rate_cow = RateMaster.query.filter_by(milk_type='COW', status='ACTIVE').first()
     rate_buffalo = RateMaster.query.filter_by(milk_type='BUFFALO', status='ACTIVE').first()
-    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_MANAGER').all()}
+    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_OPERATOR').all()}
 
     collections = []
     seq = 1240
@@ -338,11 +349,14 @@ def _seed_payments():
             period_start=date.today() - timedelta(days=15),
             period_end=date.today(),
             total_quantity=total_qty,
-            total_amount=total_amt,
+            gross_amount=round(total_amt, 2),
+            deductions=0.0,
+            total_amount=round(total_amt, 2),
             collection_count=len(collections),
             status=status,
             paid_at=datetime.now() if status == 'PAID' else None,
-            paid_by=1 if status == 'PAID' else None,  # Head Office (Super Admin)
+            paid_by=1 if status == 'PAID' else None,
+            created_by=1,
         )
         db.session.add(payment)
         db.session.flush()
@@ -392,7 +406,7 @@ def _seed_quality_tests():
 
 
 def _seed_rejections():
-    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_MANAGER').all()}
+    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_OPERATOR').all()}
     farmers = Farmer.query.order_by(Farmer.id).all()
     rejections = [
         MilkRejection(farmer_id=farmers[0].id, branch_id=farmers[0].branch_id,
@@ -586,7 +600,7 @@ def _seed_notifications():
 
 def _seed_audit_logs():
     logs = [
-        AuditLog(user_id=1, username='Admin User', action='LOGIN', entity='Session', entity_id='admin',
+        AuditLog(user_id=1, username='Admin User', action='LOGIN_SUCCESS', entity='Session', entity_id='admin',
                  detail='User logged in successfully', ip='192.168.1.100'),
         AuditLog(user_id=2, username='BR01', action='CREATE', entity='Collection', entity_id='RC0001245',
                  detail='Recorded milk collection: 25L Cow Milk', ip='192.168.1.101'),

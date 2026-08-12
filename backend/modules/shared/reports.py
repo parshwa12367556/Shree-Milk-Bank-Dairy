@@ -33,7 +33,7 @@ def _enforce_bm_report_access(report_type, branch_id):
     is returned when the report type is not available to the role.
     """
     user = get_identity()
-    if user.get('role') == 'BRANCH_MANAGER':
+    if user.get('role') == 'BRANCH_OPERATOR':
         if report_type not in BM_ALLOWED_REPORT_TYPES:
             return None, 'Access denied. This report is not available for your role.'
         # Fail-closed: unassigned branch managers are denied by get_branch_scope()
@@ -42,7 +42,7 @@ def _enforce_bm_report_access(report_type, branch_id):
 
 
 @report_bp.route('/api/reports', methods=['GET'])
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE', 'BRANCH_MANAGER')
+@role_required('ADMIN', 'BRANCH_OPERATOR')
 def get_report():
     """Generate reports based on type and filters."""
     report_type = request.args.get('type', 'collection')
@@ -425,7 +425,7 @@ def _build_csv(header_pairs, rows, filename):
 
 
 @report_bp.route('/api/reports/export', methods=['GET'])
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE', 'BRANCH_MANAGER')
+@role_required('ADMIN', 'BRANCH_OPERATOR')
 def export_report():
     """Export any report as CSV."""
     report_type = request.args.get('type', 'collection')

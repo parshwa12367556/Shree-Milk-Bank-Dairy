@@ -72,7 +72,7 @@ def _list_backups():
 
 @settings_bp.route('/api/settings', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def get_settings():
     """Get system settings."""
     return jsonify({
@@ -86,7 +86,7 @@ def get_settings():
 
 @settings_bp.route('/api/settings', methods=['PATCH'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def update_settings():
     """Update system settings."""
     data = request.get_json()
@@ -117,7 +117,7 @@ def update_settings():
 
 @settings_bp.route('/api/settings/backup', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN')
+@role_required('ADMIN')
 def create_backup():
     """Create a system backup (snapshot of the SQLite database + settings)."""
     from config import Config
@@ -154,7 +154,7 @@ def create_backup():
 
 @settings_bp.route('/api/settings/backup', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN')
+@role_required('ADMIN')
 def download_backup():
     """Download the latest backup file from disk."""
     backups = _list_backups()
@@ -176,7 +176,7 @@ def download_backup():
 
 @settings_bp.route('/api/settings/backups', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN')
+@role_required('ADMIN')
 def list_backups():
     """List all backup files."""
     return jsonify({'backups': _list_backups()})
@@ -184,7 +184,7 @@ def list_backups():
 
 @settings_bp.route('/api/settings/restore/<filename>', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN')
+@role_required('ADMIN')
 def restore_backup(filename):
     """Restore a backup — copies the DB snapshot over the live database.
 
@@ -217,7 +217,7 @@ def restore_backup(filename):
 
 @settings_bp.route('/api/settings/regenerate-key', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN')
+@role_required('ADMIN')
 def regenerate_api_key():
     """Regenerate the API key."""
     global _api_key

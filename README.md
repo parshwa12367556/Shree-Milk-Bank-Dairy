@@ -59,10 +59,12 @@ Built with a **Flask REST API backend** and a **vanilla JavaScript single-page a
 - **Live pricing engine** that recomputes rate/liter and total amount as you type.
 - Auto-generated sequential receipt numbers (`RC0000124`); collections are immutable once accepted.
 
-### 💰 Payments (Head Office Only)
-- **Only the Super Admin** can generate, approve, and mark payments (`can_pay`).
-- **Generate payment sheets** from unpaid, accepted collections within a date range (grouped per farmer).
-- Payment lifecycle: `PENDING → APPROVED → PAID` with paid-at timestamp and **bank reference (UTR)** number.
+### 💰 Payments (ADMIN Only)
+- **Only the ADMIN** can generate, approve, and mark payments (`can_pay`); BRANCH_OPERATORs have view-only payment history for their branch, and FARMERs view their own.
+- **Generate payment sheets** from unpaid, accepted collections within a date range (grouped per farmer), with gross/net amounts, deductions, payment method, and processor recorded.
+- **Double-payment protection** — backend rejects a second payment for the same farmer + period (API guard + DB unique index), and a PAID payment can never be downgraded.
+- Payment lifecycle: `PENDING → APPROVED → PAID` with paid-at timestamp, **bank reference (UTR)** number, and a **ledger debit** on the farmer's passbook.
+- Farmer is notified in-app (and by email when configured) on payment completion.
 - Pending/completed totals and payment rate % on the payments page.
 
 ### 📈 Rate Engine (Pricing)
@@ -111,7 +113,7 @@ Built with a **Flask REST API backend** and a **vanilla JavaScript single-page a
 
 ### 🧾 Live Audit Trail
 - Every important action creates an audit log automatically: login/logout, branch create/update, farmer register/verify/reject/block, collection added, quality test added, milk rejected, payment generated/approved/paid, procurement created, inventory stock-in/allocate, vehicle added, employee added, settings updated, **password changed**, exports.
-- Each entry captures **user, role, branch code, module, record ID, description, IP address, device (user-agent), and timestamp** — visible to SUPER_ADMIN only, with filters (action, entity, user, date range).
+- Each entry captures **user, role, branch code, module, record ID, description, IP address, device (user-agent), and timestamp** — visible to ADMIN only, with filters (action, entity, user, date range).
 
 ### 🔔 Notifications & Backup
 - **Automatic in-app notifications** on key events: farmer registered/verified/rejected, payment approved/paid, milk rejected, purchase order received, low stock, vehicle service due.
@@ -163,8 +165,12 @@ Built with a **Flask REST API backend** and a **vanilla JavaScript single-page a
 │   pricing.py — pricing & quality-grading business logic    │
 │   audit.py — live audit-log helper (role/branch/IP)        │
 │   notify.py — automatic notification helper                │
+│   services/ — reusable business services                   │
+│     pricing_service.py  — active-rate lookup + pricing     │
+│     ledger_service.py   — farmer passbook ledger           │
+│     payment_service.py  — payment finalization rules       │
 │   utils.py — formatting & code generators                  │
-│   models.py — SQLAlchemy ORM models                        │
+│   models.py — SQLAlchemy ORM models (27+ tables)           │
 └───────────────────────────┬────────────────────────────────┘
                             │  SQLAlchemy
 ┌───────────────────────────▼────────────────────────────────┐
@@ -179,8 +185,10 @@ Built with a **Flask REST API backend** and a **vanilla JavaScript single-page a
 - **REST API + SPA** — the backend is a pure JSON API. A single `index.html` shell hosts every page; the JS router shows/hides page containers based on the URL hash (`#dashboard`, `#farmers`, …).
 - **JWT stateless auth** — tokens carry the user identity (id, username, name, role, branch) as a JSON string in the `sub` claim; the client stores it in `localStorage`.
 - **Branch isolation** — non-global roles automatically get their queries scoped to their assigned `branch_id` (enforced on farmers, collections, payments, reports, and more).
-- **Versioned & immutable records** — collections are immutable receipts; rate changes are versioned instead of overwritten.
+- **Versioned & immutable records** — collections are immutable receipts; rate changes are versioned instead of overwritten; historical collections keep their applied rate/amount forever.
+- **Farmer ledger (passbook)** — every accepted collection credits the farmer's ledger (`MILK_EARNING`) and every PAID payment debits it (`PAYMENT`), in the same DB transaction as the source record. The passbook API reads real ledger rows with a running balance — no frontend math. Correcting a collection to `REJECTED` reverses its credit.
 - **Audit + notifications everywhere** — key routes write audit logs and auto-create notifications as a side effect of the business action.
+- **Grievance workflow** — farmers raise grievances from the portal; ADMIN reviews, filters by branch/status, responds, and the farmer is notified in-app (+ email when configured).
 
 ---
 
@@ -261,12 +269,12 @@ After seeding, use these accounts:
 
 | Username    | Password       | Role           | Branch Scope        |
 |-------------|----------------|----------------|---------------------|
-| `admin`     | `admin123`     | SUPER_ADMIN    | All branches (Head Office) |
-| `BR01`      | `9876543210`   | BRANCH_MANAGER | Branch BR01 — Nippani |
-| `BR02`      | `9123456780`   | BRANCH_MANAGER | Branch BR02 — Belagavi |
-| `BR03`      | `9234567890`   | BRANCH_MANAGER | Branch BR03 — Chikkodi |
-| `BR04`      | `9345678901`   | BRANCH_MANAGER | Branch BR04 — Sankeshwar |
-| `BR05`      | `9456789012`   | BRANCH_MANAGER | Branch BR05 — Athani |
+| `admin`     | `admin123`     | ADMIN           | All branches (Head Office) |
+| `BR01`      | `9876543210`   | BRANCH_OPERATOR | Branch BR01 — Nippani |
+| `BR02`      | `9123456780`   | BRANCH_OPERATOR | Branch BR02 — Belagavi |
+| `BR03`      | `9234567890`   | BRANCH_OPERATOR | Branch BR03 — Chikkodi |
+| `BR04`      | `9345678901`   | BRANCH_OPERATOR | Branch BR04 — Sankeshwar |
+| `BR05`      | `9456789012`   | BRANCH_OPERATOR | Branch BR05 — Athani |
 
 Branch usernames are the **branch code**; passwords are the branch's **phone number**. Each branch manager can only see their own branch's data.
 
@@ -293,13 +301,13 @@ shree-milk-bank-dairy/
 │   ├── utils.py                # INR formatting, date helpers, code generators
 │   ├── seed.py                 # Database seeder (sample data)
 │   └── modules/                # Role-based API modules (blueprints)
-│       ├── admin/              #   Head Office (SUPER_ADMIN) only
+│       ├── admin/              #   Admin only
 │       │   ├── branches.py     #     Branch CRUD + reset password
 │       │   ├── procurement.py  #     Suppliers, POs, GRN, delivery tracking, vendor payments, centers/routes/chilling
 │       │   ├── inventory.py    #     Central inventory, stock movements, branch allocations
 │       │   ├── vehicles.py     #     Vehicles + service history
 │       │   ├── employees.py    #     Employees CRUD + attendance
-│       │   ├── audit.py        #     Audit logs (SUPER_ADMIN)
+│       │   ├── audit.py        #     Audit logs (ADMIN)
 │       │   ├── settings.py     #     System settings, SMS/email config, backups & restore
 │       │   ├── pricing.py      #     Rate master (versioned)
 │       │   ├── expenses.py     #     Operational expenses (P&L input)
@@ -343,13 +351,14 @@ All models live in `backend/models.py` and use SQLAlchemy ORM. Tables are create
 
 | Model              | Table                | Purpose                                                      |
 |--------------------|----------------------|--------------------------------------------------------------|
-| `User`             | `users`              | System accounts with roles (`SUPER_ADMIN`, `HEAD_OFFICE`, `BRANCH_MANAGER`, `OPERATOR`, `ACCOUNTANT`) |
+| `User`             | `users`              | System accounts with roles (`ADMIN`, `BRANCH_OPERATOR`, `FARMER`) — legacy role names are auto-migrated on startup |
 | `Branch`           | `branches`           | Dairy branches / collection centers |
 | `Farmer`           | `farmers`            | Registered milk producers (personal, address, livestock, verification status) |
 | `BankDetail`       | `bank_details`       | One-to-one farmer bank/UPI details + verification status |
 | `RateMaster`       | `rate_masters`       | Versioned fat/SNF pricing rates per milk type |
 | `Collection`       | `collections`        | Daily milk collection receipts (immutable after creation) |
-| `Payment`          | `payments`           | Payment sheets linking collections to farmer payouts |
+| `Payment`          | `payments`           | Payment sheets (gross/net, method, processor, period; unique per farmer+period) |
+| `FarmerLedgerEntry`| `farmer_ledger_entries` | Farmer passbook ledger — credits (milk earnings) & debits (settled payments) with running balance |
 | `QualityTest`      | `quality_tests`      | Lab quality test records with auto-grading results |
 | `MilkRejection`    | `milk_rejections`    | Rejected milk records with reasons |
 
@@ -378,7 +387,9 @@ All models live in `backend/models.py` and use SQLAlchemy ORM. Tables are create
 | `VehicleServiceRecord` | `vehicle_service_records` | Service/maintenance history for vehicles         |
 | `Expense`            | `expenses`                | Operational expenses (P&L input)                 |
 | `AuditLog`           | `audit_logs`              | Full audit trail (role, branch code, IP, device) |
-| `Notification`       | `notifications`           | In-app notifications per user/global             |
+| `Notification`       | `notifications`           | In-app notifications per user/global (with farmer/related-record links) |
+| `Grievance`          | `grievances`              | Farmer grievances (status, admin response, notification) |
+| `FarmerDocument`     | `farmer_documents`        | Farmer-submitted documents (Aadhaar/PAN/bank/photo) |
 
 **Code generation conventions** (see `backend/utils.py`):
 
@@ -428,14 +439,14 @@ All models live in `backend/models.py` and use SQLAlchemy ORM. Tables are create
 
 | Capability | Allowed Roles |
 |------------|---------------|
-| Record collections (`can_collect`) | SUPER_ADMIN, HEAD_OFFICE, BRANCH_MANAGER, OPERATOR |
-| Payments & approvals (`can_pay`) | **SUPER_ADMIN only** (per architecture spec) |
-| Manage rates (`can_manage_rates`) | SUPER_ADMIN, HEAD_OFFICE |
-| Global / cross-branch access (`is_global_role`) | SUPER_ADMIN, HEAD_OFFICE |
-| Branch CRUD / procurement / central inventory / expenses | SUPER_ADMIN, HEAD_OFFICE |
-| Farmer verification & bank verification | SUPER_ADMIN, HEAD_OFFICE |
-| Farmer registration & resubmission | BRANCH_MANAGER |
-| Audit logs / settings / backups | SUPER_ADMIN (settings PATCH: SUPER_ADMIN + HEAD_OFFICE) |
+| Record collections (`can_collect`) | ADMIN, BRANCH_OPERATOR |
+| Payments & approvals (`can_pay`) | **ADMIN only** (per architecture spec) |
+| Manage rates (`can_manage_rates`) | ADMIN |
+| Global / cross-branch access (`is_global_role`) | ADMIN |
+| Branch CRUD / procurement / central inventory / expenses | ADMIN |
+| Farmer verification & bank verification | ADMIN |
+| Farmer registration & resubmission | ADMIN, BRANCH_OPERATOR (own branch) |
+| Audit logs / settings / backups | ADMIN |
 
 **Branch isolation:** roles without global access automatically see only data belonging to their assigned `branch_id` (enforced on farmer list/detail/edit, collections, payments, inventory, employees, and reports). Cross-branch reads/writes return **403**.
 
@@ -492,22 +503,22 @@ All endpoints return JSON. Except where noted, every endpoint requires `Authoriz
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
 | GET | `/api/branches` | List active branches | Public |
-| POST | `/api/branches` | Create branch (audit-logged) | SUPER_ADMIN, HEAD_OFFICE |
-| PATCH | `/api/branches/<id>` | Update branch (audit-logged) | SUPER_ADMIN, HEAD_OFFICE |
-| POST | `/api/branches/<id>/reset-password` | Reset branch password | SUPER_ADMIN, HEAD_OFFICE |
-| DELETE | `/api/branches/<id>` | Soft-delete branch | SUPER_ADMIN, HEAD_OFFICE |
+| POST | `/api/branches` | Create branch (audit-logged) | ADMIN |
+| PATCH | `/api/branches/<id>` | Update branch (audit-logged) | ADMIN |
+| POST | `/api/branches/<id>/reset-password` | Reset branch password | ADMIN |
+| DELETE | `/api/branches/<id>` | Soft-delete branch | ADMIN |
 
 ### Farmers
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
 | GET | `/api/farmers` | List (paged; filters: `q` [ID/name/mobile/**Aadhaar**/village], `branchId`, `milk_type`, `status`) | Branch-scoped |
 | GET | `/api/farmers/stats` | Farmer statistics by type/status | Branch-scoped |
-| POST | `/api/farmers` | Register farmer → `PENDING_VERIFICATION` (auto-generates `BR01xxx` code) | BRANCH_MANAGER only |
+| POST | `/api/farmers` | Register farmer → `PENDING_VERIFICATION` (auto-generates `BR01xxx` code) | ADMIN, BRANCH_OPERATOR |
 | GET | `/api/farmers/<code>` | Farmer detail + stats + recent collections | Branch-scoped |
 | PATCH | `/api/farmers/<code>` | Update farmer (incl. bank details); status changes Head Office only | Branch-scoped |
-| POST | `/api/farmers/<code>/verify` | Approve/reject verification (`{action: approve\|reject, reason}`) | SUPER_ADMIN, HEAD_OFFICE |
-| POST | `/api/farmers/<code>/resubmit` | Re-submit a REJECTED farmer | BRANCH_MANAGER (own branch) |
-| POST | `/api/farmers/<code>/verify-bank` | Verify/reject bank details | SUPER_ADMIN, HEAD_OFFICE |
+| POST | `/api/farmers/<code>/verify` | Approve/reject verification (`{action: approve\|reject, reason}`) | ADMIN |
+| POST | `/api/farmers/<code>/resubmit` | Re-submit a REJECTED farmer | BRANCH_OPERATOR (own branch) |
+| POST | `/api/farmers/<code>/verify-bank` | Verify/reject bank details | ADMIN |
 | GET | `/api/farmers/export` | Export farmers as CSV (branch-scoped) | Any |
 
 ### Collections
@@ -520,8 +531,8 @@ All endpoints return JSON. Except where noted, every endpoint requires `Authoriz
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
 | GET | `/api/payments` | List + summary (paid/pending/rate) | Any |
-| POST | `/api/payments` | Generate payment sheets from unpaid collections (**ACTIVE farmers only**) | SUPER_ADMIN (`can_pay`) |
-| PATCH | `/api/payments/<id>` | Set status to `APPROVED` or `PAID` (PAID sets UTR reference) | SUPER_ADMIN (`can_pay`) |
+| POST | `/api/payments` | Generate payment sheets from unpaid collections (**ACTIVE farmers only**) | ADMIN (`can_pay`) |
+| PATCH | `/api/payments/<id>` | Set status to `APPROVED` or `PAID` (PAID sets UTR reference) | ADMIN (`can_pay`) |
 
 ### Pricing / Rate Engine
 | Method | Endpoint | Description |
@@ -535,7 +546,7 @@ All endpoints return JSON. Except where noted, every endpoint requires `Authoriz
 | GET / POST | `/api/quality` | List / create quality test (auto-graded) |
 | GET / POST | `/api/rejections` | List / record milk rejection |
 
-### Procurement (all write ops: SUPER_ADMIN, HEAD_OFFICE)
+### Procurement (all write ops: ADMIN)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET / POST | `/api/procurement/centers` | List / create collection centers |
@@ -550,7 +561,7 @@ All endpoints return JSON. Except where noted, every endpoint requires `Authoriz
 | GET | `/api/procurement/vendor-payments` | List vendor payments |
 | POST | `/api/procurement/vendor-payments` | Record vendor payment (auto-completes fully-paid PO) |
 
-### Inventory (write ops: SUPER_ADMIN, HEAD_OFFICE)
+### Inventory (write ops: ADMIN)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/inventory` | Central stock list (incl. available/reserved) |
@@ -568,7 +579,7 @@ All endpoints return JSON. Except where noted, every endpoint requires `Authoriz
 |--------|----------|-------------|
 | GET | `/api/expenses` | List + summary by category (`from`, `to`, `branchId` filters) |
 | POST | `/api/expenses` | Record expense (category, amount, date, description) |
-| PATCH / DELETE | `/api/expenses/<id>` | Update / delete expense (SUPER_ADMIN, HEAD_OFFICE) |
+| PATCH / DELETE | `/api/expenses/<id>` | Update / delete expense (ADMIN) |
 
 ### Employees
 | Method | Endpoint | Description |
@@ -598,13 +609,13 @@ All endpoints return JSON. Except where noted, every endpoint requires `Authoriz
 ### Audit, Settings, Notifications
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| GET | `/api/audit` | Audit log list (filters: action, entity, userId, from, to) | SUPER_ADMIN |
-| GET / PATCH | `/api/settings` | Get / update settings (incl. SMS provider, email SMTP) | PATCH: SUPER_ADMIN, HEAD_OFFICE |
-| POST | `/api/settings/backup` | Create a backup (persisted to disk) | SUPER_ADMIN |
-| GET | `/api/settings/backup` | Download latest backup | SUPER_ADMIN |
-| GET | `/api/settings/backups` | List all backups | SUPER_ADMIN |
-| POST | `/api/settings/restore/<filename>` | Restore a backup | SUPER_ADMIN |
-| POST | `/api/settings/regenerate-key` | Regenerate API key | SUPER_ADMIN |
+| GET | `/api/audit` | Audit log list (filters: action, entity, userId, from, to) | ADMIN |
+| GET / PATCH | `/api/settings` | Get / update settings (incl. SMS provider, email SMTP) | PATCH: ADMIN |
+| POST | `/api/settings/backup` | Create a backup (persisted to disk) | ADMIN |
+| GET | `/api/settings/backup` | Download latest backup | ADMIN |
+| GET | `/api/settings/backups` | List all backups | ADMIN |
+| POST | `/api/settings/restore/<filename>` | Restore a backup | ADMIN |
+| POST | `/api/settings/regenerate-key` | Regenerate API key | ADMIN |
 | GET / PATCH / DELETE | `/api/notifications` | List / mark-read / delete notifications | Any |
 
 ---
@@ -625,10 +636,10 @@ The frontend is a **single-page application without any framework** — all view
 
 ## 🧪 Testing
 
-Three verification scripts are included:
+Five verification scripts are included:
 
 ```bash
-# 1. Full feature suite (134 assertions) — audit logging, farmer verification &
+# 1. Full feature suite — audit logging, farmer verification &
 #    bank verification, procurement (PO/GRN/vendor payments), inventory
 #    movements & allocation, expenses/P&L, CSV/XLSX/PDF exports, vehicle service
 #    records, employee attendance, auto-notifications, backups, dashboard KPIs,
@@ -637,15 +648,26 @@ Three verification scripts are included:
 #    ⚠️ WARNING: Deletes smart_dairy.db (or TEST_DB_PATH) first, then re-seeds
 python test_new_features.py
 
-# 2. Smoke test — verifies the Flask app boots and serves the SPA correctly
-python test_check.py
+# 2. RBAC / data-isolation security suite — 57 checks: ADMIN system-wide access,
+#    BRANCH_OPERATOR cross-branch 403s, FARMER IDOR blocks, payment/pricing
+#    authority, JWT validation, inactive/locked logins, duplicate farmer/payment
+#    prevention, backend-only price calculation, historical-price immutability,
+#    and audit-log coverage of important actions
+python test_security_rbac.py
 
-# 3. Seed test — verifies database seeding
-#    ⚠️ WARNING: Deletes smart_dairy.db first, then re-seeds it
-python test_seed.py
+# 3. Farmer portal suite — self-service dashboard, collections, passbook, payments,
+#    notifications, profile, bank details, documents, and grievances (own data only)
+python test_farmer_portal.py
+
+# 4. Email notifications suite — password reset, milk-collection, payment, and
+#    grievance emails
+python test_email_notifications.py
+
+# 5. Smoke test — verifies the Flask app boots and serves the SPA correctly
+python test_check.py
 ```
 
-Expected result: `=== RESULT: 134 passed, 0 failed ===` for the feature suite.
+Expected results: `=== RESULT: 135 passed, 0 failed ===` (feature suite) and `=== RESULT: 57 passed, 0 failed ===` (security suite).
 
 ---
 
@@ -658,10 +680,11 @@ Expected result: `=== RESULT: 134 passed, 0 failed ===` for the feature suite.
 3. **Run behind a production WSGI server** — use Gunicorn / Waitress / uWSGI instead of the built-in development server.
 4. **Use a production-grade database** — the default SQLite setup is fine for a single-instance deployment; switch `DATABASE_URL` to PostgreSQL or MySQL for multi-instance/high-availability setups.
 5. **Enable HTTPS** — all traffic should be TLS-encrypted, since authentication uses Bearer tokens.
-6. **Password reset** — `POST /api/auth/forgot-password` generates a 6-digit OTP and renders `templates/emails/password_reset.html`, but delivery isn't wired yet — in dev the OTP is returned in the response as `dev_otp`. Connect a real email-sending service (e.g., SMTP, SendGrid, Resend) to `backend/modules/shared/auth.py` before production.
+6. **Password reset** — `POST /api/auth/forgot-password` generates a 6-digit OTP and renders `templates/emails/password_reset.html`. Real SMTP delivery is wired (`backend/mailer.py`) — configure it in Settings → Email Settings. In dev the OTP is also returned as `dev_otp`; it is **never** returned when `DEV_LOGIN_ENABLED` is off.
 7. **Remove the dev login bypass** — `backend/modules/shared/auth.py` contains a temporary development bypass (`admin` / `admin123` always authenticates while `DEV_LOGIN_ENABLED` is on). Disable it before any production release.
-8. **SMS/Email sending** — the settings store SMTP/MSG91 configuration; wire up actual delivery (e.g., via SMTP or MSG91 API) before relying on automatic notifications externally.
+8. **Email sending** — `backend/mailer.py` sends milk-collection, payment, password-reset and grievance emails over real SMTP (config in Settings → Email Settings); failures are logged and never break the business transaction.
 9. **Audit & backups** — backups are stored on the local filesystem (`backups/`); for production, ship them to durable object storage and enforce a retention policy.
+10. **Document uploads** — farmer documents are extension-whitelisted and size-capped (5 MB) server-side; filenames are randomized, never client-supplied.
 
 ---
 

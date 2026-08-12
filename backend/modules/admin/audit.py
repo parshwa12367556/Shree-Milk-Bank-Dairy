@@ -1,7 +1,7 @@
 """
 Smart Dairy ERP — Audit Log Routes
 
-GET /api/audit — List audit logs (SUPER_ADMIN only)
+GET /api/audit — List audit logs (ADMIN only)
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
@@ -14,7 +14,7 @@ audit_bp = Blueprint('audit', __name__)
 
 @audit_bp.route('/api/audit', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN')
+@role_required('ADMIN')
 def get_audit_logs():
     """List audit logs with filtering."""
     page = request.args.get('page', 1, type=int)

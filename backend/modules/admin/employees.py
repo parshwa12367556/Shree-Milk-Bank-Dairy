@@ -56,7 +56,7 @@ def get_employees():
 
 @employee_bp.route('/api/employees', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_employee():
     data = request.get_json()
     if not data:
@@ -89,7 +89,7 @@ def create_employee():
 
 @employee_bp.route('/api/employees/<int:employee_id>', methods=['PATCH'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def update_employee(employee_id):
     """Update employee details (role assignment, salary, status, etc.)."""
     employee = Employee.query.get_or_404(employee_id)
@@ -113,7 +113,7 @@ def update_employee(employee_id):
 
 @employee_bp.route('/api/employees/<int:employee_id>', methods=['DELETE'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def delete_employee(employee_id):
     employee = Employee.query.get_or_404(employee_id)
     code = employee.code
@@ -179,7 +179,7 @@ def employee_attendance(employee_id):
 
 @employee_bp.route('/api/employees/attendance', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def mark_attendance():
     """Mark daily attendance for an employee (upserts by employee+date)."""
     data = request.get_json()

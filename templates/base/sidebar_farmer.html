@@ -19,9 +19,13 @@
       <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
       <span class="nav-label">Dashboard</span>
     </a>
+    <a class="nav-item {{ 'active' if active_page == 'daily_collection' }}" href="/farmer/daily-collection">
+      <span class="nav-icon"><i data-lucide="calendar-check"></i></span>
+      <span class="nav-label">Daily Collection</span>
+    </a>
     <a class="nav-item {{ 'active' if active_page == 'milk_history' }}" href="/farmer/milk-history">
       <span class="nav-icon"><i data-lucide="milk"></i></span>
-      <span class="nav-label">My Milk Collection</span>
+      <span class="nav-label">My Collections</span>
     </a>
     <a class="nav-item {{ 'active' if active_page == 'payment_status' }}" href="/farmer/payment-status">
       <span class="nav-icon"><i data-lucide="clock"></i></span>
@@ -57,6 +61,11 @@
     <a class="nav-item {{ 'active' if active_page == 'grievance' }}" href="/farmer/grievance">
       <span class="nav-icon"><i data-lucide="message-square"></i></span>
       <span class="nav-label">Grievance</span>
+    </a>
+
+    <a class="nav-item {{ 'active' if active_page == 'settings' }}" href="/farmer/settings">
+      <span class="nav-icon"><i data-lucide="settings"></i></span>
+      <span class="nav-label">Settings</span>
     </a>
 
     <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>

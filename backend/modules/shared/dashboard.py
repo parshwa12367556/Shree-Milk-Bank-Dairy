@@ -30,7 +30,7 @@ def get_dashboard():
 
     user = get_identity()
     user_branch_id = user.get('branchId')
-    scoped = user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id
+    scoped = user.get('role') not in ('ADMIN',) and user_branch_id
 
     def _scoped_query(model, *conditions):
         """Apply user branch isolation to a query if the role requires it."""

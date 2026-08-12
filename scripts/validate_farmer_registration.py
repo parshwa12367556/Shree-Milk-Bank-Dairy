@@ -28,7 +28,7 @@ def H():
 
 
 # 1) Branch Manager registers a farmer
-login_as('BRANCH_MANAGER', 'BR01', branch_id=1)
+login_as('BRANCH_OPERATOR', 'BR01', branch_id=1)
 r = c.post('/api/farmers', headers=H(), json={
     'name': 'Flow Test Farmer', 'mobile': '9012345678', 'milkType': 'COW'})
 body = r.get_json() or {}
@@ -48,7 +48,7 @@ r = c.post('/api/auth/login', json={'username': code, 'password': phone, 'role':
 results.append(('login blocked before verify (403)', r.status_code == 403, str(r.status_code)))
 
 # 3) Head Office verifies the farmer
-login_as('SUPER_ADMIN', 'admin')
+login_as('ADMIN', 'admin')
 r = c.post(f'/api/farmers/{code}/verify', headers=H(), json={'action': 'approve'})
 results.append(('verify farmer 200', r.status_code == 200, str(r.status_code)))
 
@@ -73,10 +73,10 @@ r = c.post('/api/auth/login', json={'username': femail, 'password': phone, 'role
 results.append(('farmer logs in with EMAIL (200)', r.status_code == 200, f'{r.status_code} {r.get_json().get("error")}'))
 
 # 5) Reject flow: reject a farmer -> account stays locked
-login_as('BRANCH_MANAGER', 'BR01', branch_id=1)
+login_as('BRANCH_OPERATOR', 'BR01', branch_id=1)
 r = c.post('/api/farmers', headers=H(), json={'name': 'Reject Flow', 'mobile': '9098765432', 'milkType': 'BUFFALO'})
 code2 = r.get_json().get('farmer', {}).get('farmerCode')
-login_as('SUPER_ADMIN', 'admin')
+login_as('ADMIN', 'admin')
 c.post(f'/api/farmers/{code2}/verify', headers=H(), json={'action': 'reject', 'reason': 'Docs mismatch'})
 with app.app_context():
     u2 = User.query.filter_by(farmer_id=Farmer.query.filter_by(farmer_code=code2).first().id).first()

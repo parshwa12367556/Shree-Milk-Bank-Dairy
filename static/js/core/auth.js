@@ -31,12 +31,12 @@ const Auth = {
   },
 
   /**
-   * Check if user has global role (SUPER_ADMIN, HEAD_OFFICE)
+   * Check if user has global (admin) role
    * @returns {boolean}
    */
   isGlobalRole() {
     const role = this.getRole();
-    return role === 'SUPER_ADMIN' || role === 'HEAD_OFFICE';
+    return role === 'ADMIN';
   },
 
   /**
@@ -45,25 +45,25 @@ const Auth = {
    */
   canCollect() {
     const role = this.getRole();
-    return ['SUPER_ADMIN', 'BRANCH_MANAGER', 'OPERATOR'].includes(role);
+    return ['ADMIN', 'BRANCH_OPERATOR'].includes(role);
   },
 
   /**
    * Check if user can process payments
-   * Payment system is fully controlled by the Head Office (Super Admin).
+   * Payment actions are exclusively performed by the ADMIN role.
    * @returns {boolean}
    */
   canPay() {
     const role = this.getRole();
-    return ['SUPER_ADMIN'].includes(role);
+    return ['ADMIN'].includes(role);
   },
 
   /**
-   * Check if user is a Branch Manager (the only role that registers farmers)
+   * Check if user is a Branch Operator (registers farmers for own branch)
    * @returns {boolean}
    */
-  isBranchManager() {
-    return this.getRole() === 'BRANCH_MANAGER';
+  isBranchOperator() {
+    return this.getRole() === 'BRANCH_OPERATOR';
   },
 
   /**
@@ -72,15 +72,17 @@ const Auth = {
    */
   canManageRates() {
     const role = this.getRole();
-    return ['SUPER_ADMIN', 'HEAD_OFFICE'].includes(role);
+    return ['ADMIN'].includes(role);
   },
 
   /**
-   * Handle login form submission
+   * Handle login form submission — common Login ID + Password.
+   * The backend detects the role and returns redirect_url; the frontend
+   * never sends (or trusts) a role from the browser.
    */
-  async handleLogin(username, password, branchId, role) {
+  async handleLogin(loginId, password, rememberMe = false) {
     try {
-      const result = await API.login(username, password, branchId, role);
+      const result = await API.login(loginId, password, rememberMe);
       
       // Store token and user
       Storage.setToken(result.token);
@@ -96,11 +98,11 @@ const Auth = {
       this.initApp();
       
       if (user.mustChangePassword) {
-        // First login with the default password — force a password change
+        // First login with the temporary password — force a password change
         this.openChangePassword(true);
       } else {
-        // Redirect to dashboard
-        Router.navigate('dashboard');
+        // Redirect to the role home (dashboard / farmer-dashboard)
+        Router.navigate(Router.homeRoute());
       }
       
       return { success: true };
@@ -118,7 +120,12 @@ const Auth = {
     } catch (e) {
       // Ignore errors on logout
     }
-    
+
+    // Stop the farmer dashboard's background polling on logout.
+    if (typeof window.stopFarmerPolling === 'function') {
+      window.stopFarmerPolling();
+    }
+
     Storage.remove('sd_token');
     Storage.remove('sd_user');
     
@@ -133,28 +140,24 @@ const Auth = {
   },
 
   /**
-   * Initialize login page
+   * Initialize login page — one common Login ID + Password form. No role
+   * selection: the backend detects the role from the users table.
    */
   initLoginPage() {
     const loginForm = document.getElementById('login-form');
     if (!loginForm) return;
 
     const submitBtn = loginForm.querySelector('.btn-login');
-    const errorDiv = loginForm.querySelector('.login-error');
-
-    // Load branches
-    this._loadBranches();
 
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const username = document.getElementById('login-username')?.value.trim();
-      const password = document.getElementById('login-password')?.value.trim();
-      const branchId = document.getElementById('login-branch')?.value;
-      const role = this._getSelectedRole();
 
-      if (!username || !password) {
-        this._showError('Please enter username and password');
+      const loginId = document.getElementById('login-username')?.value.trim();
+      const password = document.getElementById('login-password')?.value;
+      const rememberMe = document.getElementById('remember-me')?.checked || false;
+
+      if (!loginId || !password) {
+        this._showError('Please enter your Login ID and password');
         return;
       }
 
@@ -162,12 +165,13 @@ const Auth = {
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="anim-spin" style="display:inline-flex;width:20px;height:20px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;margin-right:8px;"></span> Signing in...';
 
-      const result = await this.handleLogin(username, password, branchId, role);
+      const result = await this.handleLogin(loginId, password, rememberMe);
 
       if (!result.success) {
         this._showError(result.error);
         submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Sign In';
+        submitBtn.innerHTML = '<i data-lucide="log-in"></i> Sign In';
+        if (window.lucide) lucide.createIcons();
       }
     });
 
@@ -183,44 +187,23 @@ const Auth = {
       });
     }
 
-    // Remember me
+    // Remember Me — remembers the Login ID only (never the password)
     const rememberMe = document.getElementById('remember-me');
     if (rememberMe) {
-      const saved = localStorage.getItem('sd_remember_user');
+      const saved = localStorage.getItem('sd_remember_login');
       if (saved) {
         document.getElementById('login-username').value = saved;
         rememberMe.checked = true;
       }
       rememberMe.addEventListener('change', () => {
-        const username = document.getElementById('login-username').value;
-        if (rememberMe.checked && username) {
-          localStorage.setItem('sd_remember_user', username);
+        const loginId = document.getElementById('login-username').value;
+        if (rememberMe.checked && loginId) {
+          localStorage.setItem('sd_remember_login', loginId);
         } else {
-          localStorage.removeItem('sd_remember_user');
+          localStorage.removeItem('sd_remember_login');
         }
       });
     }
-
-    // Role selector tabs — farmers sign in with registered email + mobile number
-    const roleTabs = document.querySelectorAll('#login-role-tabs .role-tab');
-    const applyRoleUi = (role) => {
-      const isFarmer = role === 'FARMER';
-      const uInput = document.getElementById('login-username');
-      const pInput = document.getElementById('login-password');
-      const uLabel = document.querySelector('label[for="login-username"]');
-      const branchGroup = document.getElementById('login-branch')?.closest('.form-group');
-      if (uInput) uInput.placeholder = isFarmer ? 'Enter your registered email' : 'Enter your username';
-      if (uLabel) uLabel.textContent = isFarmer ? 'Email Address' : 'Username';
-      if (pInput) pInput.placeholder = isFarmer ? 'Enter your registered mobile number' : 'Enter your password';
-      if (branchGroup) branchGroup.style.display = isFarmer ? 'none' : '';
-    };
-    roleTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        roleTabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        applyRoleUi(tab.dataset.role);
-      });
-    });
 
     // Language selector
     document.querySelectorAll('.login-language button').forEach(btn => {
@@ -233,15 +216,6 @@ const Auth = {
 
     // Wire the auth modals (change password / forgot password) once
     this._wireAuthModals();
-  },
-
-  /**
-   * Get the role selected on the login-screen role tabs
-   * @returns {string|null}
-   */
-  _getSelectedRole() {
-    const active = document.querySelector('#login-role-tabs .role-tab.active');
-    return active ? active.dataset.role : null;
   },
 
   /**
@@ -297,7 +271,8 @@ const Auth = {
     const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } };
 
     if (!current || !next) { showErr('Current and new passwords are required'); return; }
-    if (next.length < 6) { showErr('New password must be at least 6 characters'); return; }
+    const policyError = Auth.passwordPolicyError(next);
+    if (policyError) { showErr(policyError); return; }
     if (next !== confirm) { showErr('Passwords do not match'); return; }
 
     const btn = document.getElementById('cp-submit');
@@ -320,6 +295,20 @@ const Auth = {
       }
       if (window.lucide) lucide.createIcons();
     }
+  },
+
+  /**
+   * Password policy — mirrors the backend policy (spec §21).
+   * @param {string} password
+   * @returns {string|null} First violation message, or null if valid
+   */
+  passwordPolicyError(password) {
+    const p = password || '';
+    if (p.length < 8) return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(p)) return 'Password must contain at least one uppercase letter';
+    if (!/[a-z]/.test(p)) return 'Password must contain at least one lowercase letter';
+    if (!/\d/.test(p)) return 'Password must contain at least one number';
+    return null;
   },
 
   /**
@@ -353,6 +342,15 @@ const Auth = {
   },
 
   /**
+   * Legacy alias kept for any inline handlers — same as passwordPolicyError.
+   * @param {string} password
+   * @returns {string|null}
+   */
+  _passwordPolicyError(password) {
+    return this.passwordPolicyError(password);
+  },
+
+  /**
    * Handle the forgot-password flow step (1: send OTP, 2: reset password)
    */
   async _handleForgotPasswordStep() {
@@ -368,7 +366,7 @@ const Auth = {
     try {
       if (!isStep2) {
         const identifier = document.getElementById('fp-identifier')?.value.trim();
-        if (!identifier) { err('fp-error1', 'Please enter your username or email'); return; }
+        if (!identifier) { err('fp-error1', 'Please enter your Login ID or email'); return; }
         const result = await API.forgotPassword(identifier);
         // DEV: show the OTP until real SMS/email delivery is wired
         if (result.dev_otp) {
@@ -382,12 +380,13 @@ const Auth = {
         if (back) back.style.display = '';
         if (submit) submit.innerHTML = 'Reset Password';
       } else {
-        const username = document.getElementById('fp-identifier')?.value.trim();
+        const loginId = document.getElementById('fp-identifier')?.value.trim();
         const otp = document.getElementById('fp-otp')?.value.trim();
         const next = document.getElementById('fp-new')?.value.trim();
-        if (!username || !otp) { err('fp-error2', 'Username and OTP are required'); return; }
-        if (!next || next.length < 6) { err('fp-error2', 'New password must be at least 6 characters'); return; }
-        await API.resetPassword(username, otp, next);
+        if (!loginId || !otp) { err('fp-error2', 'Login ID and OTP are required'); return; }
+        const policyError = Auth.passwordPolicyError(next);
+        if (policyError) { err('fp-error2', policyError); return; }
+        await API.resetPassword(loginId, otp, next);
         Modal.close('modal-forgot-password');
         this._resetForgotPassword();
         Modal.toast({ title: 'Password Reset', message: 'Password reset successfully. Please login with your new password.', type: 'success' });
@@ -403,71 +402,6 @@ const Auth = {
         }
       }
     }
-  },
-
-  /**
-   * Load branches for login dropdown
-   * Shows hardcoded fallback immediately, then tries to update from API
-   */
-  async _loadBranches() {
-    const select = document.getElementById('login-branch');
-    if (!select) return;
-
-    // Show fallback branches immediately (synchronous - always works)
-    this._loadBranchFallback(select);
-
-    // Then try to get live data from API (async - may fail)
-    try {
-      const result = await API.getBranches();
-      const branches = result.branches || result.data || result || [];
-      
-      if (branches.length > 0) {
-        this._populateBranchDropdown(select, branches);
-      }
-    } catch (error) {
-      console.warn('Could not load branches from API, using fallback:', error);
-      // Fallback is already shown, nothing more to do
-    }
-
-    // Restore last selected branch
-    const lastBranch = localStorage.getItem('sd_last_branch');
-    if (lastBranch) select.value = lastBranch;
-
-    // Persist selection so it is restored on the next login
-    if (!select.hasAttribute('data-branch-listener')) {
-      select.setAttribute('data-branch-listener', 'true');
-      select.addEventListener('change', () => {
-        if (select.value) localStorage.setItem('sd_last_branch', select.value);
-      });
-    }
-  },
-
-  /**
-   * Populate branch dropdown from cache or hardcoded fallback
-   */
-  _loadBranchFallback(select) {
-    const cached = Storage.getCache('branches');
-    const branches = (cached && cached.length > 0) ? cached : [
-      { id: 1, name: 'Nippani Branch', code: 'BR01' },
-      { id: 2, name: 'Belagavi Branch', code: 'BR02' },
-      { id: 3, name: 'Chikkodi Branch', code: 'BR03' },
-      { id: 4, name: 'Sankeshwar Branch', code: 'BR04' },
-      { id: 5, name: 'Athani Branch', code: 'BR05' },
-    ];
-    this._populateBranchDropdown(select, branches);
-  },
-
-  /**
-   * Populate branch select element with options
-   */
-  _populateBranchDropdown(select, branches) {
-    select.innerHTML = '<option value="">Select Branch</option>';
-    branches.forEach(branch => {
-      const opt = document.createElement('option');
-      opt.value = branch.id;
-      opt.textContent = `${branch.name} (${branch.code})`;
-      select.appendChild(opt);
-    });
   },
 
   /**
@@ -497,11 +431,9 @@ const Auth = {
     userNameEls.forEach(el => { el.textContent = user.name || user.username; });
     userRoleEls.forEach(el => { 
       const roleMap = {
-        SUPER_ADMIN: 'Super Admin',
-        HEAD_OFFICE: 'Head Office',
-        BRANCH_MANAGER: 'Branch Manager',
-        OPERATOR: 'Operator',
-        ACCOUNTANT: 'Accountant'
+        ADMIN: 'Admin',
+        BRANCH_OPERATOR: 'Branch Operator',
+        FARMER: 'Farmer'
       };
       el.textContent = roleMap[user.role] || user.role;
     });
@@ -522,6 +454,19 @@ const Auth = {
       const roles = el.dataset.role.split(',');
       el.style.display = roles.includes(user.role) ? '' : 'none';
     });
+
+    // Farmer portal: point generic navbar links at the farmer equivalents
+    if (user.role === 'FARMER') {
+      const linkMap = {
+        '#profile': '#my-profile',
+        '#settings': '#farmer-settings',
+        '#notifications': '#farmer-notifications',
+      };
+      document.querySelectorAll('a[href]').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href && linkMap[href]) a.setAttribute('href', linkMap[href]);
+      });
+    }
   }
 };
 

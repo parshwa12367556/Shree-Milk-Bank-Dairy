@@ -20,14 +20,14 @@ window.initFarmerForm = function() {
   } else {
     // Only Branch Managers can register new farmers (architecture spec)
     const user = Auth.getUser();
-    if (!user || user.role !== 'BRANCH_MANAGER') {
+    if (!user || !['ADMIN', 'BRANCH_OPERATOR'].includes(user.role)) {
       const card = document.getElementById('farmer-form-card');
       const notice = document.getElementById('farmer-form-access-notice');
       if (card) card.style.display = 'none';
       if (notice) {
         notice.style.display = 'block';
       } else {
-        Modal.toast({ title: 'Access Denied', message: 'Only Branch Managers can register farmers.', type: 'error' });
+        Modal.toast({ title: 'Access Denied', message: 'Only Admin or Branch Operators can register farmers.', type: 'error' });
         setTimeout(() => Router.navigate('farmers'), 1200);
         return;
       }
@@ -126,8 +126,9 @@ function buildFarmerPayload(data) {
 }
 
 /**
- * Lock the Branch select to the logged-in user's branch.
- * Branch Managers can only register farmers under their own branch.
+ * Branch select handling.
+ * BRANCH_OPERATOR: locked to their own assigned branch.
+ * ADMIN: free to pick any ACTIVE branch (spec 5.3 — Admin selects the branch).
  */
 function initBranchLock() {
   const select = document.querySelector('#farmer-form [name="branch_id"]');
@@ -135,7 +136,7 @@ function initBranchLock() {
 
   const user = Auth.getUser();
   if (user && user.branchId) {
-    // Branch Manager: branch is locked to the manager's own branch
+    // Branch Operator: branch is locked to the operator's own branch
     select.innerHTML = '';
     const opt = document.createElement('option');
     opt.value = user.branchId;
@@ -143,14 +144,27 @@ function initBranchLock() {
     select.appendChild(opt);
     select.disabled = true;
   } else {
-    // Head Office viewing the form (edit mode): clear the stale hardcoded
-    // options — registration is manager-only, edits keep the farmer's branch.
-    select.innerHTML = '';
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = "Assigned to Branch Manager's branch";
-    select.appendChild(opt);
-    select.disabled = true;
+    // Admin: load ACTIVE branches so the farmer can be registered under
+    // any branch the admin chooses. (In edit mode the farmer's existing
+    // branch is preserved by the form's own prefill.)
+    select.innerHTML = '<option value="">Select Branch</option>';
+    if (window.API) {
+      API.getBranches()
+        .then((result) => {
+          const branches = (result && (result.branches || result.data)) || [];
+          if (branches.length) {
+            select.innerHTML = '<option value="">Select Branch</option>';
+            branches.forEach((b) => {
+              const opt = document.createElement('option');
+              opt.value = b.id;
+              opt.textContent = `${b.name} (${b.code})`;
+              select.appendChild(opt);
+            });
+          }
+        })
+        .catch(() => { /* keep the empty select */ });
+    }
+    select.disabled = false;
   }
 }
 

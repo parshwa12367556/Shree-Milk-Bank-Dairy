@@ -3,7 +3,7 @@
     <button class="sidebar-toggle-mobile" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.sidebar-overlay').classList.toggle('active')">
       <i data-lucide="menu"></i>
     </button>
-    <a href="{{ home_url or ('/farmer/profile' if current_user and current_user.role == 'FARMER' else ('/branch/dashboard' if current_user and current_user.role in ('BRANCH_MANAGER','OPERATOR') else '/admin/dashboard')) }}" class="nav-brand">
+    <a href="{{ home_url or ('/farmer/profile' if current_user and current_user.role == 'FARMER' else ('/branch/dashboard' if current_user and current_user.role == 'BRANCH_OPERATOR' else '/admin/dashboard')) }}" class="nav-brand">
       <div class="brand-logo">
         <i data-lucide="milk" style="width:20px;height:20px;"></i>
       </div>
@@ -72,7 +72,7 @@
       <div class="dropdown-menu">
         <div class="dropdown-header">User Menu</div>
         <a class="dropdown-item" href="/shared/profile"><span class="item-icon"><i data-lucide="user-circle"></i></span>My Profile</a>
-        {% if current_user and current_user.role in ('SUPER_ADMIN','HEAD_OFFICE') %}
+        {% if current_user and current_user.role == 'ADMIN' %}
         <a class="dropdown-item" href="/admin/settings/company"><span class="item-icon"><i data-lucide="settings"></i></span>Settings</a>
         {% endif %}
         <a class="dropdown-item" href="/shared/user-guide"><span class="item-icon"><i data-lucide="book-open"></i></span>User Guide</a>

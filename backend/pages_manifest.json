@@ -6,41 +6,6 @@
     "section": "dashboard",
     "page": "dashboard"
   },
-  "/admin/analytics": {
-    "template": "admin/dashboard/analytics.html",
-    "layout": "admin",
-    "title": "Analytics",
-    "section": "dashboard",
-    "page": "analytics"
-  },
-  "/admin/company-statistics": {
-    "template": "admin/dashboard/company_statistics.html",
-    "layout": "admin",
-    "title": "Company Statistics",
-    "section": "dashboard",
-    "page": "company_statistics"
-  },
-  "/admin/branch-comparison": {
-    "template": "admin/dashboard/branch_comparison.html",
-    "layout": "admin",
-    "title": "Branch Comparison",
-    "section": "dashboard",
-    "page": "branch_comparison"
-  },
-  "/admin/revenue-dashboard": {
-    "template": "admin/dashboard/revenue_dashboard.html",
-    "layout": "admin",
-    "title": "Revenue Dashboard",
-    "section": "dashboard",
-    "page": "revenue_dashboard"
-  },
-  "/admin/profit-loss-dashboard": {
-    "template": "admin/dashboard/profit_loss_dashboard.html",
-    "layout": "admin",
-    "title": "Profit & Loss Dashboard",
-    "section": "dashboard",
-    "page": "profit_loss_dashboard"
-  },
   "/admin/notifications": {
     "template": "admin/dashboard/notifications.html",
     "layout": "admin",
@@ -846,34 +811,6 @@
     "section": "quality",
     "page": "quality"
   },
-  "/branch/inventory/allocated": {
-    "template": "branch/inventory/allocated_inventory.html",
-    "layout": "branch",
-    "title": "Allocated Inventory",
-    "section": "inventory",
-    "page": "inventory"
-  },
-  "/branch/inventory/usage": {
-    "template": "branch/inventory/stock_usage.html",
-    "layout": "branch",
-    "title": "Stock Usage",
-    "section": "inventory",
-    "page": "inventory"
-  },
-  "/branch/inventory/request": {
-    "template": "branch/inventory/stock_request.html",
-    "layout": "branch",
-    "title": "Stock Request",
-    "section": "inventory",
-    "page": "inventory"
-  },
-  "/branch/inventory/history": {
-    "template": "branch/inventory/inventory_history.html",
-    "layout": "branch",
-    "title": "Inventory History",
-    "section": "inventory",
-    "page": "inventory"
-  },
   "/branch/reports/daily": {
     "template": "branch/reports/daily_report.html",
     "layout": "branch",
@@ -1076,5 +1013,85 @@
     "title": "Feedback",
     "section": "feedback",
     "page": "feedback"
+  },
+  "/admin/collections": {
+    "template": "admin/collections/collections.html",
+    "layout": "admin",
+    "title": "Milk Collections",
+    "subtitle": "Collection records across all branches.",
+    "icon": "milk",
+    "section": "collections",
+    "page": "collections",
+    "type": "list"
+  },
+  "/branch/milk-collection": {
+    "template": "branch/collection/morning_collection.html",
+    "layout": "branch",
+    "title": "Milk Collection",
+    "subtitle": "Record morning / evening milk collections.",
+    "icon": "milk",
+    "section": "collection",
+    "page": "morning_collection",
+    "type": "dashboard"
+  },
+  "/branch/payments": {
+    "template": "branch/payments/payment_history.html",
+    "layout": "branch",
+    "title": "Payment History",
+    "subtitle": "Branch payment records — view only.",
+    "icon": "wallet",
+    "section": "payments",
+    "page": "payments",
+    "type": "list"
+  },
+  "/branch/notifications": {
+    "template": "branch/notifications.html",
+    "layout": "branch",
+    "title": "Notifications",
+    "subtitle": "System notifications for your branch.",
+    "icon": "bell",
+    "section": "notifications",
+    "page": "notifications",
+    "type": "list"
+  },
+  "/farmer/daily-collection": {
+    "template": "farmer/daily_collection.html",
+    "layout": "farmer",
+    "title": "Daily Collection",
+    "subtitle": "Your milk submission for today.",
+    "icon": "calendar-check",
+    "section": "collections",
+    "page": "daily_collection",
+    "type": "dashboard"
+  },
+  "/farmer/settings": {
+    "template": "farmer/settings.html",
+    "layout": "farmer",
+    "title": "Settings",
+    "subtitle": "Account security and notification preferences.",
+    "icon": "settings",
+    "section": "settings",
+    "page": "settings",
+    "type": "settings"
+  },
+  "/farmer/grievance/new": {
+    "template": "farmer/grievance.html",
+    "layout": "farmer",
+    "title": "New Grievance",
+    "subtitle": "Raise a grievance.",
+    "icon": "message-square",
+    "section": "grievance",
+    "page": "grievance",
+    "type": "form"
+  },
+  "/admin/grievances": {
+    "template": "admin/grievances/grievances.html",
+    "layout": "admin",
+    "title": "Farmer Grievances",
+    "subtitle": "Review and respond to farmer grievances.",
+    "icon": "message-square",
+    "section": "grievances",
+    "page": "grievances",
+    "type": "list"
   }
 }

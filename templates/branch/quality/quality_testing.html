@@ -13,10 +13,7 @@
     <p class="subtitle">Record milk quality test results.</p>
   </div>
   <div class="page-actions">
-            <button class="btn btn-primary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
-              <i data-lucide="plus" style="width:16px;height:16px;"></i>
-              New Test
-            </button></div>
+            <a class="btn btn-primary" href="/branch/quality/testing"><i data-lucide="plus" style="width:16px;height:16px;"></i> New Test</a></div>
 </div>
 {% endblock %}
 
@@ -43,7 +40,7 @@
           <div class="kpi-card kpi-purple" id="qty-avg-fat">
             <div class="kpi-icon"><i data-lucide="droplets" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Avg Fat</div>
-            <div class="kpi-value">4.1%</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
         </div>
         <div class="dashboard-grid">

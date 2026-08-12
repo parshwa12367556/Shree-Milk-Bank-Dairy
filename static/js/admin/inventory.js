@@ -16,7 +16,7 @@ window.initInventory = function() {
 
 function _isGlobalRole() {
   const user = window.Auth ? Auth.getUser() : null;
-  return !!user && ['SUPER_ADMIN', 'HEAD_OFFICE'].includes(user.role);
+  return !!user && ['ADMIN'].includes(user.role);
 }
 
 function toggleInventoryView() {

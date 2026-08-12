@@ -2,16 +2,16 @@
 Smart Dairy ERP — Branch Routes
 
 GET    /api/branches                      — List active branches (public for login)
-POST   /api/branches                      — Create branch + auto-create branch login (SUPER_ADMIN, HEAD_OFFICE)
+POST   /api/branches                      — Create branch + auto-create branch login (ADMIN)
 PATCH  /api/branches/<id>                 — Update branch (syncs branch login)
 POST   /api/branches/<id>/reset-password  — Reset branch login password to branch phone
 DELETE /api/branches/<id>                 — Delete branch
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, verify_jwt_in_request
 from backend.app import db
 from backend.models import Branch, User
-from backend.auth import role_required, hash_password
+from backend.auth import role_required, hash_password, get_identity, generate_login_id
 from backend.audit import log_audit
 
 branch_bp = Blueprint('branches', __name__)
@@ -19,7 +19,13 @@ branch_bp = Blueprint('branches', __name__)
 
 @branch_bp.route('/api/branches', methods=['GET'])
 def get_branches():
-    """List all active branches. Public (used in login dropdown)."""
+    """List all active branches. Public for the login dropdown — but an
+    authenticated FARMER must never enumerate branches (their portal is
+    self-service only)."""
+    verify_jwt_in_request(optional=True)
+    identity = get_identity()
+    if identity and identity.get('role') == 'FARMER':
+        return jsonify({'error': 'Access denied. Farmer accounts can only access their own portal.'}), 403
     branches = Branch.query.filter_by(status='ACTIVE').order_by(Branch.name).all()
     return jsonify({
         'branches': [b.to_dict() for b in branches]
@@ -28,7 +34,7 @@ def get_branches():
 
 @branch_bp.route('/api/branches', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_branch():
     """Create a new branch."""
     data = request.get_json()
@@ -54,6 +60,16 @@ def create_branch():
     if User.query.filter_by(username=code).first():
         return jsonify({'error': 'Branch code conflicts with an existing login username. Choose a different code.'}), 409
 
+    # Generate the Branch Operator Login ID (spec §3): {BRANCH_CODE}OP{serial}
+    existing_ops = User.query.filter(User.role == 'BRANCH_OPERATOR',
+                                     User.username.like(f'{code}%')).count()
+    login_id = generate_login_id('BRANCH_OPERATOR', branch_code=code,
+                                 existing_count=existing_ops)
+    while User.query.filter_by(login_id=login_id).first():
+        existing_ops += 1
+        login_id = generate_login_id('BRANCH_OPERATOR', branch_code=code,
+                                     existing_count=existing_ops)
+
     branch = Branch(
         code=code,
         name=name,
@@ -68,17 +84,18 @@ def create_branch():
     db.session.add(branch)
     db.session.flush()
 
-    # Auto-create the branch login: username = branch code, password = branch phone
+    # Auto-create the branch login: login_id = {code}OP{serial} (e.g. BR01OP001),
+    # password = branch phone; first login forces a password change.
     if not User.query.filter_by(username=code).first():
         branch_user = User(
+            login_id=login_id,
             username=code,
             password_hash=hash_password(phone),
             name=data.get('managerName', '') or f'{name} Manager',
-            role='BRANCH_MANAGER',
+            role='BRANCH_OPERATOR',
             branch_id=branch.id,
             phone=phone,
             status='ACTIVE',
-            # First login uses the phone number as password — force a change.
             must_change_password=True,
         )
         db.session.add(branch_user)
@@ -93,7 +110,7 @@ def create_branch():
 
 @branch_bp.route('/api/branches/<int:branch_id>', methods=['PATCH'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def update_branch(branch_id):
     """Update an existing branch (syncs the branch login if code/phone changed)."""
     branch = Branch.query.get_or_404(branch_id)
@@ -134,6 +151,11 @@ def update_branch(branch_id):
             if User.query.filter(User.username == branch.code, User.id != branch_user.id).first():
                 return jsonify({'error': 'Branch login username already in use'}), 409
             branch_user.username = branch.code
+            # Reflect the branch code change in the Login ID too (BR01OP001 → BR02OP001)
+            if branch_user.login_id and branch_user.login_id.endswith('OP') is False:
+                _parts = branch_user.login_id.rsplit('OP', 1)
+                if len(_parts) == 2:
+                    branch_user.login_id = f'{branch.code}OP{_parts[1]}'
         if branch.phone and branch.phone != old_phone:
             branch_user.password_hash = hash_password(branch.phone)
             branch_user.phone = branch.phone
@@ -147,7 +169,7 @@ def update_branch(branch_id):
 
 @branch_bp.route('/api/branches/<int:branch_id>/reset-password', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def reset_branch_password(branch_id):
     """Reset a branch login password to the branch's phone number."""
     branch = Branch.query.get_or_404(branch_id)
@@ -156,11 +178,20 @@ def reset_branch_password(branch_id):
 
     branch_user = User.query.filter_by(username=branch.code).first()
     if not branch_user:
+        existing_ops = User.query.filter(User.role == 'BRANCH_OPERATOR',
+                                         User.username.like(f'{branch.code}%')).count()
+        login_id = generate_login_id('BRANCH_OPERATOR', branch_code=branch.code,
+                                     existing_count=existing_ops)
+        while User.query.filter_by(login_id=login_id).first():
+            existing_ops += 1
+            login_id = generate_login_id('BRANCH_OPERATOR', branch_code=branch.code,
+                                         existing_count=existing_ops)
         branch_user = User(
+            login_id=login_id,
             username=branch.code,
             password_hash=hash_password(branch.phone),
             name=branch.manager_name or f'{branch.name} Manager',
-            role='BRANCH_MANAGER',
+            role='BRANCH_OPERATOR',
             branch_id=branch.id,
             phone=branch.phone,
             status='ACTIVE',
@@ -177,13 +208,13 @@ def reset_branch_password(branch_id):
     log_audit('UPDATE', 'Branch', branch.code, detail=f'Branch login password reset')
     db.session.commit()
     return jsonify({
-        'message': f'Password reset successfully. Branch login: {branch.code} / {branch.phone}'
+        'message': f'Password reset successfully. Branch login: {branch_user.login_id} / {branch.phone}'
     })
 
 
 @branch_bp.route('/api/branches/<int:branch_id>', methods=['DELETE'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def delete_branch(branch_id):
     """Delete a branch.
 
@@ -197,7 +228,7 @@ def delete_branch(branch_id):
     # branch can reuse it later; the renamed row is never shown.
     branch.code = f"{branch.code}-DEL-{branch.id}"
     # Deactivate the auto-created branch login so it can no longer sign in
-    branch_user = User.query.filter_by(branch_id=branch.id, role='BRANCH_MANAGER').first()
+    branch_user = User.query.filter_by(branch_id=branch.id, role='BRANCH_OPERATOR').first()
     if branch_user:
         branch_user.status = 'INACTIVE'
     log_audit('DELETE', 'Branch', branch.code, detail=f'Branch {branch.name} deleted')

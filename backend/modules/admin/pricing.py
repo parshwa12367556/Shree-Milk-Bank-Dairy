@@ -2,14 +2,14 @@
 Smart Dairy ERP — Pricing / Rate Engine Routes
 
 GET  /api/pricing     — List rate versions
-POST /api/pricing     — Create new rate (SUPER_ADMIN, HEAD_OFFICE)
+POST /api/pricing     — Create new rate (ADMIN only)
 """
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from backend.app import db
 from backend.models import RateMaster
-from backend.auth import can_manage_rates, get_identity
+from backend.auth import can_manage_rates, get_identity, reject_farmer
 
 pricing_bp = Blueprint('pricing', __name__)
 
@@ -17,7 +17,9 @@ pricing_bp = Blueprint('pricing', __name__)
 @pricing_bp.route('/api/pricing', methods=['GET'])
 @jwt_required()
 def get_pricing():
-    """List all rate versions, current and historical."""
+    """List all rate versions, current and historical (staff only — farmers
+    see their own rates on their collection records, not the pricing config)."""
+    reject_farmer()
     milk_type = request.args.get('milkType', '')
     status = request.args.get('status', '')
 

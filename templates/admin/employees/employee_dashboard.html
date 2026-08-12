@@ -13,10 +13,7 @@
     <p class="subtitle">Workforce overview, attendance and payroll.</p>
   </div>
   <div class="page-actions">
-            <button class="btn btn-primary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
-              <i data-lucide="user-plus" style="width:16px;height:16px;"></i>
-              Add Employee
-            </button></div>
+            <a class="btn btn-primary" href="/admin/employees/add"><i data-lucide="user-plus" style="width:16px;height:16px;"></i> Add Employee</a></div>
 </div>
 {% endblock %}
 
@@ -43,7 +40,7 @@
           <div class="kpi-card kpi-gold" id="emp-payroll">
             <div class="kpi-icon"><i data-lucide="banknote" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Monthly Payroll</div>
-            <div class="kpi-value">₹12.4L</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
         </div>
         <div class="dashboard-grid">

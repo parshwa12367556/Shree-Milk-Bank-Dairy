@@ -10,8 +10,8 @@ function _pbParams() {
   return {
     page: _passbookPage,
     per_page: PB_PER_PAGE,
-    from: document.getElementById('filter-from')?.value || '',
-    to: document.getElementById('filter-to')?.value || '',
+    from: document.getElementById('mp-filter-from')?.value || '',
+    to: document.getElementById('mp-filter-to')?.value || '',
   };
 }
 
@@ -28,7 +28,7 @@ function _payStatusBadge(status) {
 }
 
 async function loadFarmerPassbook() {
-  const body = document.getElementById('passbook-body');
+  const body = document.getElementById('mp-passbook-body');
   if (body) body.innerHTML = '<tr><td colspan="9" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading passbook…</td></tr>';
 
   try {
@@ -48,24 +48,39 @@ async function loadFarmerPassbook() {
       if (el) el.innerHTML = v;
     });
 
-    const totalEl = document.getElementById('passbook-total');
+    const totalEl = document.getElementById('mp-passbook-total');
     if (totalEl) totalEl.textContent = `${data.total || 0} entries`;
 
-    const pager = document.getElementById('passbook-pager-info');
+    const pager = document.getElementById('mp-passbook-pager-info');
     if (pager) {
       const from = data.total === 0 ? 0 : ((data.page - 1) * (data.perPage || PB_PER_PAGE)) + 1;
       const to = Math.min((data.page || 1) * (data.perPage || PB_PER_PAGE), data.total || 0);
       pager.textContent = `Showing ${from}-${to} of ${data.total || 0} entries`;
     }
-    const prev = document.getElementById('passbook-prev');
-    const next = document.getElementById('passbook-next');
+    const prev = document.getElementById('mp-passbook-prev');
+    const next = document.getElementById('mp-passbook-next');
     if (prev) prev.disabled = !(data.page && data.page > 1);
     if (next) next.disabled = !(data.page && data.pages && data.page < data.pages);
 
     if (!entries.length) {
       body.innerHTML = '<tr><td colspan="9" class="text-center" style="padding:var(--space-6);"><div class="empty-icon" style="margin:0 auto var(--space-3);"><i data-lucide="book-open" style="width:36px;height:36px;"></i></div><p style="color:var(--ink-muted);font-size:var(--text-sm);">No passbook entries found.</p><p style="color:var(--ink-muted);font-size:var(--text-xs);margin-top:var(--space-1);">Milk collections will appear here automatically once recorded by your branch.</p></td></tr>';
     } else {
-      body.innerHTML = entries.map(e => `
+      body.innerHTML = entries.map(e => {
+        // Debit rows (settled payments) render distinctly from credit rows.
+        if (e.entryType === 'PAYMENT' || e.debit) {
+          return `
+        <tr style="background:rgba(180,60,60,0.04);">
+          <td>${fmtDate(e.date)}</td>
+          <td colspan="5" style="font-size:var(--text-sm);">
+            <span style="font-weight:600;">${e.description || 'Payment settled'}</span>
+            ${e.paymentCode ? `<div style="font-size:10px;color:var(--ink-muted);">${e.paymentCode}</div>` : ''}
+          </td>
+          <td style="font-weight:600;color:var(--danger, #b3413d);">-${fmtINR(Math.abs(e.debit != null ? e.debit : e.amount))}</td>
+          <td>${fmtINR(e.balance)}</td>
+          <td>${_payStatusBadge(e.paymentStatus || 'PAID')}</td>
+        </tr>`;
+        }
+        return `
         <tr>
           <td>${fmtDate(e.date)}</td>
           <td>${_shiftBadge(e.shift)}</td>
@@ -76,7 +91,8 @@ async function loadFarmerPassbook() {
           <td style="font-weight:600;color:var(--forest);">${fmtINR(e.amount)}</td>
           <td>${fmtINR(e.balance)}</td>
           <td>${_payStatusBadge(e.paymentStatus)}${e.paymentCode ? `<div style="font-size:10px;color:var(--ink-muted);">${e.paymentCode}</div>` : ''}</td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     }
     if (window.lucide) lucide.createIcons();
   } catch (err) {
@@ -93,13 +109,13 @@ window.refreshFarmerPassbook = function () {
   loadFarmerPassbook();
 };
 
-window.pageFarmerPassbook = function (delta) {
+window.pageMyPassbook = function (delta) {
   _passbookPage = Math.max(1, _passbookPage + delta);
   loadFarmerPassbook();
 };
 
-window.initFarmerPassbook = function () {
-  ['filter-from', 'filter-to'].forEach(id => {
+window.initMyPassbook = function () {
+  ['mp-filter-from', 'mp-filter-to'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', () => { _passbookPage = 1; loadFarmerPassbook(); });
   });

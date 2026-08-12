@@ -861,7 +861,7 @@ const Guide = {
           </div>
           <div class="guide-callout info">
             <i data-lucide="info"></i>
-            <div><b>Who can change milk rates?</b>Only SUPER_ADMIN and HEAD_OFFICE roles. Rates are
+            <div><b>Who can change milk rates?</b>Only the ADMIN role. Rates are
             versioned — new rates apply to future collections.</div>
           </div>
           <div class="guide-callout info">
@@ -1140,6 +1140,14 @@ const Guide = {
  */
 window.initGuide = function () {
   Guide.init();
+};
+
+/**
+ * Help Center entry point — the help cards use openHelpGuide() (utils.js)
+ * to jump into the matching guide chapter.
+ */
+window.initHelp = function () {
+  if (window.lucide) lucide.createIcons();
 };
 
 /* Expose for inline handlers (Help Center, chapter links) */

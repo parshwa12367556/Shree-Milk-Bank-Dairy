@@ -2,7 +2,7 @@
 {% set active_page = 'documents' %}
 {% set active_section = 'documents' %}
 {% block page_title %}My Documents{% endblock %}
-{% block page_init %}{% endblock %}
+{% block page_init %}initFarmerDocuments{% endblock %}
 
 {% block page_header %}
 {% from 'base/breadcrumb.html' import breadcrumb %}
@@ -10,49 +10,65 @@
 <div class="page-header">
   <div>
     <h2>My Documents</h2>
-    <p class="subtitle">Documents submitted for your profile.</p>
+    <p class="subtitle">Documents submitted for your profile and their review status.</p>
   </div>
   <div class="page-actions">
-            <button class="btn btn-primary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
-              <i data-lucide="upload" style="width:16px;height:16px;"></i>
-              Upload Document
-            </button></div>
+    <button class="btn btn-primary" id="btn-upload-doc">
+      <i data-lucide="upload" style="width:16px;height:16px;"></i>
+      Upload Document
+    </button>
+  </div>
 </div>
 {% endblock %}
 
 {% block content %}
 
-        <!-- Toolbar -->
-        <div class="toolbar">
-          <div class="toolbar-left">
-            <div class="search-bar" style="width:280px;">
-              <span class="search-icon"><i data-lucide="search"></i></span>
-              <input type="text" placeholder="Search...">
+        <!-- Upload modal -->
+        <div class="modal-overlay" id="doc-upload-modal" style="display:none;">
+          <div class="modal" style="max-width:480px;">
+            <div class="modal-header">
+              <h5>Upload Document</h5>
+              <button type="button" class="modal-close" data-close-doc-modal><i data-lucide="x"></i></button>
             </div>
-          </div>
-          <div class="toolbar-right">
-            <select style="padding:var(--space-1) var(--space-6) var(--space-1) var(--space-2);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-surface);color:var(--ink);font-size:var(--text-sm);">
-              <option>All Status</option>
-              <option>Active</option>
-              <option>Inactive</option>
-              <option>Pending</option>
-            </select>
-            <button class="btn btn-sm btn-ghost" title="Export"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
-            <button class="btn btn-sm btn-ghost" title="Print"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
-            <button class="btn btn-sm btn-ghost" title="Refresh"><i data-lucide="refresh-cw" style="width:16px;height:16px;"></i></button>
+            <form id="form-doc-upload" enctype="multipart/form-data">
+              <div class="modal-body">
+                <div class="form-group">
+                  <label class="form-label">Document Type</label>
+                  <select class="input-premium" id="doc-type">
+                    <option value="AADHAAR">Aadhaar Card</option>
+                    <option value="PAN">PAN Card</option>
+                    <option value="BANK_PASSBOOK">Bank Passbook</option>
+                    <option value="ADDRESS_PROOF">Address Proof</option>
+                    <option value="PHOTO">Photo</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Title</label>
+                  <input type="text" class="input-premium" id="doc-title" placeholder="e.g. Aadhaar front copy" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">File (PDF / JPG / PNG)</label>
+                  <input type="file" class="input-premium" id="doc-file" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+                </div>
+                <p style="font-size:var(--text-xs);color:var(--ink-muted);">Uploaded documents are reviewed by the dairy. Only PDF and image files up to 5&nbsp;MB are accepted.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-close-doc-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary" id="doc-submit">
+                  <i data-lucide="upload" style="width:16px;height:16px;"></i> Upload
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
+        <!-- Documents list -->
         <div class="table-wrapper">
           <div class="table-header">
-            <div class="table-title">Document</div>
+            <div class="table-title">My Documents</div>
             <div class="table-toolbar">
-              <div class="segmented-control">
-                <button class="segmented-btn active">All</button>
-                <button class="segmented-btn">Recent</button>
-              </div>
-              <button class="btn btn-sm btn-ghost" title="Export CSV"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
-              <button class="btn btn-sm btn-ghost" title="Print"><i data-lucide="printer" style="width:16px;height:16px;"></i></button>
+              <span class="table-info" id="docs-total" style="font-size:var(--text-xs);color:var(--ink-muted);">Loading…</span>
             </div>
           </div>
           <div class="table-responsive">
@@ -60,49 +76,21 @@
               <thead>
                 <tr>
                   <th>Document</th>
-                    <th>Type</th>
-                    <th>Submitted</th>
-                    <th>Status</th>
-                    <th>Remarks</th>
+                  <th>Type</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th>Remarks</th>
+                  <th></th>
                 </tr>
               </thead>
-                  <tbody>
-                    <tr><td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td></tr>
-                    <tr><td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td>
-                  <td><span class="skeleton skeleton-text"></span></td></tr>
-                  </tbody>
+              <tbody id="documents-body">
+                <tr><td colspan="6" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading documents…</td></tr>
+              </tbody>
             </table>
-          </div>
-          <div class="table-footer">
-            <div class="table-info">Showing 1-10 of 124 entries</div>
-            {% from 'base/pagination.html' import pagination %}
-            {{ pagination(1, 13, request.path) }}
           </div>
         </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.Chart && document.getElementById('chart-trend')) {
-    AppCharts.lineChart('chart-trend', ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], [{label:'Collection', data:[40,55,48,62,58,70,66], borderColor:'#2e7d32', backgroundColor:'rgba(46,125,50,0.12)', fill:true, tension:0.3}]);
-  }
-  if (window.Chart && document.getElementById('chart-breakdown')) {
-    AppCharts.doughnutChart('chart-breakdown', ['Cow','Buffalo','Mixed'], [45,35,20]);
-  }
-  if (window.Chart && document.getElementById('chart-report-1')) {
-    AppCharts.barChart('chart-report-1', ['W1','W2','W3','W4'], [{label:'Value', data:[120,145,132,158]}]);
-  }
-  if (window.Chart && document.getElementById('chart-report-2')) {
-    AppCharts.lineChart('chart-report-2', ['W1','W2','W3','W4'], [{label:'Trend', data:[90,110,105,128], borderColor:'#d4a043', backgroundColor:'rgba(212,160,67,0.12)', fill:true, tension:0.3}]);
-  }
-});
-</script>
+<script src="/static/js/farmer/documents.js"></script>
 {% endblock %}

@@ -1,11 +1,15 @@
 """
-Smart Dairy ERP — Application Entry Point
+Smart Dairy ERP — Development Entry Point
 
 Usage:
-    python run.py          # Start development server
-    python run.py --seed   # Seed database with sample data
+    python run.py          # Start development server (FLASK_ENV=development)
+    python run.py --seed   # Seed database with sample data first
+
+For production use wsgi.py / production.py (or gunicorn/waitress directly).
 """
+import os
 import sys
+
 from backend.app import create_app
 
 app = create_app()
@@ -16,5 +20,7 @@ if __name__ == '__main__':
         with app.app_context():
             seed_database()
         print('Database seeded successfully.')
-    
-    app.run(debug=True, port=5000)
+
+    debug = os.getenv('FLASK_ENV', 'development') != 'production'
+    port = int(os.getenv('PORT', '5000'))
+    app.run(debug=debug, host=os.getenv('HOST', '127.0.0.1'), port=port)

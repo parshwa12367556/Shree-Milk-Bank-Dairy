@@ -6,7 +6,7 @@
 let _notifFetched = false;
 
 async function loadFarmerNotifications() {
-  const list = document.getElementById('notifications-list');
+  const list = document.getElementById('fm-notifications-list');
   if (list && !_notifFetched) {
     list.innerHTML = '<div style="text-align:center;padding:var(--space-8);"><div class="empty-icon" style="margin:0 auto var(--space-3);"><i data-lucide="bell" style="width:36px;height:36px;"></i></div><p style="color:var(--ink-muted);font-size:var(--text-sm);">Loading notifications…</p></div>';
   }
@@ -17,7 +17,7 @@ async function loadFarmerNotifications() {
     const notifs = data.notifications || [];
     const unread = data.unreadCount || 0;
 
-    const unreadTag = document.getElementById('notif-unread-tag');
+    const unreadTag = document.getElementById('fm-notif-unread-tag');
     if (unreadTag) unreadTag.textContent = `${unread} unread`;
 
     if (!list) return;

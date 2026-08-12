@@ -17,7 +17,7 @@
 const ROUTE_MAP = {
   dashboard: () => {
     const role = window.Auth && Auth.getUser() ? Auth.getUser().role : null;
-    if (role === 'BRANCH_MANAGER' || role === 'OPERATOR') return '/branch/dashboard';
+    if (role === 'BRANCH_OPERATOR') return '/branch/dashboard';
     if (role === 'FARMER') return '/farmer/dashboard';
     return '/admin/dashboard';
   },
@@ -25,7 +25,7 @@ const ROUTE_MAP = {
   collection: () => '/branch/collection/morning',
   farmers: () => {
     const role = window.Auth && Auth.getUser() ? Auth.getUser().role : null;
-    return role === 'BRANCH_MANAGER' || role === 'OPERATOR' ? '/branch/farmers' : '/admin/farmers';
+    return role === 'BRANCH_OPERATOR' ? '/branch/farmers' : '/admin/farmers';
   },
   'farmer-form': () => '/branch/farmers/register',
   'farmer-profile': () => '/branch/farmers/profile',

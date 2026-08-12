@@ -6,13 +6,20 @@ and role-based access control (RBAC) decorators.
 """
 from functools import wraps
 import json
-from flask import jsonify, abort, make_response
+import re
+from flask import jsonify, abort, make_response, current_app
 from flask_jwt_extended import get_jwt_identity as _get_jwt_identity, verify_jwt_in_request
 import bcrypt
 
-# Roles that are always restricted to their own branch. Roles not listed here
-# (SUPER_ADMIN, HEAD_OFFICE, ACCOUNTANT) are treated as unrestricted/global.
-BRANCH_SCOPED_ROLES = ('BRANCH_MANAGER', 'OPERATOR')
+# ── Canonical roles ────────────────────────────────────────────────────────
+# The system uses exactly three roles:
+#   ADMIN            — full system scope (no branch restriction)
+#   BRANCH_OPERATOR  — strictly restricted to their assigned branch
+#   FARMER           — strictly restricted to their own farmer record
+# Roles not in BRANCH_SCOPED_ROLES are treated as unrestricted/global.
+ALL_ROLES = ('ADMIN', 'BRANCH_OPERATOR', 'FARMER')
+ADMIN_ROLES = ('ADMIN',)
+BRANCH_SCOPED_ROLES = ('BRANCH_OPERATOR',)
 
 
 def _deny(message):
@@ -48,6 +55,81 @@ def check_password(password, hashed):
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 
+def generate_login_id(role, branch_code=None, farmer_code=None, existing_count=0):
+    """
+    Generate a unique, human-friendly Login ID for a new user account.
+
+    Formats (spec §3):
+      ADMIN           → ADMIN001, ADMIN002, ...
+      BRANCH_OPERATOR → {BRANCH_CODE}OP{serial:03d}  (BR01OP001, BR02OP002, ...)
+      FARMER          → the farmer's farmer code (BR01001)
+
+    The caller supplies the number of already-existing accounts of the same
+    kind so the serial is sequential and collision-free.
+
+    Args:
+        role: One of ADMIN / BRANCH_OPERATOR / FARMER
+        branch_code: Branch code (required for BRANCH_OPERATOR)
+        farmer_code: Farmer code (required for FARMER)
+        existing_count: Count of existing accounts of the same kind
+
+    Returns:
+        Generated login_id string
+    """
+    if role == 'ADMIN':
+        return f'ADMIN{existing_count + 1:03d}'
+    if role == 'BRANCH_OPERATOR':
+        if not branch_code:
+            raise ValueError('branch_code is required for BRANCH_OPERATOR login ID')
+        return f'{branch_code}OP{existing_count + 1:03d}'
+    if role == 'FARMER':
+        if not farmer_code:
+            raise ValueError('farmer_code is required for FARMER login ID')
+        return farmer_code
+    raise ValueError(f'Unknown role: {role}')
+
+
+def normalize_login_id(value):
+    """
+    Normalize a login identifier for lookup: trim, collapse inner spaces,
+    and uppercase so Login IDs are case-insensitive (br01001 → BR01001).
+    """
+    return re.sub(r'\s+', '', (value or '')).strip().upper()
+
+
+def validate_password_policy(password):
+    """
+    Validate a new password against the configured password policy.
+
+    Configurable via env (see config.py):
+      PASSWORD_MIN_LENGTH      (default 8)
+      PASSWORD_REQUIRE_UPPER   (default on)
+      PASSWORD_REQUIRE_LOWER   (default on)
+      PASSWORD_REQUIRE_DIGIT   (default on)
+      PASSWORD_REQUIRE_SPECIAL (default off)
+
+    Args:
+        password: Candidate plain-text password
+
+    Returns:
+        List of human-readable policy violations (empty = valid)
+    """
+    cfg = current_app.config
+    errors = []
+    min_len = cfg.get('PASSWORD_MIN_LENGTH', 8)
+    if len(password or '') < min_len:
+        errors.append(f'Password must be at least {min_len} characters long')
+    if cfg.get('PASSWORD_REQUIRE_UPPER', True) and not re.search(r'[A-Z]', password or ''):
+        errors.append('Password must contain at least one uppercase letter')
+    if cfg.get('PASSWORD_REQUIRE_LOWER', True) and not re.search(r'[a-z]', password or ''):
+        errors.append('Password must contain at least one lowercase letter')
+    if cfg.get('PASSWORD_REQUIRE_DIGIT', True) and not re.search(r'\d', password or ''):
+        errors.append('Password must contain at least one number')
+    if cfg.get('PASSWORD_REQUIRE_SPECIAL', False) and not re.search(r'[^A-Za-z0-9]', password or ''):
+        errors.append('Password must contain at least one special character')
+    return errors
+
+
 def get_identity():
     """
     Get current user identity from JWT, parsing JSON string to dict.
@@ -72,7 +154,7 @@ def role_required(*roles):
     Decorator that restricts access to users with specific roles.
     
     Usage:
-        @role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+        @role_required('ADMIN')
         def protected_route():
             ...
     
@@ -102,34 +184,34 @@ def role_required(*roles):
 def can_collect():
     """
     Decorator for collection access.
-    Allowed roles: SUPER_ADMIN, BRANCH_MANAGER, OPERATOR
+    Allowed roles: ADMIN, BRANCH_OPERATOR
     """
-    return role_required('SUPER_ADMIN', 'HEAD_OFFICE', 'BRANCH_MANAGER', 'OPERATOR')
+    return role_required('ADMIN', 'BRANCH_OPERATOR')
 
 
 def can_pay():
     """
     Decorator for payment access.
-    Allowed roles: SUPER_ADMIN only — the payment system is completely
-    controlled by the Head Office (Super Admin) per the architecture spec.
+    Allowed roles: ADMIN only — creating/approving/processing farmer
+    payments is exclusively an ADMIN responsibility per the architecture spec.
     """
-    return role_required('SUPER_ADMIN')
+    return role_required('ADMIN')
 
 
 def can_manage_rates():
     """
     Decorator for rate management access.
-    Allowed roles: SUPER_ADMIN, HEAD_OFFICE
+    Allowed roles: ADMIN only
     """
-    return role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+    return role_required('ADMIN')
 
 
 def is_global_role():
     """
-    Decorator for global/head office access.
-    Allowed roles: SUPER_ADMIN, HEAD_OFFICE
+    Decorator for global/head-office access.
+    Allowed roles: ADMIN
     """
-    return role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+    return role_required('ADMIN')
 
 
 def reject_farmer():
@@ -177,7 +259,7 @@ def is_branch_accessible(branch_id):
         return False
     
     # Global roles can access all branches
-    if user.get('role') in ('SUPER_ADMIN', 'HEAD_OFFICE'):
+    if user.get('role') in ADMIN_ROLES:
         return True
     
     # Branch-specific roles can only access their branch
@@ -189,10 +271,10 @@ def get_branch_scope():
     Return the branch_id a branch-scoped user is restricted to, or None.
 
     This is the single source of truth for branch-level data isolation and
-    fails CLOSED: branch-scoped roles (BRANCH_MANAGER / OPERATOR) are always
+    fails CLOSED: branch-scoped roles (BRANCH_OPERATOR) are always
     forced to their assigned branch, and if no branch is assigned the request
     is denied (403) instead of silently granting unrestricted access.
-    Unrestricted roles (SUPER_ADMIN / HEAD_OFFICE / ACCOUNTANT) return None.
+    Unrestricted roles (ADMIN) return None.
 
     Returns:
         branch_id (int) to filter by, or None for unrestricted access

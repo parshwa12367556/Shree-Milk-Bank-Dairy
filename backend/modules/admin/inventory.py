@@ -90,7 +90,7 @@ def get_movements():
 
 @inventory_bp.route('/api/inventory', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_inventory():
     data = request.get_json()
     if not data:
@@ -114,7 +114,7 @@ def create_inventory():
 
 @inventory_bp.route('/api/inventory/<int:item_id>', methods=['PATCH'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def update_inventory(item_id):
     """Edit item metadata (name, category, unit, min stock)."""
     item = InventoryItem.query.get_or_404(item_id)
@@ -140,7 +140,7 @@ def update_inventory(item_id):
 
 @inventory_bp.route('/api/inventory/<int:item_id>', methods=['DELETE'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def delete_inventory(item_id):
     item = InventoryItem.query.get_or_404(item_id)
     code = item.code
@@ -152,7 +152,7 @@ def delete_inventory(item_id):
 
 @inventory_bp.route('/api/inventory/<int:item_id>/movement', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def add_movement(item_id):
     """Stock IN / OUT / ALLOCATE for an item."""
     item = InventoryItem.query.get_or_404(item_id)
@@ -246,7 +246,7 @@ def get_allocations(item_id):
 
 @inventory_bp.route('/api/inventory/<int:item_id>/allocate', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def allocate_stock(item_id):
     """Allocate a quantity of an item to a branch (central inventory → branch).
 
@@ -315,7 +315,7 @@ def allocate_stock(item_id):
 
 @inventory_bp.route('/api/inventory/<int:item_id>/deallocate', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def deallocate_stock(item_id):
     """Return allocated quantity from a branch back to the central pool."""
     item = InventoryItem.query.get_or_404(item_id)

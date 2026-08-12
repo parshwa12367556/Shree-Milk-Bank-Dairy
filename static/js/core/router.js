@@ -17,14 +17,50 @@ const Router = {
    * farmer registration are role-gated per the architecture spec.
    */
   roleAccess: {
-    branches: ['SUPER_ADMIN', 'HEAD_OFFICE'],
-    procurement: ['SUPER_ADMIN', 'HEAD_OFFICE'],
-    vehicles: ['SUPER_ADMIN', 'HEAD_OFFICE'],
-    expenses: ['SUPER_ADMIN', 'HEAD_OFFICE'],
-    pricing: ['SUPER_ADMIN', 'HEAD_OFFICE'],
-    audit: ['SUPER_ADMIN'],
-    settings: ['SUPER_ADMIN', 'HEAD_OFFICE'],
-    'farmer-form': ['BRANCH_MANAGER'],
+    // Head-office modules — ADMIN only
+    branches: ['ADMIN'],
+    procurement: ['ADMIN'],
+    vehicles: ['ADMIN'],
+    expenses: ['ADMIN'],
+    pricing: ['ADMIN'],
+    audit: ['ADMIN'],
+    settings: ['ADMIN'],
+    inventory: ['ADMIN'],
+    employees: ['ADMIN'],
+    // Farmer registry & operational pages — ADMIN + BRANCH_OPERATOR
+    'farmer-form': ['ADMIN', 'BRANCH_OPERATOR'],
+    'farmer-profile': ['ADMIN', 'BRANCH_OPERATOR'],
+    'farmer-passbook': ['ADMIN', 'BRANCH_OPERATOR'],
+    farmers: ['ADMIN', 'BRANCH_OPERATOR'],
+    collection: ['ADMIN', 'BRANCH_OPERATOR'],
+    quality: ['ADMIN', 'BRANCH_OPERATOR'],
+    rejections: ['ADMIN', 'BRANCH_OPERATOR'],
+    reports: ['ADMIN', 'BRANCH_OPERATOR'],
+    notifications: ['ADMIN', 'BRANCH_OPERATOR'],
+    profile: ['ADMIN', 'BRANCH_OPERATOR'],
+    // Shared workspace — every authenticated user except farmers
+    dashboard: ['ADMIN', 'BRANCH_OPERATOR'],
+    // Farmer portal — FARMER only
+    'farmer-dashboard': ['FARMER'],
+    'farmer-collections': ['FARMER'],
+    'farmer-daily': ['FARMER'],
+    'my-passbook': ['FARMER'],
+    'farmer-payments': ['FARMER'],
+    'farmer-notifications': ['FARMER'],
+    'my-profile': ['FARMER'],
+    'farmer-bank-details': ['FARMER'],
+    'farmer-documents': ['FARMER'],
+    'farmer-grievance': ['FARMER'],
+    'farmer-settings': ['FARMER'],
+  },
+
+  /**
+   * Role home route — used for post-login redirects and guard fallbacks.
+   */
+  homeRoute() {
+    const user = window.Auth ? Auth.getUser() : null;
+    if (user && user.role === 'FARMER') return 'farmer-dashboard';
+    return 'dashboard';
   },
 
   /**
@@ -33,12 +69,12 @@ const Router = {
    * @returns {boolean}
    */
   canAccess(page) {
-    // Farmer form: only Branch Managers may REGISTER new farmers, but any
+    // Farmer form: ADMIN and BRANCH_OPERATOR may REGISTER new farmers, but any
     // authenticated user may open it to EDIT an existing farmer.
     if (page === 'farmer-form') {
       const user = window.Auth ? Auth.getUser() : null;
       if (!user) return false;
-      if (user.role === 'BRANCH_MANAGER') return true;
+      if (['ADMIN', 'BRANCH_OPERATOR'].includes(user.role)) return true;
       return !!(window.App && window.App.editFarmer);
     }
     const allowed = this.roleAccess[page];
@@ -118,12 +154,12 @@ const Router = {
     this.previousPage = this.currentPage;
     this.currentPage = page;
 
-    // Role-based route guard — redirect forbidden pages to dashboard
+    // Role-based route guard — redirect forbidden pages to the role home
     if (!this.canAccess(page)) {
       if (window.Modal) {
         Modal.toast({ title: 'Access Denied', message: 'You do not have permission to view this page.', type: 'error' });
       }
-      window.location.replace('#dashboard');
+      window.location.replace(`#${this.homeRoute()}`);
       return;
     }
 
@@ -254,5 +290,18 @@ Router.register('notifications', { title: 'Notifications', icon: 'bell', init: '
 Router.register('profile', { title: 'My Profile', icon: 'user-circle', init: 'initProfile', owner: 'shared' });
 Router.register('help', { title: 'Help Center', icon: 'help-circle', init: 'initHelp', owner: 'shared' });
 Router.register('guide', { title: 'User Guide', icon: 'book-open', init: 'initGuide', owner: 'shared' });
+
+// ── Farmer portal routes ──
+Router.register('farmer-dashboard', { title: 'My Dashboard', icon: 'layout-dashboard', init: 'initFarmerDashboard', owner: 'farmer' });
+Router.register('farmer-collections', { title: 'My Collections', icon: 'milk', init: 'initFarmerCollections', owner: 'farmer' });
+Router.register('farmer-daily', { title: 'Daily Collection', icon: 'sunrise', init: 'initFarmerDailyCollection', owner: 'farmer' });
+Router.register('my-passbook', { title: 'My Passbook', icon: 'book-open', init: 'initMyPassbook', owner: 'farmer' });
+Router.register('farmer-payments', { title: 'My Payments', icon: 'wallet', init: 'initFarmerPayments', owner: 'farmer' });
+Router.register('farmer-notifications', { title: 'My Notifications', icon: 'bell', init: 'initFarmerNotifications', owner: 'farmer' });
+Router.register('my-profile', { title: 'My Profile', icon: 'user-circle', init: 'initFarmerProfilePage', owner: 'farmer' });
+Router.register('farmer-bank-details', { title: 'Bank Details', icon: 'landmark', init: 'initFarmerBankDetails', owner: 'farmer' });
+Router.register('farmer-documents', { title: 'My Documents', icon: 'file-text', init: 'initFarmerDocuments', owner: 'farmer' });
+Router.register('farmer-grievance', { title: 'Grievance', icon: 'message-square', init: 'initFarmerGrievance', owner: 'farmer' });
+Router.register('farmer-settings', { title: 'My Settings', icon: 'settings', init: 'initFarmerSettings', owner: 'farmer' });
 
 window.Router = Router;

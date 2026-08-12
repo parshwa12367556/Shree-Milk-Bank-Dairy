@@ -13,14 +13,8 @@
     <p class="subtitle">Stock levels, movements and alerts.</p>
   </div>
   <div class="page-actions">
-            <button class="btn btn-primary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
-              <i data-lucide="plus" style="width:16px;height:16px;"></i>
-              Add Item
-            </button>
-            <button class="btn btn-secondary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
-              <i data-lucide="arrow-down-circle" style="width:16px;height:16px;"></i>
-              Stock In
-            </button></div>
+            <a class="btn btn-primary" href="/admin/items/create"><i data-lucide="plus" style="width:16px;height:16px;"></i> Add Item</a>
+            <a class="btn btn-secondary" href="/admin/items/create"><i data-lucide="arrow-down-circle" style="width:16px;height:16px;"></i> Stock In</a></div>
 </div>
 {% endblock %}
 
@@ -37,7 +31,7 @@
           <div class="kpi-card kpi-green" id="inv-stock">
             <div class="kpi-icon"><i data-lucide="indian-rupee" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Stock Value</div>
-            <div class="kpi-value">₹8.2L</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
           <div class="kpi-card kpi-amber" id="inv-low">
             <div class="kpi-icon"><i data-lucide="alert-triangle" style="width:20px;height:20px;"></i></div>

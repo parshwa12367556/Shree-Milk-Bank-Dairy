@@ -1,0 +1,50 @@
+      <!-- ── Farmer Passbook (admin view) ── -->
+      <div class="page-container" id="page-my-passbook" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#dashboard">Dashboard</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <a href="#farmers">Farmers</a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Passbook</span>
+        </div>
+        <div class="page-header">
+          <div>
+            <h2>Farmer Passbook</h2>
+            <p class="subtitle">Complete collection & payment history</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary" data-action="print-passbook"><i data-lucide="printer" style="width:16px;height:16px;"></i> Print</button>
+            <button class="btn btn-secondary" data-action="export-pdf"><i data-lucide="download" style="width:16px;height:16px;"></i> PDF</button>
+          </div>
+        </div>
+        <div class="card" style="padding:var(--space-6);margin-bottom:var(--space-4);">
+          <p id="passbook-header-text" style="color:var(--ink-muted);">Passbook for <strong>Farmer Name (Code)</strong></p>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Collection History</div>
+            <div class="table-toolbar">
+              <button class="btn btn-sm btn-ghost" onclick="Table.exportCSV('passbook-table', 'passbook.csv')"><i data-lucide="download" style="width:16px;height:16px;"></i> Export</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="mp-passbook-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Receipt</th>
+                  <th>Shift</th>
+                  <th>Qty</th>
+                  <th>Fat</th>
+                  <th>SNF</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody id="mp-passbook-body">
+                <tr><td colspan="8" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading passbook…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>

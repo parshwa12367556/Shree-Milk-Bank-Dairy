@@ -34,6 +34,7 @@ async function loadPayments(filters = {}) {
 
 /** Render payment summary cards from real API data */
 function updatePaymentSummary(summary) {
+  // List-page summary strip
   const paidEl = document.getElementById('summary-total-paid');
   const pendingEl = document.getElementById('summary-pending');
   const rateEl = document.getElementById('summary-rate');
@@ -42,12 +43,29 @@ function updatePaymentSummary(summary) {
     if (paidEl) paidEl.textContent = '—';
     if (pendingEl) pendingEl.textContent = '—';
     if (rateEl) rateEl.textContent = '—';
+    // Dashboard KPI cards (payment_dashboard.html) — show empty state
+    ['pay-pending', 'pay-approved', 'pay-paid', 'pay-failed'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.querySelector('.kpi-value').textContent = '—';
+    });
     return;
   }
 
   if (paidEl) paidEl.textContent = summary.totalPaid != null ? fmtINR(summary.totalPaid) : '—';
   if (pendingEl) pendingEl.textContent = summary.totalPending != null ? fmtINR(summary.totalPending) : '—';
   if (rateEl) rateEl.textContent = summary.paymentRate != null ? summary.paymentRate + '%' : '—';
+
+  // Dashboard KPI cards (payment_dashboard.html)
+  const cards = {
+    'pay-pending': summary.totalPendingAmount,
+    'pay-approved': summary.totalApprovedAmount,
+    'pay-paid': summary.totalPaidAmount,
+    'pay-failed': summary.totalFailedAmount,
+  };
+  Object.entries(cards).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.querySelector('.kpi-value').textContent = value != null ? fmtINR(value) : '—';
+  });
 }
 
 function renderPaymentsTable(payments) {
@@ -69,7 +87,7 @@ function renderPaymentsTable(payments) {
 
   const statusBadges = { PENDING: 'tag-gold', APPROVED: 'tag-blue', PAID: 'tag-green' };
   const user = window.Auth ? Auth.getUser() : null;
-  const isGlobal = !!user && ['SUPER_ADMIN', 'HEAD_OFFICE'].includes(user.role);
+  const isGlobal = !!user && ['ADMIN'].includes(user.role);
 
   tbody.innerHTML = payments.map(p => {
     const actions = [];

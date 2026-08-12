@@ -32,11 +32,19 @@ def create_app(config_name=None):
     )
 
     # Load configuration
-    from config import config_by_name
+    from config import config_by_name, validate_production
     app.config.from_object(config_by_name.get(config_name, config_by_name['default']))
+    if config_name == 'production':
+        validate_production()
 
     # Initialize extensions
-    CORS(app)
+    # CORS: same-origin by default. Only enabled for explicitly configured
+    # origins (comma-separated CORS_ORIGINS), never wide open.
+    cors_origins = app.config.get('CORS_ORIGINS') or []
+    if cors_origins:
+        CORS(app, resources={r'/api/*': {'origins': cors_origins}}, supports_credentials=True)
+    else:
+        CORS(app, resources={r'/api/*': {'origins': []}})
     db.init_app(app)
     jwt.init_app(app)
 
@@ -51,7 +59,10 @@ def create_app(config_name=None):
         from backend import models  # noqa: F401 — ensures models are loaded
         db.create_all()
         run_schema_updates()
+        migrate_legacy_roles()
+        backfill_login_ids()
         ensure_farmer_accounts()
+        backfill_ledger()
         run_auto_backup()
 
     # Serve the main SPA shell
@@ -82,6 +93,54 @@ def create_app(config_name=None):
         if _is_api_request():
             return {'error': 'Internal server error'}, 500
         return render_template('errors/500.html'), 500
+
+    # ── Forced password change (spec §24) ────────────────────────────────
+    # Accounts created with a temporary password (must_change_password=True)
+    # may ONLY use the auth endpoints until they set a real password. This is
+    # enforced server-side — the frontend forced modal is UX, this is security.
+    _MUST_CHANGE_ALLOWED = {
+        '/api/auth/change-password',
+        '/api/auth/login',
+        '/api/auth/logout',
+        '/api/auth/me',
+        '/api/auth/forgot-password',
+        '/api/auth/reset-password',
+        '/api/health',
+    }
+
+    @app.before_request
+    def enforce_password_change():
+        if not request.path.startswith('/api/') or request.path in _MUST_CHANGE_ALLOWED:
+            return None
+        token = (request.headers.get('Authorization', '') or '')
+        if token.lower().startswith('bearer '):
+            token = token[7:].strip()
+        else:
+            token = request.cookies.get('access_token')
+        if not token:
+            return None
+        try:
+            from flask_jwt_extended import decode_token
+            from backend.models import User as _User
+            import json as _json
+            payload = decode_token(token)
+            raw = payload.get('sub')
+            try:
+                identity = _json.loads(raw) if isinstance(raw, str) else raw
+            except (ValueError, TypeError):
+                return None
+            if not identity or not identity.get('uid'):
+                return None
+            user = db.session.get(_User, identity.get('uid'))
+            if user and user.status != 'ACTIVE':
+                # Deactivated/suspended accounts must not keep using valid
+                # tokens (spec §10: verify account is active on every request).
+                return {'error': 'Your account is currently inactive. Please contact the administrator.'}, 403
+            if user and user.must_change_password:
+                return {'error': 'You must change your password before continuing.'}, 403
+        except Exception:
+            return None  # invalid tokens are handled by the JWT loader
+        return None
 
     return app
 
@@ -143,12 +202,15 @@ def run_schema_updates():
         ('vehicles', 'mileage', 'FLOAT'),
         ('audit_logs', 'role', 'VARCHAR(30)'),
         ('audit_logs', 'branch_code', 'VARCHAR(20)'),
+        ('users', 'login_id', 'VARCHAR(80)'),
         ('users', 'must_change_password', 'BOOLEAN'),
         ('users', 'failed_attempts', 'INTEGER'),
         ('users', 'locked_until', 'DATETIME'),
+        ('users', 'password_changed_at', 'DATETIME'),
         ('users', 'recovery_email', 'VARCHAR(120)'),
         ('users', 'recovery_mobile', 'VARCHAR(15)'),
         ('users', 'farmer_id', 'INTEGER'),
+        ('users', 'updated_at', 'DATETIME'),
         ('bank_details', 'verification_status', 'VARCHAR(20)'),
         ('bank_details', 'verified_by', 'INTEGER'),
         ('bank_details', 'verified_at', 'DATETIME'),
@@ -158,6 +220,18 @@ def run_schema_updates():
         ('purchase_orders', 'delivery_status', 'VARCHAR(20)'),
         ('purchase_orders', 'grn_no', 'VARCHAR(20)'),
         ('collections', 'idempotency_key', 'VARCHAR(64)'),
+        ('collections', 'collection_time', 'TIME'),
+        ('collections', 'quality_grade', 'VARCHAR(20)'),
+        ('payments', 'gross_amount', 'FLOAT'),
+        ('payments', 'deductions', 'FLOAT'),
+        ('payments', 'payment_method', 'VARCHAR(30)'),
+        ('payments', 'created_by', 'INTEGER'),
+        ('payments', 'processed_by', 'INTEGER'),
+        ('payments', 'updated_at', 'DATETIME'),
+        ('notifications', 'farmer_id', 'INTEGER'),
+        ('notifications', 'related_type', 'VARCHAR(30)'),
+        ('notifications', 'related_id', 'INTEGER'),
+        ('notifications', 'read_at', 'DATETIME'),
     ]
     for table, column, col_type in additions:
         if table in existing and column not in existing[table]:
@@ -178,6 +252,144 @@ def run_schema_updates():
         db.session.commit()
     except Exception:
         db.session.rollback()
+
+    # Double-payment backstop (spec §22): a farmer can have at most ONE
+    # payment row per (period_start, period_end). The application guard
+    # (payment_service.has_overlapping_payment) runs first; this unique
+    # index is the database-level guarantee that survives races.
+    try:
+        db.session.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_payments_farmer_period "
+            "ON payments (farmer_id, period_start, period_end)"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    # Recommended read-path indexes (spec §28). CREATE INDEX IF NOT EXISTS
+    # is safe on existing databases; new databases get them from db.create_all.
+    recommended_indexes = {
+        'users': ['email', 'role', 'branch_id', 'farmer_id'],
+        'farmers': ['farmer_code', 'branch_id', 'mobile', 'status'],
+        'collections': ['farmer_id', 'branch_id', 'date', 'shift', 'status'],
+        'payments': ['farmer_id', 'branch_id', 'status', 'period_start', 'period_end'],
+        'notifications': ['user_id', 'farmer_id', 'read', 'created_at'],
+        'grievances': ['farmer_id', 'branch_id', 'status'],
+        'audit_logs': ['user_id', 'branch_code', 'entity', 'entity_id', 'created_at'],
+        'farmer_ledger_entries': ['farmer_id', 'branch_id', 'entry_date'],
+    }
+    for table_name, columns in recommended_indexes.items():
+        if table_name not in existing:
+            continue
+        for col in columns:
+            try:
+                db.session.execute(text(
+                    f"CREATE INDEX IF NOT EXISTS ix_{table_name}_{col} "
+                    f"ON {table_name} ({col})"))
+            except Exception:
+                db.session.rollback()
+    db.session.commit()
+
+
+def backfill_login_ids():
+    """
+    Assign a canonical, unique Login ID to every user that predates the
+    login_id column (spec §2/§3/§26):
+
+      ADMIN           → ADMIN001, ADMIN002, ...
+      BRANCH_OPERATOR → {branch_code}OP{serial:03d}  (BR01OP001, BR02OP002, ...)
+      FARMER          → the farmer's farmer code (BR01001)
+
+    Runs after migrate_legacy_roles() so legacy roles are already canonical.
+    Idempotent: users with a login_id are left untouched.
+    """
+    from sqlalchemy import text
+    from backend.models import User, Branch
+
+    try:
+        missing = User.query.filter((User.login_id.is_(None)) | (User.login_id == '')).order_by(User.id).all()
+        if not missing:
+            # Still ensure the unique index exists (fresh or migrated DBs).
+            db.session.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_login_id ON users (login_id)"))
+            db.session.commit()
+            return
+        admin_serial = User.query.filter(User.role == 'ADMIN', User.login_id.isnot(None)).count()
+        operator_serial = {}  # branch_code -> next serial
+        for u in missing:
+            if u.role == 'ADMIN':
+                admin_serial += 1
+                u.login_id = f'ADMIN{admin_serial:03d}'
+            elif u.role == 'BRANCH_OPERATOR':
+                code = u.branch.code if u.branch else (Branch.query.get(u.branch_id).code if u.branch_id else 'BR')
+                code = code or 'BR'
+                nxt = operator_serial.get(code, 0) + 1
+                operator_serial[code] = nxt
+                candidate = f'{code}OP{nxt:03d}'
+                # never collide with an existing login_id
+                while User.query.filter_by(login_id=candidate).first():
+                    nxt += 1
+                    operator_serial[code] = nxt
+                    candidate = f'{code}OP{nxt:03d}'
+                u.login_id = candidate
+            elif u.role == 'FARMER':
+                fcode = u.farmer.farmer_code if u.farmer else None
+                if not fcode or User.query.filter_by(login_id=fcode).first():
+                    fcode = u.username or f'FARMER{u.id:05d}'
+                u.login_id = fcode
+            else:
+                u.login_id = u.username or f'USER{u.id:05d}'
+        db.session.commit()
+        print(f'[MIGRATE] Backfilled login_id for {len(missing)} user(s)')
+        # Unique index — the database-level guarantee that Login IDs are unique.
+        db.session.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_login_id ON users (login_id)"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def migrate_legacy_roles():
+    """
+    Consolidate legacy role names onto the canonical three-role model.
+
+    The system uses exactly three auth roles: ADMIN, BRANCH_OPERATOR, FARMER.
+    Accounts created by older builds may still carry legacy role strings;
+    remap them here so the whole codebase (RBAC decorators, page routing,
+    data scoping) stays consistent without a manual DB migration:
+
+      SUPER_ADMIN / HEAD_OFFICE / ACCOUNTANT  →  ADMIN
+      BRANCH_MANAGER / OPERATOR               →  BRANCH_OPERATOR
+      FARMER                                  →  FARMER (unchanged)
+    """
+    from sqlalchemy import text
+    mapping = {
+        ('SUPER_ADMIN', 'HEAD_OFFICE', 'ACCOUNTANT'): 'ADMIN',
+        ('BRANCH_MANAGER', 'OPERATOR'): 'BRANCH_OPERATOR',
+    }
+    # One UPDATE per legacy name: text() bind params do NOT auto-expand
+    # tuples for ``IN``, so iterating keeps the migration explicit and safe.
+    for legacy_names, canonical in mapping.items():
+        for legacy in legacy_names:
+            try:
+                db.session.execute(
+                    text("UPDATE users SET role = :canonical WHERE role = :legacy"),
+                    {'canonical': canonical, 'legacy': legacy},
+                )
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+
+def backfill_ledger():
+    """
+    Create farmer ledger entries for collections/payments that predate the
+    ledger table. Idempotent — safe to run on every startup.
+    """
+    from backend.services import ledger_service
+    try:
+        ledger_service.backfill_ledger()
+    except Exception as exc:  # never block startup on ledger backfill
+        print(f'[LEDGER] Backfill skipped: {exc}')
 
 
 def ensure_farmer_accounts():
@@ -216,7 +428,11 @@ def ensure_farmer_accounts():
             username = farmer.farmer_code
             if User.query.filter_by(username=username).first():
                 username = f'farmer_{farmer.id}'
+            login_id = farmer.farmer_code
+            if User.query.filter_by(login_id=login_id).first():
+                login_id = f'FARMER{farmer.id:05d}'
             user = User(
+                login_id=login_id,
                 username=username,
                 password_hash=hash_password(farmer.mobile or 'farmer@123'),
                 name=farmer.name,
@@ -241,6 +457,10 @@ def ensure_farmer_accounts():
         # Keep the login email in sync with the farmer record
         if user.email != farmer.email:
             user.email = farmer.email
+            updated += 1
+        # Keep the canonical Login ID in sync with the farmer code
+        if user.login_id != farmer.farmer_code and not User.query.filter_by(login_id=farmer.farmer_code).first():
+            user.login_id = farmer.farmer_code
             updated += 1
     if created or updated or email_filled:
         db.session.commit()
@@ -276,6 +496,7 @@ def register_blueprints(app):
     from backend.modules.admin.pricing import pricing_bp
     from backend.modules.admin.expenses import expense_bp
     from backend.modules.admin.payments import payment_bp
+    from backend.modules.admin.grievances import grievance_admin_bp
 
     # ── Branch (Branch Manager) modules ──
     from backend.modules.branch.collection import collection_bp
@@ -316,4 +537,5 @@ def register_blueprints(app):
     app.register_blueprint(settings_bp)
     app.register_blueprint(notification_bp)
     app.register_blueprint(expense_bp)
+    app.register_blueprint(grievance_admin_bp)
     app.register_blueprint(pages_bp)

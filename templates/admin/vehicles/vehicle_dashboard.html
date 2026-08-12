@@ -13,10 +13,7 @@
     <p class="subtitle">Fleet overview, fuel, and maintenance.</p>
   </div>
   <div class="page-actions">
-            <button class="btn btn-primary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
-              <i data-lucide="plus" style="width:16px;height:16px;"></i>
-              Add Vehicle
-            </button></div>
+            <a class="btn btn-primary" href="/admin/vehicles/add"><i data-lucide="plus" style="width:16px;height:16px;"></i> Add Vehicle</a></div>
 </div>
 {% endblock %}
 
@@ -38,7 +35,7 @@
           <div class="kpi-card kpi-gold" id="veh-fuel">
             <div class="kpi-icon"><i data-lucide="fuel" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Fuel Cost (Month)</div>
-            <div class="kpi-value">₹1.8L</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
           <div class="kpi-card kpi-amber" id="veh-service">
             <div class="kpi-icon"><i data-lucide="wrench" style="width:20px;height:20px;"></i></div>

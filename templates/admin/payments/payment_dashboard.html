@@ -13,10 +13,7 @@
     <p class="subtitle">Overview of the farmer payment pipeline.</p>
   </div>
   <div class="page-actions">
-            <button class="btn btn-primary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
-              <i data-lucide="plus" style="width:16px;height:16px;"></i>
-              New Payment Sheet
-            </button></div>
+            <a class="btn btn-primary" href="/admin/payments/sheet"><i data-lucide="plus" style="width:16px;height:16px;"></i> New Payment Sheet</a></div>
 </div>
 {% endblock %}
 
@@ -28,22 +25,22 @@
           <div class="kpi-card kpi-amber" id="pay-pending">
             <div class="kpi-icon"><i data-lucide="clock" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Pending Amount</div>
-            <div class="kpi-value">₹1,24,500</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
           <div class="kpi-card kpi-blue" id="pay-approved">
             <div class="kpi-icon"><i data-lucide="check-circle" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Approved</div>
-            <div class="kpi-value">₹2,18,000</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
           <div class="kpi-card kpi-green" id="pay-paid">
             <div class="kpi-icon"><i data-lucide="check-check" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Paid (This Month)</div>
-            <div class="kpi-value">₹18.6L</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
           <div class="kpi-card kpi-red" id="pay-failed">
             <div class="kpi-icon"><i data-lucide="x-circle" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Failed</div>
-            <div class="kpi-value">₹12,400</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
         </div>
         <div class="dashboard-grid">

@@ -67,17 +67,54 @@ function selectFarmer(farmer) {
   `;
 }
 
-function loadTodaySummary() {
+function _currentShift() {
+  const hour = new Date().getHours();
+  return hour < 14 ? 'MORNING' : 'EVENING';
+}
+
+async function loadTodaySummary() {
   const container = document.getElementById('today-summary');
-  if (!container) return;
-  container.innerHTML = `
-    <div class="today-summary">
-      <div class="summary-item"><div class="summary-label">Collections</div><div class="summary-value">0</div></div>
-      <div class="summary-item"><div class="summary-label">Total Qty</div><div class="summary-value">0 L</div></div>
-      <div class="summary-item"><div class="summary-label">Total Amount</div><div class="summary-value">₹0</div></div>
-      <div class="summary-item"><div class="summary-label">Avg Rate</div><div class="summary-value">₹0</div></div>
-    </div>
-  `;
+  const today = new Date().toISOString().slice(0, 10);
+  let rows = [];
+  let count = 0, totalQty = 0, totalAmount = 0, rateSum = 0, rateN = 0;
+  try {
+    const result = await API.getCollections({ date: today, per_page: 10000 });
+    rows = result.collections || [];
+    count = rows.length;
+    rows.forEach(c => {
+      totalQty += c.quantity || 0;
+      totalAmount += c.amount || 0;
+      if (c.ratePerLiter) { rateSum += c.ratePerLiter; rateN++; }
+    });
+  } catch (err) { /* API failure — show empty state below */ }
+  if (container) {
+    container.innerHTML = `
+      <div class="today-summary">
+        <div class="summary-item"><div class="summary-label">Collections</div><div class="summary-value">${count}</div></div>
+        <div class="summary-item"><div class="summary-label">Total Qty</div><div class="summary-value">${fmtNum(totalQty)} L</div></div>
+        <div class="summary-item"><div class="summary-label">Total Amount</div><div class="summary-value">${fmtINR(totalAmount)}</div></div>
+        <div class="summary-item"><div class="summary-label">Avg Rate</div><div class="summary-value">${rateN ? fmtINR(rateSum / rateN) : '—'}</div></div>
+      </div>
+    `;
+  }
+  // Shift KPI cards (morning_collection.html / evening_collection.html)
+  const shift = _currentShift();
+  const shiftRows = rows.filter(c => (c.shift || '').toUpperCase() === shift);
+  const cardIds = {
+    'MORNING': { count: 'col-morning-count', qty: 'col-morning-qty', avg: 'col-morning-avg', pending: 'col-morning-pending' },
+    'EVENING': { count: 'col-evening-count', qty: 'col-evening-qty', avg: 'col-evening-avg', pending: 'col-evening-pending' },
+  }[shift] || {};
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.querySelector('.kpi-value').textContent = val;
+  };
+  if (cardIds.count) {
+    set(cardIds.count, shiftRows.length);
+    set(cardIds.qty, fmtNum(shiftRows.reduce((s, c) => s + (c.quantity || 0), 0)) + ' L');
+    const fats = shiftRows.filter(c => c.fat);
+    set(cardIds.avg, fats.length ? (fats.reduce((s, c) => s + (c.fat || 0), 0) / fats.length).toFixed(1) + '%' : '—');
+    set(cardIds.pending, '—');  // pending-farmer count needs attendance data — kept as empty state
+  }
 }
 
 function initQuantityPills() {

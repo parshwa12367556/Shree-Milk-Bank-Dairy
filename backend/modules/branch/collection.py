@@ -10,10 +10,11 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from sqlalchemy.exc import IntegrityError
 from backend.app import db
-from backend.models import Collection, Farmer, RateMaster, User
+from backend.models import Collection, Farmer, User
 from backend.auth import can_collect, get_identity, get_branch_scope, reject_farmer
 from backend.utils import generate_receipt_no
-from backend.pricing import compute_price
+from backend.services.pricing_service import calculate_collection_price
+from backend.services import ledger_service
 from backend.audit import log_audit
 from backend.notify import notify
 
@@ -35,19 +36,54 @@ def get_collections():
     reject_farmer()  # farmers use /api/farmer/me/collections
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
-    date_str = request.args.get('date', date.today().isoformat())
+    date_str = request.args.get('date', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
     shift = request.args.get('shift', '')
+    milk_type = request.args.get('milkType', '')
+    status = request.args.get('status', '')
     farmer_id = request.args.get('farmerId', type=int)
     branch_id = request.args.get('branchId', type=int)
+    q = request.args.get('q', '').strip()
 
     query = Collection.query
 
-    # Filter by date
-    try:
-        query_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        query = query.filter_by(date=query_date)
-    except (ValueError, TypeError):
-        pass
+    # Farmer search by ID / name (join on farmers, only for the caller's scope)
+    if q:
+        search = f'%{q}%'
+        query = query.join(Farmer, Collection.farmer_id == Farmer.id).filter(
+            db.or_(
+                Farmer.farmer_code.ilike(search),
+                Farmer.name.ilike(search),
+                Farmer.mobile.ilike(search),
+            )
+        )
+
+    # Filter by a single date, or a date range (from/to). No date at all
+    # returns every record (used by the admin collections page).
+    if date_str:
+        try:
+            query = query.filter_by(date=datetime.strptime(date_str, '%Y-%m-%d').date())
+        except (ValueError, TypeError):
+            pass
+    else:
+        if date_from:
+            try:
+                query = query.filter(Collection.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+            except (ValueError, TypeError):
+                pass
+        if date_to:
+            try:
+                query = query.filter(Collection.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+            except (ValueError, TypeError):
+                pass
+
+    if milk_type:
+        query = query.filter_by(milk_type=milk_type.upper())
+    if status:
+        status = status.upper()
+        if status in VALID_STATUSES:
+            query = query.filter_by(status=status)
 
     if shift:
         query = query.filter_by(shift=shift.upper())
@@ -59,17 +95,26 @@ def get_collections():
     # Branch isolation
     user = get_identity()
     user_branch_id = user.get('branchId')
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id:
+    if user.get('role') not in ('ADMIN',) and user_branch_id:
         query = query.filter_by(branch_id=user_branch_id)
 
     query = query.order_by(Collection.created_at.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    # Summary of the FILTERED result set (not just the current page)
+    summary_rows = query.limit(10000).all()
+    summary = {
+        'totalQuantity': round(sum((c.quantity or 0) for c in summary_rows), 2),
+        'totalAmount': round(sum((c.amount or 0) for c in summary_rows), 2),
+        'collectionCount': pagination.total,
+    }
 
     return jsonify({
         'collections': [c.to_dict() for c in pagination.items],
         'total': pagination.total,
         'page': pagination.page,
         'pages': pagination.pages,
+        'summary': summary,
     })
 
 
@@ -137,11 +182,6 @@ def create_collection():
     if not receipt_no:
         return jsonify({'error': 'Could not allocate a receipt number. Try again.'}), 409
 
-    # Get current active rate
-    rate = RateMaster.query.filter_by(
-        milk_type=farmer.milk_type, status='ACTIVE'
-    ).first()
-
     fat = data.get('fat')
     if fat is None:
         fat = 4.0 if farmer.milk_type == 'COW' else 6.0
@@ -154,10 +194,11 @@ def create_collection():
     except (TypeError, ValueError):
         return jsonify({'error': 'Fat and SNF must be numbers'}), 400
 
-    # Compute price server-side — never trust a client amount
-    fat_rate = rate.fat_rate if rate else 5.0
-    snf_rate = rate.snf_rate if rate else 2.5
-    price = compute_price(fat, snf, quantity, fat_rate, snf_rate)
+    # Compute price server-side via the pricing service — the amount is
+    # always derived from the ACTIVE rate rule for the collection date.
+    # A client-supplied amount/rate is never trusted.
+    price = calculate_collection_price(farmer.milk_type, fat, snf, quantity)
+    rate = price['rate']
 
     shift = (data.get('shift') or 'MORNING').upper()
     if shift not in VALID_SHIFTS:
@@ -168,6 +209,13 @@ def create_collection():
         status = 'ACCEPTED'
 
     user = get_identity()
+    now = datetime.utcnow()
+
+    # Quality grade derived server-side from the recorded parameters.
+    quality_grade = None
+    if data.get('water') is not None:
+        from backend.pricing import quality_grade as grade_milk
+        quality_grade = grade_milk(fat, float(data.get('water')), farmer.milk_type)['label']
 
     collection = Collection(
         receipt_no=receipt_no,
@@ -176,6 +224,7 @@ def create_collection():
         operator_id=user.get('uid'),
         rate_master_id=rate.id if rate else None,
         date=date.today(),
+        collection_time=now.time(),
         shift=shift,
         milk_type=farmer.milk_type,
         quantity=quantity,
@@ -186,12 +235,19 @@ def create_collection():
         water=data.get('water'),
         rate_per_liter=price['rate_per_liter'],
         amount=price['amount'],
+        quality_grade=quality_grade,
         remarks=data.get('remarks', ''),
         idempotency_key=idem_key,
         status=status,
     )
     db.session.add(collection)
     db.session.flush()
+
+    # Farmer passbook — same transaction, no drift: an accepted collection
+    # immediately credits the farmer's ledger.
+    if status in ('ACCEPTED', 'RECORDED', 'VERIFIED'):
+        ledger_service.record_milk_earning(collection)
+
     log_audit('CREATE', 'Collection', receipt_no,
               detail=f'Recorded {quantity}L {farmer.milk_type} milk for {farmer.farmer_code} (₹{price["amount"]})')
 
@@ -292,11 +348,9 @@ def update_collection(collection_id):
         return jsonify({'error': 'Fat and SNF values are required to re-price the collection.'}), 400
 
     if changes:
-        rate = RateMaster.query.filter_by(
-            milk_type=farmer.milk_type, status='ACTIVE').first()
-        fat_rate = rate.fat_rate if rate else 5.0
-        snf_rate = rate.snf_rate if rate else 2.5
-        price = compute_price(new_fat, new_snf, new_qty, fat_rate, snf_rate)
+        # Re-price using the pricing service (active rate for the milk type)
+        price = calculate_collection_price(
+            farmer.milk_type, new_fat, new_snf, new_qty, on_date=collection.date)
         collection.quantity = new_qty
         collection.fat = new_fat
         collection.snf = new_snf
@@ -324,6 +378,22 @@ def update_collection(collection_id):
               detail=f'Corrected collection {collection.receipt_no}: '
                      + ('; '.join(changes) if changes else 'details updated')
                      + (f' — reason: {reason}' if reason else ''))
+
+    # Keep the farmer's ledger credit in sync with the corrected amount.
+    # record_milk_earning is idempotent per (farmer, Collection, id) — it
+    # returns the existing row, which we update with the new amount.
+    # A correction to REJECTED reverses the earning (the farmer must not
+    # keep passbook credit for milk that was ultimately rejected).
+    if changes:
+        from backend.services.ledger_service import _recompute_balances, _reject_collection_credit
+        if collection.status == 'REJECTED':
+            _reject_collection_credit(collection.id)
+        elif collection.status in ('ACCEPTED', 'RECORDED', 'VERIFIED', 'CORRECTED'):
+            entry = ledger_service.record_milk_earning(collection)
+            if entry:
+                entry.credit_amount = round(collection.amount or 0, 2)
+                db.session.flush()
+            _recompute_balances(collection.farmer_id)
 
     # Notify the farmer that their record was corrected
     farmer_acct = _farmer_user(collection.farmer_id)

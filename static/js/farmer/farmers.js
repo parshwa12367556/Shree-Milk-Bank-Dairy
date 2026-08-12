@@ -22,7 +22,7 @@ window.initFarmers = function() {
 
 function _isGlobalRole() {
   const user = window.Auth ? Auth.getUser() : null;
-  return !!user && ['SUPER_ADMIN', 'HEAD_OFFICE'].includes(user.role);
+  return !!user && ['ADMIN'].includes(user.role);
 }
 
 /** Load farmer stats from API */
@@ -167,6 +167,7 @@ function openFarmerProfile(code) {
   API.getFarmer(code)
     .then(result => {
       App.selectedFarmer = result.farmer || result;
+      App.selectedFarmerData = result;
       Router.navigate('farmer-profile');
     })
     .catch(err => Modal.toast({ title: 'Error', message: err.message || 'Could not load farmer', type: 'error' }));

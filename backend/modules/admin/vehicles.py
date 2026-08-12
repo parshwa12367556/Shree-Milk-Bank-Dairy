@@ -49,7 +49,7 @@ def get_vehicles():
 
 @vehicle_bp.route('/api/vehicles', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_vehicle():
     data = request.get_json()
     if not data:
@@ -80,7 +80,7 @@ def create_vehicle():
 
 @vehicle_bp.route('/api/vehicles/<int:vehicle_id>', methods=['PATCH'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def update_vehicle(vehicle_id):
     """Update a vehicle's details."""
     vehicle = Vehicle.query.get_or_404(vehicle_id)
@@ -126,7 +126,7 @@ def update_vehicle(vehicle_id):
 
 @vehicle_bp.route('/api/vehicles/<int:vehicle_id>', methods=['DELETE'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def delete_vehicle(vehicle_id):
     """Delete a vehicle."""
     vehicle = Vehicle.query.get_or_404(vehicle_id)
@@ -158,7 +158,7 @@ def get_service_history(vehicle_id):
 
 @vehicle_bp.route('/api/vehicles/<int:vehicle_id>/service', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def add_service_record(vehicle_id):
     """Add a service record for a vehicle."""
     vehicle = Vehicle.query.get_or_404(vehicle_id)

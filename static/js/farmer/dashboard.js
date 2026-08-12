@@ -38,6 +38,8 @@ function stopPolling() {
   }
 }
 
+window.stopFarmerPolling = stopPolling;
+
 function setRefreshStatus(text) {
   const el = document.getElementById('refresh-status');
   if (el) el.textContent = text;
@@ -105,7 +107,7 @@ function renderDashboard(data) {
     'kpi-today-amount': fmtINR(k.amount),
     'kpi-total-qty': `${fmtNum(t.totalQuantity, 2)} L`,
     'kpi-avg-fat': t.avgFat != null ? `${t.avgFat}%` : '—',
-    'kpi-pending': fmtINR(p.pendingAmount),
+    'fm-kpi-pending': fmtINR(p.pendingAmount),
     'kpi-paid': fmtINR(p.paidAmount),
   };
   Object.entries(kpiMap).forEach(([id, value]) => {

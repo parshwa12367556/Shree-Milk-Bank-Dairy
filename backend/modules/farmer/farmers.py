@@ -41,7 +41,7 @@ def get_farmers():
     # Branch filter (respect user's branch)
     user = get_identity()
     user_branch_id = user.get('branchId')
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id:
+    if user.get('role') not in ('ADMIN',) and user_branch_id:
         query = query.filter_by(branch_id=user_branch_id)
     elif branch_id:
         query = query.filter_by(branch_id=branch_id)
@@ -88,7 +88,7 @@ def get_farmer_stats():
     reject_farmer()
     user = get_identity()
     user_branch_id = user.get('branchId')
-    scoped = user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id
+    scoped = user.get('role') not in ('ADMIN',) and user_branch_id
     q = Farmer.query.filter_by(branch_id=user_branch_id) if scoped else Farmer.query
 
     total = q.count()
@@ -116,12 +116,15 @@ def get_farmer_stats():
 
 @farmer_bp.route('/api/farmers', methods=['POST'])
 @jwt_required()
-@role_required('BRANCH_MANAGER')
+@role_required('ADMIN', 'BRANCH_OPERATOR')
 def create_farmer():
-    """Register a new farmer — Branch Manager only (per architecture spec).
+    """Register a new farmer — ADMIN or BRANCH_OPERATOR (per architecture spec).
 
-    The farmer is always assigned to the manager's own branch, and the
-    farmer ID is auto-generated as <branch_code><3-digit serial> (e.g. BR01001).
+    Branch resolution (never trusted blindly):
+      - ADMIN: the branch is taken from the request (branchId) and validated.
+      - BRANCH_OPERATOR: the branch is ALWAYS the operator's own assigned
+        branch — a client-supplied branchId is ignored.
+    The farmer ID is auto-generated as <branch_code><3-digit serial> (e.g. BR01001).
     """
     data = request.get_json()
     if not data:
@@ -138,15 +141,24 @@ def create_farmer():
     if milk_type not in ('COW', 'BUFFALO', 'MIXED'):
         return jsonify({'error': 'Valid milk type is required (COW, BUFFALO, MIXED)'}), 400
 
-    # Farmers always belong to the branch manager's own branch
     user = get_identity()
-    branch_id = user.get('branchId')
-    if not branch_id:
-        return jsonify({'error': 'No branch assigned to this user. Contact Head Office.'}), 400
+    if user.get('role') == 'ADMIN':
+        # Admin may register a farmer under any branch they choose.
+        try:
+            branch_id = int(data.get('branchId') or 0)
+        except (TypeError, ValueError):
+            branch_id = 0
+        if not branch_id:
+            return jsonify({'error': 'Please select the branch for this farmer.'}), 400
+    else:
+        # Branch operators can only register farmers for their own branch.
+        branch_id = user.get('branchId')
+        if not branch_id:
+            return jsonify({'error': 'No branch assigned to this user. Contact Head Office.'}), 400
 
     branch = Branch.query.get(branch_id)
-    if not branch:
-        return jsonify({'error': 'Assigned branch not found'}), 400
+    if not branch or branch.status != 'ACTIVE':
+        return jsonify({'error': 'Selected branch not found or inactive.'}), 400
 
     # Auto-generate farmer code: <branch_code><3-digit serial> (e.g. BR01001)
     prefix = branch.code
@@ -202,11 +214,13 @@ def create_farmer():
     db.session.add(farmer)
     db.session.flush()  # Get farmer ID
 
-    # Auto-create the farmer's login account — username = farmer code,
-    # password = registered mobile (same pattern as branch logins: code / phone).
-    # The account stays INACTIVE until Head Office verifies the farmer, so
-    # only approved farmers can sign in to the farmer portal.
+    # Auto-create the farmer's login account — login_id = farmer code
+    # (so the Farmer Code IS the Login ID, spec §3), password = registered
+    # mobile as the initial/temporary password. The account stays INACTIVE
+    # until Head Office verifies the farmer, and must change the temporary
+    # password on first login.
     db.session.add(User(
+        login_id=farmer_code,
         username=farmer_code,
         password_hash=hash_password(mobile),
         name=name,
@@ -216,6 +230,7 @@ def create_farmer():
         email=email,
         status='INACTIVE',  # activated in verify_farmer on approval
         farmer_id=farmer.id,
+        must_change_password=True,  # first login requires a real password
     ))
 
     # Create bank detail if provided
@@ -245,7 +260,7 @@ def create_farmer():
 
 @farmer_bp.route('/api/farmers/<code>/verify', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def verify_farmer(code):
     """Verify (approve) or reject a farmer (Head Office only).
 
@@ -303,7 +318,7 @@ def verify_farmer(code):
 
 @farmer_bp.route('/api/farmers/<code>/resubmit', methods=['POST'])
 @jwt_required()
-@role_required('BRANCH_MANAGER')
+@role_required('ADMIN', 'BRANCH_OPERATOR')
 def resubmit_farmer(code):
     """Re-submit a REJECTED farmer for verification (Branch Manager)."""
     farmer = Farmer.query.filter_by(farmer_code=code).first()
@@ -329,7 +344,7 @@ def resubmit_farmer(code):
 
 @farmer_bp.route('/api/farmers/<code>/verify-bank', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def verify_farmer_bank(code):
     """Verify or reject a farmer's bank details (Head Office only).
 
@@ -376,11 +391,11 @@ def export_farmers():
 
     user = get_identity()
     user_branch_id = user.get('branchId')
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id:
+    if user.get('role') not in ('ADMIN',) and user_branch_id:
         query = query.filter_by(branch_id=user_branch_id)
 
     branch_id = request.args.get('branchId', type=int)
-    if branch_id and user.get('role') in ('SUPER_ADMIN', 'HEAD_OFFICE'):
+    if branch_id and user.get('role') in ('ADMIN',):
         query = query.filter_by(branch_id=branch_id)
 
     farmers = query.order_by(Farmer.farmer_code).all()
@@ -428,7 +443,7 @@ def get_farmer(code):
 
     # Branch scope: managers can only view farmers from their own branch
     user = get_identity()
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user.get('branchId') != farmer.branch_id:
+    if user.get('role') not in ('ADMIN',) and user.get('branchId') != farmer.branch_id:
         return jsonify({'error': 'You can only view farmers from your own branch.'}), 403
 
     # Get collection stats
@@ -470,7 +485,7 @@ def update_farmer(code):
 
     # Branch scope: managers can only edit farmers from their own branch
     user = get_identity()
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user.get('branchId') != farmer.branch_id:
+    if user.get('role') not in ('ADMIN',) and user.get('branchId') != farmer.branch_id:
         return jsonify({'error': 'You can only edit farmers from your own branch.'}), 403
 
     # Map JSON field names to model attributes
@@ -492,8 +507,8 @@ def update_farmer(code):
 
     # Only Head Office may change a farmer's status (freeze / activate)
     user = get_identity()
-    if 'status' in data and user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE'):
-        return jsonify({'error': 'Only Head Office can change farmer status.'}), 403
+    if 'status' in data and user.get('role') not in ('ADMIN',):
+        return jsonify({'error': 'Only Admin can change farmer status.'}), 403
 
     # Keep the farmer's login account status in sync (ACTIVE ⇄ locked out)
     if farmer.user_account:

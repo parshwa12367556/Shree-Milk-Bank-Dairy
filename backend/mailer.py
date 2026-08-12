@@ -116,6 +116,47 @@ def _fmt(value, digits=2, suffix=''):
         return '—'
 
 
+def send_payment_email(payment):
+    """
+    Send the 'Payment Approved / Paid' email to the farmer's registered
+    email (read from the database record — never from the frontend). Called
+    only after the payment transition has committed. Best-effort delivery.
+
+    Returns (True, None) on success or (False, reason) when skipped/failed.
+    """
+    farmer = payment.farmer if payment else None
+    to_address = (farmer.email or '').strip() if farmer else ''
+    if not to_address:
+        return False, 'farmer has no email on file'
+
+    status = (payment.status or 'PENDING').title()
+    period = f"{payment.period_start.strftime('%d-%b-%Y')} to {payment.period_end.strftime('%d-%b-%Y')}" \
+        if payment.period_start and payment.period_end else '—'
+
+    html = render_template(
+        'emails/payment.html',
+        farmer_name=farmer.name,
+        farmer_code=farmer.farmer_code,
+        pay_code=payment.pay_code or '—',
+        period=period,
+        total_quantity=_fmt(payment.total_quantity, 2, ' Liters'),
+        collection_count=payment.collection_count or 0,
+        payment_status=status,
+        gross_amount=_fmt(payment.gross_amount if payment.gross_amount is not None else payment.total_amount, 2),
+        deductions=_fmt(payment.deductions or 0, 2),
+        net_amount=_fmt(payment.total_amount, 2),
+        reference=payment.reference or '',
+    )
+    subject = f'Payment {status} - Shree Milk Bank ({payment.pay_code})'
+    if SEND_ASYNC:
+        threading.Thread(
+            target=lambda: send_email(to_address, subject, html),
+            daemon=True,
+        ).start()
+        return True, None
+    return send_email(to_address, subject, html)
+
+
 def send_milk_collection_email(collection):
     """
     Send the 'New Milk Collection Recorded' email to the farmer's registered

@@ -17,7 +17,7 @@
       <input type="text" placeholder="Search menu..." onkeyup="filterSidebar(this.value)">
     </div>
 
-    <nav class="sidebar-nav" id="sidebar-nav">
+    <nav class="sidebar-nav" id="sidebar-nav" data-role="ADMIN,BRANCH_OPERATOR">
       <!-- Dashboard -->
       <a class="nav-item active" data-route="dashboard" onclick="Router.navigate('dashboard')">
         <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
@@ -41,7 +41,7 @@
           <span class="nav-icon"><i data-lucide="list"></i></span>
           <span class="nav-label">All Farmers</span>
         </a>
-        <a class="nav-item" data-route="farmer-form" data-role="BRANCH_MANAGER" onclick="Router.navigate('farmer-form')">
+        <a class="nav-item" data-route="farmer-form" data-role="ADMIN,BRANCH_OPERATOR" onclick="Router.navigate('farmer-form')">
           <span class="nav-icon"><i data-lucide="user-plus"></i></span>
           <span class="nav-label">Register Farmer</span>
         </a>
@@ -62,7 +62,7 @@
       </a>
 
       <!-- Pricing -->
-      <a class="nav-item" data-route="pricing" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('pricing')">
+      <a class="nav-item" data-route="pricing" data-role="ADMIN" onclick="Router.navigate('pricing')">
         <span class="nav-icon"><i data-lucide="dollar-sign"></i></span>
         <span class="nav-label">Rate Engine</span>
       </a>
@@ -80,13 +80,13 @@
       </a>
 
       <!-- Branches -->
-      <a class="nav-item" data-route="branches" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('branches')">
+      <a class="nav-item" data-route="branches" data-role="ADMIN" onclick="Router.navigate('branches')">
         <span class="nav-icon"><i data-lucide="building-2"></i></span>
         <span class="nav-label">Branches</span>
       </a>
 
       <!-- Procurement -->
-      <a class="nav-item" data-route="procurement" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('procurement')">
+      <a class="nav-item" data-route="procurement" data-role="ADMIN" onclick="Router.navigate('procurement')">
         <span class="nav-icon"><i data-lucide="truck"></i></span>
         <span class="nav-label">Procurement</span>
       </a>
@@ -104,13 +104,13 @@
       </a>
 
       <!-- Vehicles -->
-      <a class="nav-item" data-route="vehicles" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('vehicles')">
+      <a class="nav-item" data-route="vehicles" data-role="ADMIN" onclick="Router.navigate('vehicles')">
         <span class="nav-icon"><i data-lucide="car"></i></span>
         <span class="nav-label">Vehicles</span>
       </a>
 
       <!-- Expenses -->
-      <a class="nav-item" data-route="expenses" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('expenses')">
+      <a class="nav-item" data-route="expenses" data-role="ADMIN" onclick="Router.navigate('expenses')">
         <span class="nav-icon"><i data-lucide="receipt"></i></span>
         <span class="nav-label">Expenses</span>
       </a>
@@ -131,24 +131,80 @@
       </a>
 
       <!-- Audit -->
-      <a class="nav-item" data-route="audit" data-role="SUPER_ADMIN" onclick="Router.navigate('audit')">
+      <a class="nav-item" data-route="audit" data-role="ADMIN" onclick="Router.navigate('audit')">
         <span class="nav-icon"><i data-lucide="scroll-text"></i></span>
         <span class="nav-label">Audit Logs</span>
       </a>
 
       <!-- Settings -->
-      <a class="nav-item" data-route="settings" data-role="SUPER_ADMIN,HEAD_OFFICE" onclick="Router.navigate('settings')">
+      <a class="nav-item" data-route="settings" data-role="ADMIN" onclick="Router.navigate('settings')">
+        <span class="nav-icon"><i data-lucide="settings"></i></span>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+
+    <!-- ═══ FARMER PORTAL NAV (shown for FARMER role only) ═══ -->
+    <nav class="sidebar-nav" id="sidebar-nav-farmer" data-role="FARMER" style="display:none;">
+      <a class="nav-item" data-route="farmer-dashboard" onclick="Router.navigate('farmer-dashboard')">
+        <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+      <div class="nav-section-label" style="padding:var(--space-2) var(--space-3);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4);">My Milk</div>
+      <a class="nav-item" data-route="farmer-collections" onclick="Router.navigate('farmer-collections')">
+        <span class="nav-icon"><i data-lucide="milk"></i></span>
+        <span class="nav-label">My Collections</span>
+      </a>
+      <a class="nav-item" data-route="farmer-daily" onclick="Router.navigate('farmer-daily')">
+        <span class="nav-icon"><i data-lucide="sunrise"></i></span>
+        <span class="nav-label">Daily Collection</span>
+      </a>
+      <a class="nav-item" data-route="my-passbook" onclick="Router.navigate('my-passbook')">
+        <span class="nav-icon"><i data-lucide="book-open"></i></span>
+        <span class="nav-label">My Passbook</span>
+      </a>
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+      <div class="nav-section-label" style="padding:var(--space-2) var(--space-3);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4);">My Finance</div>
+      <a class="nav-item" data-route="farmer-payments" onclick="Router.navigate('farmer-payments')">
+        <span class="nav-icon"><i data-lucide="wallet"></i></span>
+        <span class="nav-label">My Payments</span>
+      </a>
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+      <div class="nav-section-label" style="padding:var(--space-2) var(--space-3);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4);">Account</div>
+      <a class="nav-item" data-route="my-profile" onclick="Router.navigate('my-profile')">
+        <span class="nav-icon"><i data-lucide="user-circle"></i></span>
+        <span class="nav-label">My Profile</span>
+      </a>
+      <a class="nav-item" data-route="farmer-bank-details" onclick="Router.navigate('farmer-bank-details')">
+        <span class="nav-icon"><i data-lucide="landmark"></i></span>
+        <span class="nav-label">Bank Details</span>
+      </a>
+      <a class="nav-item" data-route="farmer-documents" onclick="Router.navigate('farmer-documents')">
+        <span class="nav-icon"><i data-lucide="file-text"></i></span>
+        <span class="nav-label">Documents</span>
+      </a>
+      <div style="height:1px;background:rgba(255,255,255,0.08);margin:var(--space-2) var(--space-3);"></div>
+      <div class="nav-section-label" style="padding:var(--space-2) var(--space-3);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4);">Other</div>
+      <a class="nav-item" data-route="farmer-notifications" onclick="Router.navigate('farmer-notifications')">
+        <span class="nav-icon"><i data-lucide="bell"></i></span>
+        <span class="nav-label">Notifications</span>
+      </a>
+      <a class="nav-item" data-route="farmer-grievance" onclick="Router.navigate('farmer-grievance')">
+        <span class="nav-icon"><i data-lucide="message-square"></i></span>
+        <span class="nav-label">Grievance</span>
+      </a>
+      <a class="nav-item" data-route="farmer-settings" onclick="Router.navigate('farmer-settings')">
         <span class="nav-icon"><i data-lucide="settings"></i></span>
         <span class="nav-label">Settings</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
-      <div class="sidebar-user" onclick="Router.navigate('profile')">
-        <div class="user-avatar">AD</div>
+      <div class="sidebar-user" id="sidebar-user-card" onclick="Router.navigate(Router.homeRoute())">
+        <div class="user-avatar">—</div>
         <div class="user-info">
-          <div class="user-name">Admin User</div>
-          <div class="user-role">Super Admin</div>
+          <div class="user-name">Loading…</div>
+          <div class="user-role">—</div>
         </div>
       </div>
     </div>

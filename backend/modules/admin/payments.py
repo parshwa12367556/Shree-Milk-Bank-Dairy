@@ -5,15 +5,17 @@ GET  /api/payments          — List payments (filterable)
 POST /api/payments          — Generate payment sheet
 PATCH /api/payments/<id>    — Approve/pay payment
 """
-from datetime import datetime, date
-from flask import Blueprint, request, jsonify
+from datetime import datetime
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
+from sqlalchemy.exc import IntegrityError
 from backend.app import db
-from backend.models import Payment, Collection, Farmer
+from backend.models import Payment, Collection, Farmer, User
 from backend.auth import can_pay, get_identity, reject_farmer
 from backend.utils import generate_pay_code
 from backend.audit import log_audit
 from backend.notify import notify
+from backend.services import payment_service, ledger_service
 
 payment_bp = Blueprint('payments', __name__)
 
@@ -28,6 +30,8 @@ def get_payments():
     status = request.args.get('status', '')
     branch_id = request.args.get('branchId', type=int)
     farmer_id = request.args.get('farmerId', type=int)
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
 
     query = Payment.query
 
@@ -37,10 +41,20 @@ def get_payments():
         query = query.filter_by(branch_id=branch_id)
     if farmer_id:
         query = query.filter_by(farmer_id=farmer_id)
+    if date_from:
+        try:
+            query = query.filter(Payment.period_end >= datetime.strptime(date_from, '%Y-%m-%d').date())
+        except (ValueError, TypeError):
+            pass
+    if date_to:
+        try:
+            query = query.filter(Payment.period_start <= datetime.strptime(date_to, '%Y-%m-%d').date())
+        except (ValueError, TypeError):
+            pass
 
     user = get_identity()
     user_branch_id = user.get('branchId')
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id:
+    if user.get('role') not in ('ADMIN',) and user_branch_id:
         query = query.filter_by(branch_id=user_branch_id)
 
     query = query.order_by(Payment.created_at.desc())
@@ -48,7 +62,7 @@ def get_payments():
 
     # Payment summary (respect user's branch scope)
     summary_query = Payment.query
-    if user.get('role') not in ('SUPER_ADMIN', 'HEAD_OFFICE') and user_branch_id:
+    if user.get('role') not in ('ADMIN',) and user_branch_id:
         summary_query = summary_query.filter_by(branch_id=user_branch_id)
 
     now = datetime.utcnow()
@@ -69,6 +83,12 @@ def get_payments():
     total_paid_all = sum(p.total_amount for p in all_payments if p.status == 'PAID')
     payment_rate = round(total_paid_all / total_amount_all * 100, 1) if total_amount_all else 0.0
 
+    # Status breakdown for the dashboard KPI cards — real DB sums only.
+    total_pending_amount = sum(p.total_amount for p in all_payments if p.status == 'PENDING')
+    total_approved_amount = sum(p.total_amount for p in all_payments if p.status == 'APPROVED')
+    total_paid_amount = sum(p.total_amount for p in all_payments if p.status == 'PAID')
+    total_failed_amount = sum(p.total_amount for p in all_payments if p.status == 'FAILED')
+
     return jsonify({
         'payments': [p.to_dict() for p in pagination.items],
         'total': pagination.total,
@@ -78,6 +98,10 @@ def get_payments():
             'totalPaid': round(total_paid, 2),
             'totalPending': round(total_pending, 2),
             'paymentRate': payment_rate,
+            'totalPendingAmount': round(total_pending_amount, 2),
+            'totalApprovedAmount': round(total_approved_amount, 2),
+            'totalPaidAmount': round(total_paid_amount, 2),
+            'totalFailedAmount': round(total_failed_amount, 2),
         },
     })
 
@@ -135,42 +159,59 @@ def create_payment():
 
     user = get_identity()
     created_payments = []
+    skipped = []
 
     for farmer_id, farmer_collections in farmer_groups.items():
+        # Double-payment guard: a farmer who already has a payment covering
+        # this period must NOT get a second sheet for the same collections.
+        if payment_service.has_overlapping_payment(farmer_id, start, end):
+            farmer = Farmer.query.get(farmer_id)
+            skipped.append(farmer.farmer_code if farmer else str(farmer_id))
+            continue
+
         pay_code = generate_pay_code(seq)
         seq += 1
 
-        total_qty = sum(c.quantity for c in farmer_collections)
-        total_amt = sum(c.amount for c in farmer_collections)
-
-        payment = Payment(
-            pay_code=pay_code,
-            farmer_id=farmer_id,
-            branch_id=branch_id or farmer_collections[0].branch_id,
+        payment = payment_service.create_payment_sheet(
+            farmer=Farmer.query.get(farmer_id),
+            branch_id=branch_id,
             period_start=start,
             period_end=end,
-            total_quantity=total_qty,
-            total_amount=total_amt,
-            collection_count=len(farmer_collections),
-            status='PENDING',
+            collections=farmer_collections,
+            pay_code=pay_code,
+            created_by=user.get('uid'),
         )
-        db.session.add(payment)
-        db.session.flush()
-
-        # Link collections to payment
-        for c in farmer_collections:
-            c.payment_id = payment.id
-
         created_payments.append(payment.to_dict())
 
-    log_audit('CREATE', 'Payment', None,
-              detail=f'Generated {len(created_payments)} payment(s) for period {start} to {end}')
-    db.session.commit()
+    if not created_payments:
+        msg = 'No new payments generated.'
+        if skipped:
+            msg += f' Farmers already covered for this period: {', '.join(skipped)}'
+        return jsonify({'error': msg, 'skipped': skipped}), 409
 
+    log_audit('CREATE', 'Payment', None,
+              detail=f'Generated {len(created_payments)} payment(s) for period {start} to {end}'
+                     + (f'; skipped already-covered: {', '.join(skipped)}' if skipped else ''))
+    try:
+        db.session.commit()
+    except IntegrityError:
+        # Raced past the app-level guard — the unique index on
+        # (farmer_id, period_start, period_end) is the final backstop.
+        db.session.rollback()
+        return jsonify({
+            'error': 'A payment already exists for one or more farmers in this period. '
+                     'Duplicate payments are not allowed.',
+            'skipped': skipped,
+        }), 409
+
+    message = f'Generated {len(created_payments)} payment(s)'
+    if skipped:
+        message += f'. Skipped already-covered farmer(s): {', '.join(skipped)}'
     return jsonify({
         'payments': created_payments,
         'count': len(created_payments),
-        'message': f'Generated {len(created_payments)} payment(s)',
+        'skipped': skipped,
+        'message': message,
     }), 201
 
 
@@ -178,7 +219,7 @@ def create_payment():
 @jwt_required()
 @can_pay()
 def update_payment(payment_id):
-    """Approve or mark payment as paid."""
+    """Approve or mark payment as paid — ADMIN only, transition-guarded."""
     payment = Payment.query.get_or_404(payment_id)
     data = request.get_json()
 
@@ -186,33 +227,57 @@ def update_payment(payment_id):
         return jsonify({'error': 'Request body is required'}), 400
 
     new_status = data.get('status', '').upper()
-    if new_status not in ('APPROVED', 'PAID'):
-        return jsonify({'error': 'Status must be APPROVED or PAID'}), 400
+    reference = (data.get('reference') or '').strip() or None
+    payment_method = (data.get('paymentMethod') or '').strip() or None
 
-    payment.status = new_status
-    if new_status == 'PAID':
-        payment.paid_at = datetime.utcnow()
-        payment.paid_by = get_identity().get('uid')
-        # Simulated bank transfer: auto-generate a UTR-style reference when
-        # the payment is marked paid (real bank API integration can replace
-        # this with the actual bank reference later).
-        if not payment.reference:
-            payment.reference = 'UTR' + datetime.utcnow().strftime('%Y%m%d%H%M%S') + str(payment.id or 0)
+    actor = get_identity().get('uid')
+    payment, err = payment_service.finalize_payment(
+        payment, new_status, actor, reference=reference, payment_method=payment_method)
+    if err:
+        return jsonify({'error': err}), 400
 
-    payment.reference = data.get('reference', payment.reference)
-    log_audit('PAY' if new_status == 'PAID' else 'APPROVE', 'Payment', payment.pay_code,
-              detail=f'Payment {payment.pay_code} {new_status} (₹{payment.total_amount}) ref {payment.reference}')
     if new_status == 'PAID':
         notify('payment', 'Payment Paid',
                f'₹{payment.total_amount} transferred to {payment.farmer.name if payment.farmer else "farmer"} ({payment.pay_code}). Ref: {payment.reference}',
                link='payments')
+        # Farmer-specific notification + email (best-effort, never blocks)
+        _notify_farmer_payment(payment, paid=True)
     elif new_status == 'APPROVED':
         notify('payment', 'Payment Approved',
                f'Payment {payment.pay_code} of ₹{payment.total_amount} approved.',
                link='payments')
+        _notify_farmer_payment(payment, paid=False)
+
     db.session.commit()
 
     return jsonify({
         'payment': payment.to_dict(),
         'message': f'Payment {payment.pay_code} {new_status}' + (f'. Bank ref: {payment.reference}' if new_status == 'PAID' else ''),
     })
+
+
+def _notify_farmer_payment(payment, paid=False):
+    """In-app notification + email to the farmer for payment events."""
+    farmer = payment.farmer if payment else None
+    if not farmer:
+        return
+    acct = User.query.filter_by(farmer_id=farmer.id, role='FARMER').first()
+    if not acct:
+        return
+    title = 'Payment Received' if paid else 'Payment Approved'
+    message = (
+        f'₹{payment.total_amount:,.2f} has been credited for period '
+        f'{payment.period_start} to {payment.period_end} ({payment.pay_code}).'
+        if paid else
+        f'Your payment {payment.pay_code} of ₹{payment.total_amount:,.2f} has been approved.'
+    )
+    notify('payment', title, message, link='/farmer/payment-history',
+           user_id=acct.id, farmer_id=farmer.id,
+           related_type='Payment', related_id=payment.id)
+    try:
+        from backend.mailer import send_payment_email
+        sent, reason = send_payment_email(payment)
+        if not sent:
+            current_app.logger.info('Payment email to %s skipped: %s', farmer.email, reason)
+    except Exception as exc:  # email must never break the payment flow
+        current_app.logger.warning('Payment email failed: %s', exc)

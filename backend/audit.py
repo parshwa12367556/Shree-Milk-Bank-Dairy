@@ -3,13 +3,11 @@ Smart Dairy ERP — Audit Logging Helper
 
 Writes AuditLog entries for every important system action.
 Call log_audit(...) from any route; the current JWT identity,
-request IP and user-agent are captured automatically.
-
-Usage:
-    from backend.audit import log_audit
-    log_audit('CREATE', 'Farmer', farmer.farmer_code, detail='Farmer registered')
-    log_audit('LOGIN', 'Session', username, user_id=user.id, username=username)
-"""
+request IP and user-agent are captured automatically.    Usage:
+        from backend.audit import log_audit
+        log_audit('CREATE', 'Farmer', farmer.farmer_code, detail='Farmer registered')
+        log_audit('LOGIN_SUCCESS', 'Session', user.login_id, user_id=user.id, username=user.username)
+    """
 from flask import request
 from backend.app import db
 from backend.models import AuditLog
@@ -28,8 +26,9 @@ def log_audit(action, entity, entity_id=None, detail=None, field_name=None,
     Create an audit log entry.
 
     Args:
-        action: LOGIN, LOGOUT, CREATE, UPDATE, DELETE, APPROVE, PAY, VERIFY,
-                REJECT, ALLOCATE, EXPORT ...
+        action: LOGIN_SUCCESS, LOGIN_FAILED, ACCOUNT_LOCKED, LOGOUT, CREATE,
+                UPDATE, DELETE, APPROVE, PAY, VERIFY, REJECT, ALLOCATE,
+                EXPORT, PASSWORD_CHANGED, PASSWORD_RESET_REQUESTED, ...
         entity: e.g. Farmer, Collection, Payment, Branch, InventoryItem ...
         entity_id: record identifier string
         detail: human-readable description

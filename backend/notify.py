@@ -9,14 +9,24 @@ from backend.app import db
 from backend.models import Notification, InventoryItem, Vehicle, Branch, User
 
 
-def notify(notif_type, title, message, link=None, user_id=None):
-    """Create a notification. user_id=None → global notification (all users)."""
+def notify(notif_type, title, message, link=None, user_id=None, farmer_id=None,
+           related_type=None, related_id=None):
+    """
+    Create a notification.
+
+    user_id=None → global notification (all users).
+    farmer_id / related_type / related_id are optional metadata used by the
+    farmer portal (e.g. related_type='Payment', related_id=<payment id>).
+    """
     n = Notification(
         user_id=user_id,
+        farmer_id=farmer_id,
         type=notif_type,
         title=title[:200],
         message=message,
         link=link,
+        related_type=related_type,
+        related_id=related_id,
         read=False,
     )
     db.session.add(n)

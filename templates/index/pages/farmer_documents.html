@@ -1,0 +1,76 @@
+      <!-- ── My Documents (farmer portal) ── -->
+      <div class="page-container" id="page-farmer-documents" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#farmer-dashboard"><i data-lucide="home" style="width:14px;height:14px;"></i></a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">My Documents</span>
+        </div>
+
+        <!-- Upload modal -->
+        <div class="modal-overlay" id="doc-upload-modal" style="display:none;">
+          <div class="modal" style="max-width:480px;">
+            <div class="modal-header">
+              <h5>Upload Document</h5>
+              <button type="button" class="modal-close" data-close-doc-modal><i data-lucide="x"></i></button>
+            </div>
+            <form id="form-doc-upload" enctype="multipart/form-data">
+              <div class="modal-body">
+                <div class="form-group">
+                  <label class="form-label">Document Type</label>
+                  <select class="input-premium" id="doc-type">
+                    <option value="AADHAAR">Aadhaar Card</option>
+                    <option value="PAN">PAN Card</option>
+                    <option value="BANK_PASSBOOK">Bank Passbook</option>
+                    <option value="ADDRESS_PROOF">Address Proof</option>
+                    <option value="PHOTO">Photo</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Title</label>
+                  <input type="text" class="input-premium" id="doc-title" placeholder="e.g. Aadhaar front copy" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">File (PDF / JPG / PNG)</label>
+                  <input type="file" class="input-premium" id="doc-file" accept=".pdf,.jpg,.jpeg,.png,.webp" required>
+                </div>
+                <p style="font-size:var(--text-xs);color:var(--ink-muted);">Uploaded documents are reviewed by the dairy. Only PDF and image files up to 5&nbsp;MB are accepted.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" data-close-doc-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary" id="doc-submit">
+                  <i data-lucide="upload" style="width:16px;height:16px;"></i> Upload
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Documents list -->
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">My Documents</div>
+            <div class="table-toolbar">
+              <span class="table-info" id="docs-total" style="font-size:var(--text-xs);color:var(--ink-muted);">Loading…</span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="documents-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Type</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th>Remarks</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="documents-body">
+                <tr><td colspan="6" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading documents…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>

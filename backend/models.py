@@ -12,25 +12,32 @@ class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
+    # Canonical login identifier (ADMIN001, BR01OP001, BR01001...). Unique
+    # per account — this is what users type on the common login screen.
+    login_id = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    # Legacy username kept for backward compatibility (branch code, farmer
+    # code, 'admin') — login_id is the canonical identifier.
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(30), nullable=False, default='OPERATOR')
-    # Roles: SUPER_ADMIN, HEAD_OFFICE, BRANCH_MANAGER, OPERATOR, ACCOUNTANT, FARMER
-    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
+    role = db.Column(db.String(30), nullable=False, default='BRANCH_OPERATOR')
+    # Roles: ADMIN, BRANCH_OPERATOR, FARMER
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True, index=True)
     # Farmers get a login account linked to their Farmer record (role=FARMER).
-    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=True)
-    phone = db.Column(db.String(15))
-    email = db.Column(db.String(120))
-    status = db.Column(db.String(20), default='ACTIVE')
+    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=True, index=True)
+    phone = db.Column(db.String(15), index=True)
+    email = db.Column(db.String(120), index=True)
+    status = db.Column(db.String(20), default='ACTIVE', index=True)
     last_login_at = db.Column(db.DateTime, nullable=True)
     # Login hardening (first-login enforcement + brute-force protection)
     must_change_password = db.Column(db.Boolean, default=False)
     failed_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime, nullable=True)
+    password_changed_at = db.Column(db.DateTime, nullable=True)
     recovery_email = db.Column(db.String(120))
     recovery_mobile = db.Column(db.String(15))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     branch = db.relationship('Branch', backref='users', lazy=True)
     # Farmer has multiple FKs to users (verified_by, created_by) — pin the
@@ -42,6 +49,7 @@ class User(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'loginId': self.login_id,
             'username': self.username,
             'name': self.name,
             'role': self.role,
@@ -53,6 +61,7 @@ class User(db.Model):
             'email': self.email,
             'status': self.status,
             'mustChangePassword': bool(self.must_change_password),
+            'lastLoginAt': self.last_login_at.isoformat() if self.last_login_at else None,
         }
 
 
@@ -173,6 +182,60 @@ class Farmer(db.Model):
         }
 
 
+class FarmerLedgerEntry(db.Model):
+    """
+    Farmer passbook / ledger — one row per financial transaction.
+
+    Every milk earning (credit) and every settled payment (debit) writes a
+    ledger row, so the farmer passbook is generated from real transactions
+    instead of being computed ad-hoc on the frontend.
+
+    entry_type: MILK_EARNING, PAYMENT, ADJUSTMENT, DEDUCTION
+    source_type / source_id: link back to the originating record
+        (Collection → collection id, Payment → payment id)
+    """
+    __tablename__ = 'farmer_ledger_entries'
+
+    id = db.Column(db.Integer, primary_key=True)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=False, index=True)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False, index=True)
+    entry_type = db.Column(db.String(30), nullable=False)  # MILK_EARNING, PAYMENT, ADJUSTMENT, DEDUCTION
+    source_type = db.Column(db.String(30))                 # Collection, Payment, Manual
+    source_id = db.Column(db.Integer)
+    entry_date = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    description = db.Column(db.String(255))
+    credit_amount = db.Column(db.Float, default=0)   # milk earnings (amount payable to farmer)
+    debit_amount = db.Column(db.Float, default=0)    # payments settled to the farmer
+    running_balance = db.Column(db.Float, default=0) # credits - debits up to this row
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    farmer = db.relationship('Farmer', backref=db.backref('ledger_entries', lazy='dynamic'),
+                             lazy=True)
+    branch = db.relationship('Branch', lazy=True)
+
+    # A source record must never produce two ledger rows (idempotent writes).
+    __table_args__ = (
+        db.UniqueConstraint('farmer_id', 'source_type', 'source_id',
+                            name='uq_ledger_farmer_source'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'farmerId': self.farmer_id,
+            'branchId': self.branch_id,
+            'entryType': self.entry_type,
+            'sourceType': self.source_type,
+            'sourceId': self.source_id,
+            'date': self.entry_date.isoformat() if self.entry_date else None,
+            'description': self.description,
+            'credit': self.credit_amount,
+            'debit': self.debit_amount,
+            'balance': self.running_balance,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class BankDetail(db.Model):
     """Farmer bank account details."""
     __tablename__ = 'bank_details'
@@ -238,14 +301,15 @@ class Collection(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     receipt_no = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=False)
-    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=False, index=True)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False, index=True)
     operator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     rate_master_id = db.Column(db.Integer, db.ForeignKey('rate_masters.id'), nullable=True)
     payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), nullable=True)
 
-    date = db.Column(db.Date, nullable=False, default=date.today)
-    shift = db.Column(db.String(20), nullable=False)  # MORNING, EVENING
+    date = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    collection_time = db.Column(db.Time, nullable=True)
+    shift = db.Column(db.String(20), nullable=False, index=True)  # MORNING, EVENING
     milk_type = db.Column(db.String(20), nullable=False)
     quantity = db.Column(db.Float, nullable=False)
     # Idempotency key — lets the operator retry a save safely (duplicate
@@ -259,7 +323,8 @@ class Collection(db.Model):
     water = db.Column(db.Float)
     rate_per_liter = db.Column(db.Float)
     amount = db.Column(db.Float)
-    status = db.Column(db.String(20), default='ACCEPTED')  # ACCEPTED, REJECTED, CORRECTED
+    quality_grade = db.Column(db.String(20))  # PASS, BORDERLINE, REJECTED
+    status = db.Column(db.String(20), default='ACCEPTED', index=True)  # ACCEPTED, REJECTED, CORRECTED
     remarks = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -287,6 +352,8 @@ class Collection(db.Model):
             'water': self.water,
             'ratePerLiter': self.rate_per_liter,
             'amount': self.amount,
+            'qualityGrade': self.quality_grade,
+            'collectionTime': self.collection_time.isoformat() if self.collection_time else None,
             'status': self.status,
             'remarks': self.remarks,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
@@ -299,18 +366,24 @@ class Payment(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     pay_code = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=False)
-    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False)
-    period_start = db.Column(db.Date, nullable=False)
-    period_end = db.Column(db.Date, nullable=False)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=False, index=True)
+    branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False, index=True)
+    period_start = db.Column(db.Date, nullable=False, index=True)
+    period_end = db.Column(db.Date, nullable=False, index=True)
     total_quantity = db.Column(db.Float, default=0)
-    total_amount = db.Column(db.Float, default=0)
+    gross_amount = db.Column(db.Float, default=0)
+    deductions = db.Column(db.Float, default=0)
+    total_amount = db.Column(db.Float, default=0)  # net amount (gross - deductions)
     collection_count = db.Column(db.Integer, default=0)
-    status = db.Column(db.String(20), default='PENDING')  # PENDING, APPROVED, PAID
+    status = db.Column(db.String(20), default='PENDING', index=True)  # PENDING, APPROVED, PAID
+    payment_method = db.Column(db.String(30), default='BANK_TRANSFER')
     paid_at = db.Column(db.DateTime, nullable=True)
     paid_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    processed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     reference = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     farmer = db.relationship('Farmer', backref='payments', lazy=True)
     collections = db.relationship('Collection', backref='payment', lazy='dynamic')
@@ -326,9 +399,13 @@ class Payment(db.Model):
             'periodStart': self.period_start.isoformat() if self.period_start else None,
             'periodEnd': self.period_end.isoformat() if self.period_end else None,
             'totalQuantity': self.total_quantity,
+            'grossAmount': self.gross_amount,
+            'deductions': self.deductions,
             'totalAmount': self.total_amount,
+            'netAmount': self.total_amount,
             'collectionCount': self.collection_count,
             'status': self.status,
+            'paymentMethod': self.payment_method,
             'paidAt': self.paid_at.isoformat() if self.paid_at else None,
             'reference': self.reference,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
@@ -601,7 +678,8 @@ class Employee(db.Model):
     code = db.Column(db.String(20), unique=True, nullable=False)
     name = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(50), nullable=False)
-    # OPERATOR, ACCOUNTANT, BRANCH_MANAGER, DRIVER, ADMIN
+    # HR role labels only (Operator, Accountant, Driver, ...) — independent of
+    # the auth roles (ADMIN / BRANCH_OPERATOR / FARMER) used for login access.
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
     branch = db.relationship('Branch', backref='employees', lazy=True)
     mobile = db.Column(db.String(15))
@@ -713,25 +791,33 @@ class Notification(db.Model):
     __tablename__ = 'notifications'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=True)
     type = db.Column(db.String(30), nullable=False)
-    # payment, collection, quality, system, farmer
+    # payment, collection, quality, system, farmer, grievance
     title = db.Column(db.String(200), nullable=False)
     message = db.Column(db.Text)
     link = db.Column(db.String(200))
-    read = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    related_type = db.Column(db.String(30))  # Collection, Payment, Grievance, ...
+    related_id = db.Column(db.Integer)
+    read = db.Column(db.Boolean, default=False, index=True)
+    read_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
     def to_dict(self):
         return {
             'id': self.id,
             'userId': self.user_id,
+            'farmerId': self.farmer_id,
             'type': self.type,
             'title': self.title,
             'message': self.message,
             'link': self.link,
+            'relatedType': self.related_type,
+            'relatedId': self.related_id,
             'read': self.read,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'readAt': self.read_at.isoformat() if self.read_at else None,
         }
 
 
@@ -982,6 +1068,36 @@ class EmployeeAttendance(db.Model):
             'status': self.status,
             'shift': self.shift,
             'notes': self.notes,
+        }
+
+
+class FarmerDocument(db.Model):
+    """Documents submitted by a farmer (identity, address, bank, other)."""
+    __tablename__ = 'farmer_documents'
+
+    id = db.Column(db.Integer, primary_key=True)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=False)
+    doc_type = db.Column(db.String(30), nullable=False, default='OTHER')
+    # AADHAAR, PAN, BANK_PASSBOOK, PHOTO, ADDRESS_PROOF, OTHER
+    title = db.Column(db.String(200), nullable=False)
+    file_path = db.Column(db.String(500))
+    mime_type = db.Column(db.String(100))
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, APPROVED, REJECTED
+    remarks = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    farmer = db.relationship('Farmer', backref='documents')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'farmerId': self.farmer_id,
+            'docType': self.doc_type,
+            'title': self.title,
+            'filePath': self.file_path,
+            'status': self.status,
+            'remarks': self.remarks,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
         }
 
 

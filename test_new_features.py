@@ -57,7 +57,7 @@ with app.test_client() as c:
     # ── Audit logging on login ──
     r = c.get('/api/audit', headers=auth(admin_token))
     logs = r.get_json().get('logs', [])
-    check('audit: login recorded', any(l['action'] == 'LOGIN' for l in logs),
+    check('audit: login recorded', any(l['action'] == 'LOGIN_SUCCESS' for l in logs),
           f'({len(logs)} logs)')
 
     # ── Farmer verification workflow ──
@@ -89,10 +89,14 @@ with app.test_client() as c:
     r = c.post(f'/api/farmers/BR03011/verify', headers=auth(br_token))
     check('verify blocked for branch manager', r.status_code == 403)
 
-    # Admin cannot create farmers
+    # Admin CAN create farmers (must choose a branch — spec 5.2/5.3)
     r = c.post('/api/farmers', json={'name': 'X', 'mobile': '9999999999', 'milkType': 'COW'},
                headers=auth(admin_token))
-    check('admin cannot register farmer', r.status_code == 403)
+    check('admin needs branch to register farmer', r.status_code == 400)
+    r = c.post('/api/farmers', json={'name': 'X', 'mobile': '9999999999', 'milkType': 'COW', 'branchId': 1},
+               headers=auth(admin_token))
+    check('admin registers farmer with branch', r.status_code == 201,
+          f"({r.get_json().get('farmer', {}).get('farmerCode')})")
 
     # Branch manager registers farmer → PENDING_VERIFICATION
     r = c.post('/api/farmers', json={
@@ -265,11 +269,11 @@ with app.test_client() as c:
     # ── Audit role/branch captured ──
     r = c.get('/api/audit', headers=auth(admin_token))
     logs = r.get_json()['logs']
-    admin_login = next((l for l in logs if l['action'] == 'LOGIN' and l.get('username') == 'admin'), None)
-    check('audit: role captured', admin_login and admin_login.get('role') == 'SUPER_ADMIN')
-    br_login = next((l for l in logs if l['action'] == 'LOGIN' and l.get('username') == 'BR01'), None)
+    admin_login = next((l for l in logs if l['action'] == 'LOGIN_SUCCESS' and l.get('username') == 'admin'), None)
+    check('audit: role captured', admin_login and admin_login.get('role') == 'ADMIN')
+    br_login = next((l for l in logs if l['action'] == 'LOGIN_SUCCESS' and l.get('username') == 'BR01'), None)
     check('audit: branch role + code captured',
-          br_login and br_login.get('role') == 'BRANCH_MANAGER' and br_login.get('branchCode') == 'BR01')
+          br_login and br_login.get('role') == 'BRANCH_OPERATOR' and br_login.get('branchCode') == 'BR01')
 
     # ── Supplier GSTIN ──
     r = c.post('/api/procurement/suppliers', json={'name': 'GST Vendor', 'gstin': '27ABCDE1234F1Z5'},
@@ -473,12 +477,19 @@ with app.test_client() as c:
 # ═══════════════ Phase 4 — Login hardening (first-login, lockout, OTP reset) ═══════════════
 
     # ── Role hint validation (login-screen role tabs) ──
-    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210', 'role': 'SUPER_ADMIN'})
-    check('role hint: mismatch rejected', r.status_code == 401)
-    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210', 'role': 'BRANCH_MANAGER'})
-    check('role hint: match accepted', r.status_code == 200)
+    # Common login: the backend detects the role — a role sent by the client
+    # is NEVER trusted (it is ignored entirely).
+    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210', 'role': 'ADMIN'})
+    body = r.get_json() or {}
+    check('role sent by client is ignored (login succeeds)', r.status_code == 200,
+          f'(status={r.status_code})')
+    check('role detected from DB (BRANCH_OPERATOR, not client role)',
+          body.get('user', {}).get('role') == 'BRANCH_OPERATOR',
+          f"(role={body.get('user', {}).get('role')})")
+    check('login response has redirect_url', '/branch/dashboard' == body.get('redirect_url'),
+          f"(redirect={body.get('redirect_url')})")
     check('login response has mustChangePassword flag',
-          r.get_json().get('mustChangePassword') is False)
+          body.get('mustChangePassword') is False)
 
     # ── Brute-force lockout (BR01) ──
     for _ in range(5):
@@ -493,38 +504,45 @@ with app.test_client() as c:
     r = c.get('/api/audit', headers=auth(admin_token))
     audit_actions = {l['action'] for l in r.get_json()['logs']}
     check('audit: LOGIN_FAILED recorded', 'LOGIN_FAILED' in audit_actions)
-    check('audit: LOCK recorded', 'LOCK' in audit_actions)
+    check('audit: ACCOUNT_LOCKED recorded', 'ACCOUNT_LOCKED' in audit_actions)
 
     # ── OTP reset (also unlocks the account) ──
     r = c.post('/api/auth/forgot-password', json={'username': 'BR01'})
     otp = r.get_json().get('dev_otp')
     check('forgot-password returns dev OTP', bool(otp), f"(otp={otp})")
-    r = c.post('/api/auth/reset-password', json={'username': 'BR01', 'otp': '000000', 'new_password': 'br01newpass'})
+    r = c.post('/api/auth/reset-password', json={'login_id': 'BR01OP001', 'otp': '000000', 'new_password': 'Br01newpass9'})
     check('reset rejects wrong OTP', r.status_code == 400)
-    r = c.post('/api/auth/reset-password', json={'username': 'BR01', 'otp': otp, 'new_password': 'br01newpass'})
+    r = c.post('/api/auth/reset-password', json={'login_id': 'BR01OP001', 'otp': otp, 'new_password': 'Br01newpass9'})
     check('correct OTP still valid after wrong guess', r.status_code == 200)
     check('reset password via OTP', r.status_code == 200)
-    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': 'br01newpass'})
-    check('login with new password works', r.status_code == 200)
-    r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210'})
+    r = c.post('/api/auth/login', json={'login_id': 'BR01OP001', 'password': 'Br01newpass9'})
+    check('login with new password works (login_id)', r.status_code == 200)
+    r = c.post('/api/auth/login', json={'login_id': 'br01op001', 'password': 'Br01newpass9'})
+    check('login_id is case-insensitive', r.status_code == 200)
+    r = c.post('/api/auth/login', json={'login_id': 'BR01OP001', 'password': '9876543210'})
     check('old phone password no longer works', r.status_code == 401)
 
     # ── First-login must-change-password flow (new branch manager) ──
     r = c.post('/api/branches', json={'name': 'Login Test Branch', 'code': 'BR99', 'phone': '9999999999'},
                headers=auth(admin_token))
     check('create branch for login test', r.status_code == 201, f"({r.get_json().get('message', '')[:45]})")
-    r = c.post('/api/auth/login', json={'username': 'BR99', 'password': '9999999999'})
+    r = c.post('/api/auth/login', json={'login_id': 'BR99OP001', 'password': '9999999999'})
     br99 = r.get_json()
     check('new manager: first login forces password change',
           r.status_code == 200 and br99.get('mustChangePassword') is True)
-    r = c.post('/api/auth/change-password', json={'current_password': '9999999999', 'new_password': 'br99secure'},
+    # While must_change_password is set, all non-auth APIs are blocked
+    r = c.get('/api/dashboard', headers=auth(br99['token']))
+    check('new manager: dashboard blocked until password change (403)', r.status_code == 403)
+    r = c.post('/api/auth/change-password', json={'current_password': '9999999999', 'new_password': 'Br99secure9'},
                headers=auth(br99['token']))
     check('change default password', r.status_code == 200)
-    r = c.post('/api/auth/login', json={'username': 'BR99', 'password': 'br99secure'})
+    r = c.post('/api/auth/login', json={'login_id': 'BR99OP001', 'password': 'Br99secure9'})
     check('new manager: login after change (flag cleared)',
           r.status_code == 200 and r.get_json().get('mustChangePassword') is False)
 
     # ── Production config must not leak the OTP in the response ──
+    os.environ.setdefault('SECRET_KEY', 'test-secret-key-for-prod-mode-checks')
+    os.environ.setdefault('JWT_SECRET_KEY', 'test-jwt-secret-key-for-prod-mode-checks')
     from backend.app import create_app as _create_app
     prod_app = _create_app('production')
     with prod_app.test_client() as pc:

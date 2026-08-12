@@ -1,0 +1,75 @@
+      <!-- ── Settings (farmer portal) ── -->
+      <div class="page-container" id="page-farmer-settings" style="display:none;">
+        <div class="breadcrumb">
+          <a href="#farmer-dashboard"><i data-lucide="home" style="width:14px;height:14px;"></i></a>
+          <span class="separator"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="current">Settings</span>
+        </div>
+
+        <!-- Change password -->
+        <div class="card" style="padding:var(--space-6);margin-bottom:var(--space-5);">
+          <div class="card-header" style="margin-bottom:var(--space-4);">
+            <h5 class="section-title"><i data-lucide="key" style="width:18px;height:18px;vertical-align:middle;margin-right:6px;"></i> Change Password</h5>
+          </div>
+          <form id="form-farmer-password" class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));max-width:760px;">
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <input type="password" class="input-premium" id="fp-current" autocomplete="current-password" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input type="password" class="input-premium" id="fp-new" minlength="6" autocomplete="new-password" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="input-premium" id="fp-confirm" minlength="6" autocomplete="new-password" required>
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;">
+              <button type="submit" class="btn btn-primary w-full">
+                <i data-lucide="shield-check" style="width:16px;height:16px;"></i>
+                Update Password
+              </button>
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+              <p style="font-size:var(--text-xs);color:var(--ink-muted);">Password must be at least 6 characters. Changing your password signs you out of other sessions.</p>
+            </div>
+          </form>
+        </div>
+
+        <!-- Notification preferences -->
+        <div class="card" style="padding:var(--space-6);">
+          <div class="card-header" style="margin-bottom:var(--space-4);">
+            <h5 class="section-title"><i data-lucide="bell" style="width:18px;height:18px;vertical-align:middle;margin-right:6px;"></i> Notification Preferences</h5>
+          </div>
+          <div id="settings-notif-panel" style="max-width:640px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) 0;border-bottom:1px solid var(--line);">
+              <div>
+                <div style="font-weight:600;font-size:var(--text-sm);">SMS Notifications</div>
+                <div style="font-size:var(--text-xs);color:var(--ink-muted);">Receive milk collection and payment updates on —.</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="pref-sms"><span class="slider round"></span></label>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) 0;border-bottom:1px solid var(--line);">
+              <div>
+                <div style="font-weight:600;font-size:var(--text-sm);">WhatsApp Notifications</div>
+                <div style="font-size:var(--text-xs);color:var(--ink-muted);">Receive updates on WhatsApp when available.</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="pref-whatsapp"><span class="slider round"></span></label>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) 0;border-bottom:1px solid var(--line);">
+              <div>
+                <div style="font-weight:600;font-size:var(--text-sm);">Email Notifications</div>
+                <div style="font-size:var(--text-xs);color:var(--ink-muted);">Receive milk collection and payment emails at —.</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="pref-email"><span class="slider round"></span></label>
+            </div>
+            <div style="margin-top:var(--space-4);display:flex;gap:var(--space-3);">
+              <button class="btn btn-primary" id="btn-save-prefs">
+                <i data-lucide="save" style="width:16px;height:16px;"></i>
+                Save Preferences
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>

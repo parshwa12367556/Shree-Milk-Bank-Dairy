@@ -53,9 +53,9 @@ const App = {
       loginPage.style.display = 'none';
       appLayout.style.display = 'flex';
       Auth.initApp();
-      // Navigate to dashboard
+      // Navigate to the role home (dashboard / farmer-dashboard)
       if (Router.getCurrentRoute() === 'login') {
-        Router.navigate('dashboard', true);
+        Router.navigate(Router.homeRoute(), true);
       }
     } else {
       // Show login, hide app

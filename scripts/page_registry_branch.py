@@ -196,42 +196,8 @@ BRANCH_PAGES = [
          icon='file-text', section='quality', page='quality', type='list',
          cols=['Report No', 'Date', 'Batch', 'Parameters', 'Result', 'Status']),
 
-    # ── Inventory ────────────────────────────────────────────────
-    dict(route='/branch/inventory/allocated', file='branch/inventory/allocated_inventory.html', layout='branch',
-         title='Allocated Inventory', subtitle='Stock allocated to this branch.',
-         icon='boxes', section='inventory', page='inventory', type='list',
-         cols=['Item', 'Category', 'Allocated', 'Used', 'Remaining', 'Status']),
-
-    dict(route='/branch/inventory/usage', file='branch/inventory/stock_usage.html', layout='branch',
-         title='Stock Usage', subtitle='Record stock consumed at this branch.',
-         icon='arrow-up-circle', section='inventory', page='inventory', type='form',
-         sections=[
-             ('Stock Usage', [
-                 ('Item', 'item', 'select', True, 'Select Item'),
-                 ('Quantity', 'quantity', 'number', True, '0'),
-                 ('Purpose', 'purpose', 'select', True, 'Processing / Sales / Damage / Other'),
-                 ('Date', 'date', 'date', False, ''),
-                 ('Remarks', 'remarks', 'textarea', False, ''),
-             ]),
-         ]),
-
-    dict(route='/branch/inventory/request', file='branch/inventory/stock_request.html', layout='branch',
-         title='Stock Request', subtitle='Request additional stock from Head Office.',
-         icon='send', section='inventory', page='inventory', type='form',
-         sections=[
-             ('Stock Request', [
-                 ('Item', 'item', 'select', True, 'Select Item'),
-                 ('Quantity', 'quantity', 'number', True, '0'),
-                 ('Priority', 'priority', 'select', False, 'Normal / High / Urgent'),
-                 ('Reason', 'reason', 'textarea', False, 'Why is this stock needed?'),
-                 ('Required By', 'required_by', 'date', False, ''),
-             ]),
-         ]),
-
-    dict(route='/branch/inventory/history', file='branch/inventory/inventory_history.html', layout='branch',
-         title='Inventory History', subtitle='Stock movement history for this branch.',
-         icon='history', section='inventory', page='inventory', type='audit',
-         cols=['Date', 'Item', 'Type', 'Qty', 'Reference', 'User']),
+    # NOTE: Branch Operator inventory management is intentionally NOT part of
+    # the branch portal. Inventory is Admin-only (see /admin/inventory/*).
 
     # ── Reports ──────────────────────────────────────────────────
     dict(route='/branch/reports/daily', file='branch/reports/daily_report.html', layout='branch',

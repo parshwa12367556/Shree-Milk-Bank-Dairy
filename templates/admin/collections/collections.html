@@ -1,0 +1,146 @@
+{% extends 'base/admin_layout.html' %}
+{% set active_page = 'collections' %}
+{% set active_section = 'collections' %}
+{% block page_title %}Milk Collections{% endblock %}
+{% block page_init %}initAdminCollections{% endblock %}
+
+{% block page_header %}
+{% from 'base/breadcrumb.html' import breadcrumb %}
+{{ breadcrumb([{'url': '/admin/dashboard', 'label': 'Dashboard'}, {'url': '', 'label': 'Milk Collections'}]) }}
+<div class="page-header">
+  <div>
+    <h2>Milk Collections</h2>
+    <p class="subtitle">Collection records across all branches — corrections are audit-logged.</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-secondary" onclick="window.refreshAdminCollections && refreshAdminCollections()">
+      <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+      Refresh
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+        <!-- Summary -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-green" id="ac-qty">
+            <div class="kpi-icon"><i data-lucide="milk" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Total Quantity (Filtered)</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-gold" id="ac-amount">
+            <div class="kpi-icon"><i data-lucide="indian-rupee" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Total Amount (Filtered)</div>
+            <div class="kpi-value">—</div>
+          </div>
+          <div class="kpi-card kpi-teal" id="ac-count">
+            <div class="kpi-icon"><i data-lucide="layers" style="width:20px;height:20px;"></i></div>
+            <div class="kpi-label">Records (Filtered)</div>
+            <div class="kpi-value">—</div>
+          </div>
+        </div>
+
+        <div style="height:var(--space-5);"></div>
+
+        <!-- Filters -->
+        <div class="card" style="padding:var(--space-5);margin-bottom:var(--space-5);">
+          <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
+            <div class="form-group">
+              <label class="form-label">Branch</label>
+              <select class="input-premium" id="ac-branch"><option value="">All Branches</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">From Date</label>
+              <input type="date" class="input-premium" id="ac-from">
+            </div>
+            <div class="form-group">
+              <label class="form-label">To Date</label>
+              <input type="date" class="input-premium" id="ac-to">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Shift</label>
+              <select class="input-premium" id="ac-shift">
+                <option value="">All Shifts</option>
+                <option value="MORNING">Morning</option>
+                <option value="EVENING">Evening</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Milk Type</label>
+              <select class="input-premium" id="ac-type">
+                <option value="">All Types</option>
+                <option value="COW">Cow</option>
+                <option value="BUFFALO">Buffalo</option>
+                <option value="MIXED">Mixed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="input-premium" id="ac-status">
+                <option value="">All Statuses</option>
+                <option value="ACCEPTED">Accepted</option>
+                <option value="RECORDED">Recorded</option>
+                <option value="VERIFIED">Verified</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="CORRECTED">Corrected</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Farmer ID / Name</label>
+              <input type="text" class="input-premium" id="ac-farmer" placeholder="e.g. BR01001">
+            </div>
+            <div class="form-group">
+              <label class="form-label">&nbsp;</label>
+              <button class="btn btn-primary w-full" onclick="window.refreshAdminCollections && refreshAdminCollections()">
+                <i data-lucide="search" style="width:16px;height:16px;"></i> Apply
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="table-title">Collection Records</div>
+            <div class="table-toolbar">
+              <span class="table-info" id="ac-total" style="font-size:var(--text-xs);color:var(--ink-muted);">Loading…</span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table-premium" id="ac-table" style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Receipt</th>
+                  <th>Date / Time</th>
+                  <th>Branch</th>
+                  <th>Farmer</th>
+                  <th>Shift</th>
+                  <th>Type</th>
+                  <th>Qty</th>
+                  <th>Fat</th>
+                  <th>SNF</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                  <th>Quality</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="ac-body">
+                <tr><td colspan="13" class="text-center" style="padding:var(--space-4);color:var(--ink-muted);font-size:var(--text-sm);">Loading collections…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <div class="table-info" id="ac-pager-info">—</div>
+            <div class="pagination-controls">
+              <button class="btn btn-sm btn-ghost" id="ac-prev" onclick="window.pageAdminCollections && pageAdminCollections(-1)" disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Prev</button>
+              <button class="btn btn-sm btn-ghost" id="ac-next" onclick="window.pageAdminCollections && pageAdminCollections(1)" disabled>Next <i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/admin/collections.js"></script>
+{% endblock %}

@@ -27,6 +27,9 @@ DB_PATH = os.getenv('TEST_DB_PATH', 'instance/test_farmer_portal.db')
 if os.path.exists(DB_PATH):
     os.remove(DB_PATH)
 os.environ['DATABASE_URL'] = 'sqlite:///' + os.path.abspath(DB_PATH).replace('\\', '/')
+# Production-mode validation requires secrets — tests supply throwaway ones.
+os.environ.setdefault('SECRET_KEY', 'test-secret-key-for-prod-mode-checks')
+os.environ.setdefault('JWT_SECRET_KEY', 'test-jwt-secret-key-for-prod-mode-checks')
 
 from backend.app import create_app  # noqa: E402
 
@@ -73,9 +76,9 @@ farmer_c = app.test_client()
 # ══════════ Logins ══════════
 admin_token, _ = login(admin_c, 'admin', 'admin123')
 check('admin login', bool(admin_token))
-br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_MANAGER')
+br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_OPERATOR')
 check('branch BR01 login', bool(br_token))
-br2_token, _ = login(br2_c, 'BR02', '9123456780', 'BRANCH_MANAGER')
+br2_token, _ = login(br2_c, 'BR02', '9123456780', 'BRANCH_OPERATOR')
 check('branch BR02 login', bool(br2_token))
 
 # Find a BR01 ACTIVE farmer with a priced milk type (COW/BUFFALO — MIXED
@@ -172,7 +175,7 @@ check('farmer /branch/dashboard → unauthorized redirect', r.status_code == 302
 r = farmer_c.get('/farmer/dashboard')
 check('farmer /farmer/dashboard → 200', r.status_code == 200)
 r = br_c.get('/farmer/dashboard')
-check('branch user can view farmer page (manager preview)', r.status_code == 200)
+check('branch user /farmer/dashboard → unauthorized redirect', r.status_code == 302)
 r = br_c.get('/admin/dashboard')
 check('branch user /admin/dashboard → unauthorized redirect', r.status_code == 302)
 r = admin_c.get('/admin/dashboard')
@@ -180,7 +183,7 @@ check('admin /admin/dashboard → 200', r.status_code == 200)
 r = admin_c.get('/branch/dashboard')
 check('admin can preview branch dashboard', r.status_code == 200)
 r = admin_c.get('/farmer/dashboard')
-check('admin can preview farmer dashboard', r.status_code == 200)
+check('admin /farmer/dashboard → unauthorized redirect', r.status_code == 302)
 
 # ══════════ Branch isolation (BR01 vs BR02) ══════════
 r = br_c.get('/api/farmers?branchId=2', headers=auth(br_token))

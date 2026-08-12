@@ -6,7 +6,7 @@ Suppliers CRUD
 Purchase Orders (DRAFT → PENDING → APPROVED → RECEIVED → COMPLETED / REJECTED)
 Vendor Payments
 
-Head Office only (all write endpoints gated to SUPER_ADMIN / HEAD_OFFICE).
+Admin only (all write endpoints gated to ADMIN).
 """
 from datetime import date, datetime
 from flask import Blueprint, request, jsonify
@@ -39,7 +39,7 @@ def _parse_date(value):
 
 @procurement_bp.route('/api/procurement/centers', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def get_centers():
     centers = CollectionCenter.query.order_by(CollectionCenter.name).all()
     return jsonify({'centers': [c.to_dict() for c in centers]})
@@ -47,7 +47,7 @@ def get_centers():
 
 @procurement_bp.route('/api/procurement/centers', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_center():
     data = request.get_json()
     if not data:
@@ -74,7 +74,7 @@ def create_center():
 
 @procurement_bp.route('/api/procurement/routes', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def get_routes():
     routes = CollectionRoute.query.order_by(CollectionRoute.name).all()
     return jsonify({'routes': [r.to_dict() for r in routes]})
@@ -82,7 +82,7 @@ def get_routes():
 
 @procurement_bp.route('/api/procurement/routes', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_route():
     data = request.get_json()
     if not data:
@@ -108,7 +108,7 @@ def create_route():
 
 @procurement_bp.route('/api/procurement/chilling', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def get_chilling_centers():
     centers = ChillingCenter.query.order_by(ChillingCenter.name).all()
     return jsonify({'chilling_centers': [c.to_dict() for c in centers]})
@@ -116,7 +116,7 @@ def get_chilling_centers():
 
 @procurement_bp.route('/api/procurement/chilling', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_chilling_center():
     data = request.get_json()
     if not data:
@@ -148,7 +148,7 @@ def create_chilling_center():
 
 @procurement_bp.route('/api/procurement/suppliers', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def get_suppliers():
     suppliers = Supplier.query.order_by(Supplier.name).all()
     return jsonify({'suppliers': [s.to_dict() for s in suppliers]})
@@ -156,7 +156,7 @@ def get_suppliers():
 
 @procurement_bp.route('/api/procurement/suppliers', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_supplier():
     data = request.get_json()
     if not data:
@@ -187,7 +187,7 @@ def create_supplier():
 
 @procurement_bp.route('/api/procurement/suppliers/<int:supplier_id>', methods=['PATCH'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def update_supplier(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
     data = request.get_json()
@@ -205,7 +205,7 @@ def update_supplier(supplier_id):
 
 @procurement_bp.route('/api/procurement/suppliers/<int:supplier_id>', methods=['DELETE'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def delete_supplier(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
     code = supplier.code
@@ -221,7 +221,7 @@ def delete_supplier(supplier_id):
 
 @procurement_bp.route('/api/procurement/purchase-orders', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def get_purchase_orders():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -242,7 +242,7 @@ def get_purchase_orders():
 
 @procurement_bp.route('/api/procurement/purchase-orders', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_purchase_order():
     """Create a purchase order (with line items). Starts as DRAFT."""
     data = request.get_json()
@@ -299,7 +299,7 @@ def create_purchase_order():
 
 @procurement_bp.route('/api/procurement/purchase-orders/<int:po_id>', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def get_purchase_order(po_id):
     po = PurchaseOrder.query.get_or_404(po_id)
     return jsonify({'purchase_order': po.to_dict()})
@@ -307,7 +307,7 @@ def get_purchase_order(po_id):
 
 @procurement_bp.route('/api/procurement/purchase-orders/<int:po_id>', methods=['PATCH'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def update_purchase_order(po_id):
     """Advance a purchase order through its workflow.
 
@@ -409,7 +409,7 @@ def update_purchase_order(po_id):
 
 @procurement_bp.route('/api/procurement/vendor-payments', methods=['GET'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def get_vendor_payments():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -430,7 +430,7 @@ def get_vendor_payments():
 
 @procurement_bp.route('/api/procurement/vendor-payments', methods=['POST'])
 @jwt_required()
-@role_required('SUPER_ADMIN', 'HEAD_OFFICE')
+@role_required('ADMIN')
 def create_vendor_payment():
     """Record a payment to a supplier against a purchase order."""
     data = request.get_json()

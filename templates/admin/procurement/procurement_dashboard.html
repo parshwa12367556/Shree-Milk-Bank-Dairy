@@ -13,10 +13,7 @@
     <p class="subtitle">Suppliers, purchase orders and deliveries.</p>
   </div>
   <div class="page-actions">
-            <button class="btn btn-primary" onclick="window.Modal && Modal.toast({title:'Info', message:'This action is not wired yet.', type:'info'})">
-              <i data-lucide="file-plus" style="width:16px;height:16px;"></i>
-              Create PO
-            </button></div>
+            <a class="btn btn-primary" href="/admin/purchase-orders/create"><i data-lucide="file-plus" style="width:16px;height:16px;"></i> Create PO</a></div>
 </div>
 {% endblock %}
 
@@ -38,7 +35,7 @@
           <div class="kpi-card kpi-green" id="pro-value">
             <div class="kpi-icon"><i data-lucide="indian-rupee" style="width:20px;height:20px;"></i></div>
             <div class="kpi-label">Order Value</div>
-            <div class="kpi-value">₹6.4L</div>
+            <div class="kpi-value"><div class="skeleton skeleton-text" style="height:1.4rem;width:60%;margin-top:0.25rem;"></div></div>
           </div>
           <div class="kpi-card kpi-purple" id="pro-deliveries">
             <div class="kpi-icon"><i data-lucide="truck" style="width:20px;height:20px;"></i></div>

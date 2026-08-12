@@ -1,0 +1,38 @@
+# ── Environment & secrets ──
+.env
+*.env
+
+# ── Databases ──
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# ── Backups ──
+backups/
+backend/modules/backups/
+*.bak
+
+# ── Logs ──
+logs/
+*.log
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# ── Test artifacts ──
+instance/
+test_*.db
+tmp_*.db
+login_resp.txt
+/tmp/
+
+# ── IDE / OS ──
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

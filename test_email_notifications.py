@@ -24,6 +24,8 @@ os.environ['DATABASE_URL'] = 'sqlite:///' + os.path.abspath(DB_PATH).replace('\\
 
 from backend.app import create_app  # noqa: E402
 
+os.environ.setdefault('SECRET_KEY', 'test-secret-key-for-prod-mode-checks')
+os.environ.setdefault('JWT_SECRET_KEY', 'test-jwt-secret-key-for-prod-mode-checks')
 app = create_app('production')
 
 # Deliver synchronously so the capture class below sees messages deterministically.
@@ -99,7 +101,7 @@ admin_c = app.test_client()
 br_c = app.test_client()
 
 admin_token = login(admin_c, 'admin', 'admin123')
-br_token = login(br_c, 'BR01', '9876543210', 'BRANCH_MANAGER')
+br_token = login(br_c, 'BR01', '9876543210', 'BRANCH_OPERATOR')
 check('logins ok', bool(admin_token and br_token))
 
 # Pick a BR01 ACTIVE farmer with a known email

@@ -579,6 +579,27 @@ def main():
         write(page['file'], tpl)
 
     # ── Route manifest for the backend pages blueprint ──
+    # Hand-written pages (real, data-driven templates that are NOT regenerated
+    # from the registries) are merged in afterwards so re-running this script
+    # never drops them or overwrites them with skeletons.
+    HAND_WRITTEN_ROUTES = {
+        '/admin/collections': {'template': 'admin/collections/collections.html', 'layout': 'admin',
+                               'title': 'Milk Collections', 'section': 'collections', 'page': 'collections'},
+        '/admin/grievances': {'template': 'admin/grievances/grievances.html', 'layout': 'admin',
+                              'title': 'Farmer Grievances', 'section': 'grievances', 'page': 'grievances'},
+        '/branch/milk-collection': {'template': 'branch/collection/morning_collection.html', 'layout': 'branch',
+                                    'title': 'Milk Collection', 'section': 'collection', 'page': 'morning_collection'},
+        '/branch/payments': {'template': 'branch/payments/payment_history.html', 'layout': 'branch',
+                             'title': 'Payment History', 'section': 'payments', 'page': 'payments'},
+        '/branch/notifications': {'template': 'branch/notifications.html', 'layout': 'branch',
+                                  'title': 'Notifications', 'section': 'notifications', 'page': 'notifications'},
+        '/farmer/daily-collection': {'template': 'farmer/daily_collection.html', 'layout': 'farmer',
+                                     'title': 'Daily Collection', 'section': 'collections', 'page': 'daily_collection'},
+        '/farmer/settings': {'template': 'farmer/settings.html', 'layout': 'farmer',
+                             'title': 'Settings', 'section': 'settings', 'page': 'settings'},
+        '/farmer/grievance/new': {'template': 'farmer/grievance.html', 'layout': 'farmer',
+                                  'title': 'New Grievance', 'section': 'grievance', 'page': 'grievance'},
+    }
     manifest = {}
     for page in all_pages:
         manifest[page['route']] = {
@@ -588,6 +609,7 @@ def main():
             'section': page.get('section', ''),
             'page': page.get('page', ''),
         }
+    manifest.update(HAND_WRITTEN_ROUTES)
     manifest_path = os.path.join(ROOT, 'backend', 'pages_manifest.json')
     with open(manifest_path, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)

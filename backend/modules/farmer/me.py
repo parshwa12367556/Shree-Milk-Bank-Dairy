@@ -8,24 +8,37 @@ request another farmer's records by tampering with parameters.
 
 Endpoints
 ---------
-GET   /api/farmer/me                      — Own profile
-GET   /api/farmer/me/dashboard            — Dashboard stats (today, totals, recent)
-GET   /api/farmer/me/collections          — Own milk collections (filter/paginate)
-GET   /api/farmer/me/passbook             — Own passbook (collections + payments)
-GET   /api/farmer/me/payments             — Own payments
-GET   /api/farmer/me/notifications        — Own notifications + dairy announcements
-PATCH /api/farmer/me/notifications/read   — Mark own notifications as read
-GET   /api/farmer/me/grievances           — Own grievances
-POST  /api/farmer/me/grievances           — Raise a grievance
+GET    /api/farmer/me                    — Own profile
+PATCH  /api/farmer/me/profile            — Update permitted personal fields
+GET    /api/farmer/me/dashboard          — Dashboard stats (today, totals, recent)
+GET    /api/farmer/me/collections        — Own milk collections (filter/paginate)
+GET    /api/farmer/me/daily-collection   — Today's own collection (morning/evening)
+GET    /api/farmer/me/passbook           — Own passbook (collections + payments)
+GET    /api/farmer/me/payments           — Own payments
+GET    /api/farmer/me/bank-details       — Own bank details (account masked)
+POST   /api/farmer/me/bank-details       — Save/update own bank details
+GET    /api/farmer/me/documents          — Own documents
+POST   /api/farmer/me/documents          — Upload a document
+DELETE /api/farmer/me/documents/<id>     — Delete an own pending document
+GET    /api/farmer/me/notifications      — Own notifications + dairy announcements
+PATCH  /api/farmer/me/notifications/read — Mark own notifications as read
+GET    /api/farmer/me/grievances         — Own grievances
+POST   /api/farmer/me/grievances         — Raise a grievance
+GET    /api/farmer/me/grievances/<id>    — Own grievance detail
+GET    /api/farmer/me/settings           — Own notification preferences
+PATCH  /api/farmer/me/settings           — Update own notification preferences
 """
+import os
+import uuid
 from datetime import date, datetime
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 
 from backend.app import db
 from backend.models import (
-    Collection, Payment, Notification, Grievance, User,
+    Collection, Payment, Notification, Grievance, User, Farmer, BankDetail,
+    FarmerDocument,
 )
 from backend.auth import get_identity
 from backend.audit import log_audit
@@ -119,6 +132,83 @@ def my_profile():
             'bankDetail': bank.to_dict() if bank else None,
         },
     })
+
+
+def _bank_payload(bank):
+    """Bank detail row with the account number masked for safe display."""
+    if not bank:
+        return None
+    acc = bank.account_number or ''
+    masked = (acc[:4] + '*' * max(len(acc) - 8, 0) + acc[-4:]) if len(acc) > 8 else '***'
+    return {
+        'id': bank.id,
+        'accountHolder': bank.account_holder,
+        'bankName': bank.bank_name,
+        'branchName': bank.branch_name,
+        'accountNumber': bank.account_number,
+        'accountNumberMasked': masked,
+        'ifsc': bank.ifsc,
+        'upi': bank.upi,
+        'verificationStatus': bank.verification_status,
+    }
+
+
+@farmer_me_bp.route('/api/farmer/me/profile', methods=['GET'])
+@jwt_required()
+def my_profile_alias():
+    """Alias of GET /api/farmer/me (spec 7.8 — profile API)."""
+    return my_profile()
+
+
+@farmer_me_bp.route('/api/farmer/me/profile', methods=['PATCH'])
+@jwt_required()
+def update_my_profile():
+    """Update permitted personal fields of the authenticated farmer.
+
+    Immutable fields (farmer ID, branch, milk type, status, role) are never
+    accepted — they can only be changed by ADMIN / BRANCH_OPERATOR.
+    """
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+
+    data = request.get_json(silent=True) or {}
+    allowed = {
+        'mobile': 'mobile', 'altMobile': 'alt_mobile', 'email': 'email',
+        'address': 'address', 'village': 'village', 'taluka': 'taluka',
+        'district': 'district', 'state': 'state', 'pincode': 'pincode',
+        'landmark': 'landmark',
+    }
+    changed = []
+    for json_key, attr in allowed.items():
+        if json_key in data:
+            value = (data[json_key] or '').strip() if isinstance(data[json_key], str) else data[json_key]
+            if value:
+                setattr(farmer, attr, value)
+                changed.append(json_key)
+
+    if 'email' in changed:
+        farmer.email = farmer.email.strip().lower()
+        if user:
+            user.email = farmer.email  # farmers sign in with their email
+
+    if changed:
+        log_audit('UPDATE', 'Farmer', farmer.farmer_code,
+                  detail=f'Farmer updated own profile: {", ".join(changed)}')
+        db.session.commit()
+        return jsonify({'message': 'Profile updated successfully',
+                        'farmer': {
+                            'id': farmer.id,
+                            'farmerCode': farmer.farmer_code,
+                            'name': farmer.name,
+                            'mobile': farmer.mobile,
+                            'email': farmer.email,
+                            'village': farmer.village,
+                            'taluka': farmer.taluka,
+                            'district': farmer.district,
+                            'state': farmer.state,
+                        }})
+    return jsonify({'message': 'No changes provided'})
 
 
 # ── Dashboard ────────────────────────────────────────────────────────────
@@ -270,59 +360,93 @@ def my_collections():
 @jwt_required()
 def my_passbook():
     """
-    Digital passbook — one row per milk collection, enriched with the
-    payment status of the period it belongs to.
+    Digital passbook — generated from the real farmer ledger
+    (`farmer_ledger_entries`), which is written in the same transaction as
+    every collection (credit) and settled payment (debit). No frontend
+    computation; the running balance comes straight from the ledger.
     """
     farmer, user, err, status = _auth_farmer()
     if err:
         return jsonify(err), status
+
+    from backend.models import FarmerLedgerEntry
+    from backend.services import ledger_service
 
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 20, type=int), 100)
     date_from = request.args.get('from', '')
     date_to = request.args.get('to', '')
 
-    query = Collection.query.filter_by(farmer_id=farmer.id)
+    query = FarmerLedgerEntry.query.filter_by(farmer_id=farmer.id)
     if date_from:
         try:
-            query = query.filter(Collection.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+            query = query.filter(FarmerLedgerEntry.entry_date >= datetime.strptime(date_from, '%Y-%m-%d').date())
         except (ValueError, TypeError):
             pass
     if date_to:
         try:
-            query = query.filter(Collection.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+            query = query.filter(FarmerLedgerEntry.entry_date <= datetime.strptime(date_to, '%Y-%m-%d').date())
         except (ValueError, TypeError):
             pass
 
-    query = query.order_by(Collection.date.desc(), Collection.created_at.desc())
+    query = query.order_by(FarmerLedgerEntry.entry_date.desc(),
+                           FarmerLedgerEntry.id.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
-    # Running balance = cumulative amount of ALL collections up to and
-    # including each entry, against the total paid so far.
-    all_colls = Collection.query.filter_by(farmer_id=farmer.id) \
-        .order_by(Collection.date.asc(), Collection.id.asc()).all()
-    running = 0.0
-    running_map = {}
-    for c in all_colls:
-        running += (c.amount or 0)
-        running_map[c.id] = round(running, 2)
-
+    # Enrich ledger rows with collection/payment display data.
     entries = []
-    for c in pagination.items:
-        pay_status = None
-        if c.payment:
-            pay_status = c.payment.status
-        entries.append({
-            **_collection_payload(c),
-            'paymentStatus': pay_status,
-            'paymentCode': c.payment.pay_code if c.payment else None,
-            'balance': round(running_map.get(c.id, 0), 2),
-        })
+    coll_map = {c.id: c for c in Collection.query.filter_by(farmer_id=farmer.id).all()}
+    pay_map = {p.id: p for p in Payment.query.filter_by(farmer_id=farmer.id).all()}
+    for le in pagination.items:
+        base = {
+            'id': le.id,
+            'farmerId': le.farmer_id,
+            'entryType': le.entry_type,
+            'date': le.entry_date.isoformat() if le.entry_date else None,
+            'description': le.description,
+            'credit': le.credit_amount,
+            'debit': le.debit_amount,
+            'balance': round(le.running_balance or 0, 2),
+        }
+        if le.source_type == 'Collection' and le.source_id in coll_map:
+            c = coll_map[le.source_id]
+            base.update({
+                'shift': c.shift,
+                'milkType': c.milk_type,
+                'quantity': c.quantity,
+                'fat': c.fat,
+                'snf': c.snf,
+                'ratePerLiter': c.rate_per_liter,
+                'amount': c.amount,
+                'receiptNo': c.receipt_no,
+                'paymentStatus': c.payment.status if c.payment else None,
+                'paymentCode': c.payment.pay_code if c.payment else None,
+            })
+        elif le.source_type == 'Payment' and le.source_id in pay_map:
+            p = pay_map[le.source_id]
+            base.update({
+                'amount': -(le.debit_amount or 0),  # debit shown as negative
+                'paymentStatus': p.status,
+                'paymentCode': p.pay_code,
+            })
+        entries.append(base)
 
+    # Summary from the full ledger (unfiltered). Quantity counts only the
+    # collections that actually carry a MILK_EARNING credit (rejected
+    # collections have no credit, so they must not inflate the summary).
+    all_entries = FarmerLedgerEntry.query.filter_by(farmer_id=farmer.id).all()
+    credited_coll_ids = {
+        e.source_id for e in all_entries
+        if e.source_type == 'Collection' and (e.credit_amount or 0) > 0
+    }
+    total_qty = sum(
+        (c.quantity or 0) for cid, c in coll_map.items() if cid in credited_coll_ids)
+    credits = sum((e.credit_amount or 0) for e in all_entries)
+    debits = sum((e.debit_amount or 0) for e in all_entries)
     paid_total = sum(
-        (p.total_amount or 0) for p in Payment.query.filter_by(farmer_id=farmer.id).all()
-        if p.status == 'PAID'
-    )
+        (p.total_amount or 0) for p in Payment.query.filter_by(
+            farmer_id=farmer.id, status='PAID').all())
+
     return jsonify({
         'entries': entries,
         'total': pagination.total,
@@ -330,11 +454,10 @@ def my_passbook():
         'pages': pagination.pages,
         'perPage': per_page,
         'summary': {
-            'totalQuantity': round(sum((c.quantity or 0) for c in all_colls), 2),
-            'totalAmount': round(sum((c.amount or 0) for c in all_colls), 2),
+            'totalQuantity': round(total_qty, 2),
+            'totalAmount': round(credits, 2),
             'paidAmount': round(paid_total, 2),
-            'pendingAmount': round(
-                sum((c.amount or 0) for c in all_colls) - paid_total, 2),
+            'pendingAmount': round(ledger_service.farmer_balance(farmer.id), 2),
         },
     })
 
@@ -497,3 +620,253 @@ def create_grievance():
         'grievance': grievance.to_dict(),
         'message': 'Grievance submitted. The dairy will respond shortly.',
     }), 201
+
+
+@farmer_me_bp.route('/api/farmer/me/grievances/<int:grievance_id>', methods=['GET'])
+@jwt_required()
+def my_grievance_detail(grievance_id):
+    """A single grievance — only if it belongs to the authenticated farmer."""
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+
+    grievance = Grievance.query.filter_by(
+        id=grievance_id, farmer_id=farmer.id).first()
+    if not grievance:
+        return jsonify({'error': 'Grievance not found'}), 404
+    return jsonify({'grievance': grievance.to_dict()})
+
+
+# ── Daily collection ─────────────────────────────────────────────────────
+
+@farmer_me_bp.route('/api/farmer/me/daily-collection', methods=['GET'])
+@jwt_required()
+def my_daily_collection():
+    """Today's own milk collection — morning / evening / summary."""
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+
+    today = date.today()
+    rows = Collection.query.filter_by(farmer_id=farmer.id, date=today) \
+        .order_by(Collection.created_at.asc()).all()
+
+    def _shift(shift):
+        rows_s = [r for r in rows if r.shift == shift]
+        return {
+            'quantity': round(sum((r.quantity or 0) for r in rows_s), 2),
+            'amount': round(sum((r.amount or 0) for r in rows_s), 2),
+            'fat': round(sum((r.fat or 0) for r in rows_s) / len(rows_s), 1) if rows_s else None,
+            'snf': round(sum((r.snf or 0) for r in rows_s) / len(rows_s), 1) if rows_s else None,
+            'ratePerLiter': (rows_s[0].rate_per_liter if rows_s else None),
+            'collections': [_collection_payload(r) for r in rows_s],
+        }
+
+    return jsonify({
+        'date': today.isoformat(),
+        'morning': _shift('MORNING'),
+        'evening': _shift('EVENING'),
+        'summary': {
+            'totalQuantity': round(sum((r.quantity or 0) for r in rows), 2),
+            'totalAmount': round(sum((r.amount or 0) for r in rows), 2),
+            'collectionCount': len(rows),
+        },
+    })
+
+
+# ── Bank details ─────────────────────────────────────────────────────────
+
+@farmer_me_bp.route('/api/farmer/me/bank-details', methods=['GET'])
+@jwt_required()
+def my_bank_details():
+    """The authenticated farmer's own bank details (masked for display)."""
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+    return jsonify({'bankDetail': _bank_payload(farmer.bank_detail)})
+
+
+@farmer_me_bp.route('/api/farmer/me/bank-details', methods=['POST', 'PATCH'])
+@jwt_required()
+def save_my_bank_details():
+    """Save/update the authenticated farmer's own bank details.
+
+    Saving a change resets verification to PENDING so the ADMIN can
+    re-review the new details before any payment transfer.
+    """
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+
+    data = request.get_json(silent=True) or {}
+    bank = farmer.bank_detail
+    if not bank:
+        bank = BankDetail(farmer_id=farmer.id)
+        db.session.add(bank)
+
+    for json_key, attr in [
+        ('accountHolder', 'account_holder'), ('bankName', 'bank_name'),
+        ('branchName', 'branch_name'), ('accountNumber', 'account_number'),
+        ('ifsc', 'ifsc'), ('upi', 'upi'),
+    ]:
+        if json_key in data:
+            setattr(bank, attr, (data[json_key] or '').strip())
+
+    if not bank.account_holder or not bank.account_number or not bank.ifsc:
+        return jsonify({'error': 'Account holder, account number and IFSC are required.'}), 400
+
+    # Any edit invalidates the previous verification.
+    bank.verification_status = 'PENDING'
+    bank.verified_by = None
+    bank.verified_at = None
+
+    log_audit('UPDATE', 'BankDetail', farmer.farmer_code,
+              detail=f'{farmer.farmer_code} updated own bank details (awaiting verification)')
+    db.session.commit()
+    return jsonify({
+        'message': 'Bank details saved. Verification status reset to PENDING.',
+        'bankDetail': _bank_payload(bank),
+    })
+
+
+# ── Documents ────────────────────────────────────────────────────────────
+
+_DOC_UPLOAD_DIR = os.path.join('static', 'uploads', 'documents')
+_MAX_DOC_SIZE = 5 * 1024 * 1024  # 5 MB — enforced server-side too
+
+
+@farmer_me_bp.route('/api/farmer/me/documents', methods=['GET'])
+@jwt_required()
+def my_documents():
+    """The authenticated farmer's own uploaded documents."""
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+
+    documents = FarmerDocument.query.filter_by(farmer_id=farmer.id) \
+        .order_by(FarmerDocument.created_at.desc()).all()
+    return jsonify({'documents': [d.to_dict() for d in documents]})
+
+
+@farmer_me_bp.route('/api/farmer/me/documents', methods=['POST'])
+@jwt_required()
+def upload_my_document():
+    """Upload a document for the authenticated farmer."""
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+
+    title = (request.form.get('title') or '').strip()
+    doc_type = (request.form.get('docType') or 'OTHER').strip().upper()
+    file = request.files.get('file')
+
+    if not title:
+        return jsonify({'error': 'Document title is required'}), 400
+    if not file or not file.filename:
+        return jsonify({'error': 'A file is required'}), 400
+    if doc_type not in ('AADHAAR', 'PAN', 'BANK_PASSBOOK', 'PHOTO', 'ADDRESS_PROOF', 'OTHER'):
+        doc_type = 'OTHER'
+
+    # Sandbox the filename and store under /static/uploads/documents/<farmer>/.
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ('.pdf', '.jpg', '.jpeg', '.png', '.webp'):
+        return jsonify({'error': 'Only PDF or image files are allowed.'}), 400
+
+    # Enforce the size cap server-side (client-side limits are not security).
+    file.stream.seek(0, 2)
+    size = file.stream.tell()
+    file.stream.seek(0)
+    if size > _MAX_DOC_SIZE:
+        return jsonify({'error': 'File is too large. Maximum size is 5 MB.'}), 400
+
+    rel_dir = os.path.join(_DOC_UPLOAD_DIR, farmer.farmer_code)
+    abs_dir = os.path.join(current_app.root_path, '..', rel_dir)
+    abs_dir = os.path.abspath(abs_dir)
+    os.makedirs(abs_dir, exist_ok=True)
+
+    fname = f'{uuid.uuid4().hex}{ext}'
+    file.save(os.path.join(abs_dir, fname))
+    file_path = f'/{rel_dir.replace(os.sep, "/")}/{fname}'
+
+    doc = FarmerDocument(
+        farmer_id=farmer.id,
+        doc_type=doc_type,
+        title=title,
+        file_path=file_path,
+        mime_type=file.mimetype,
+        status='PENDING',
+    )
+    db.session.add(doc)
+    db.session.commit()
+    log_audit('CREATE', 'FarmerDocument', farmer.farmer_code,
+              detail=f'{farmer.farmer_code} uploaded a {doc_type} document: {title}')
+    return jsonify({'document': doc.to_dict(),
+                    'message': 'Document uploaded. Pending review by the dairy.'}), 201
+
+
+@farmer_me_bp.route('/api/farmer/me/documents/<int:doc_id>', methods=['DELETE'])
+@jwt_required()
+def delete_my_document(doc_id):
+    """Delete one of the farmer's own documents (pending ones only)."""
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+
+    doc = FarmerDocument.query.filter_by(id=doc_id, farmer_id=farmer.id).first()
+    if not doc:
+        return jsonify({'error': 'Document not found'}), 404
+    if doc.status not in ('PENDING', 'REJECTED'):
+        return jsonify({'error': 'Approved documents cannot be deleted. Contact the dairy.'}), 400
+
+    db.session.delete(doc)
+    db.session.commit()
+    return jsonify({'message': 'Document removed'})
+
+
+# ── Settings ─────────────────────────────────────────────────────────────
+
+@farmer_me_bp.route('/api/farmer/me/settings', methods=['GET'])
+@jwt_required()
+def my_settings():
+    """The authenticated farmer's notification preferences."""
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+    return jsonify({
+        'settings': {
+            'notificationSms': bool(farmer.notification_sms),
+            'notificationWhatsapp': bool(farmer.notification_whatsapp),
+            'notificationEmail': bool(farmer.notification_email),
+            'email': farmer.email,
+            'mobile': farmer.mobile,
+        }
+    })
+
+
+@farmer_me_bp.route('/api/farmer/me/settings', methods=['PATCH'])
+@jwt_required()
+def update_my_settings():
+    """Update the authenticated farmer's notification preferences."""
+    farmer, user, err, status = _auth_farmer()
+    if err:
+        return jsonify(err), status
+
+    data = request.get_json(silent=True) or {}
+    for json_key, attr in [
+        ('notificationSms', 'notification_sms'),
+        ('notificationWhatsapp', 'notification_whatsapp'),
+        ('notificationEmail', 'notification_email'),
+    ]:
+        if json_key in data:
+            setattr(farmer, attr, bool(data[json_key]))
+
+    log_audit('UPDATE', 'Farmer', farmer.farmer_code,
+              detail=f'{farmer.farmer_code} updated notification preferences')
+    db.session.commit()
+    return jsonify({'message': 'Settings saved',
+                    'settings': {
+                        'notificationSms': bool(farmer.notification_sms),
+                        'notificationWhatsapp': bool(farmer.notification_whatsapp),
+                        'notificationEmail': bool(farmer.notification_email),
+                    }})
+

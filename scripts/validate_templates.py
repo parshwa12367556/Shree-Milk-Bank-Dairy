@@ -45,13 +45,13 @@ def main():
         if resp.status_code != 200:
             failures.append((route, resp.status_code, resp.get_data(as_text=True)[:300]))
 
-    # 2) Manifest pages — as an authenticated SUPER_ADMIN (cookie)
+    # 2) Manifest pages — as an authenticated ADMIN (cookie)
     with open(MANIFEST, encoding='utf-8') as f:
         manifest = json.load(f)
 
     # Build a real token by logging in through the API
     login = client.post('/api/auth/login', json={
-        'username': 'admin', 'password': 'admin123', 'role': 'SUPER_ADMIN'})
+        'username': 'admin', 'password': 'admin123', 'role': 'ADMIN'})
     if login.status_code == 200:
         token = login.get_json()['token']
         client.set_cookie('access_token', token)
