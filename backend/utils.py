@@ -3,7 +3,83 @@ Smart Dairy ERP — Utility Functions
 
 Common helper functions used throughout the application.
 """
-from datetime import datetime, date
+import hashlib
+import hmac
+from datetime import datetime, date, timezone
+
+
+# ── Timezone-consistent UTC helpers ───────────────────────────────────────
+# The whole application uses ONE convention: timezone-aware UTC datetimes.
+# (SQLAlchemy stores aware datetimes with a +00:00 suffix; on read they come
+# back naive, so `ensure_utc` re-tags them before any Python-side comparison.)
+
+def utcnow():
+    """Current UTC datetime, timezone-aware (single app-wide convention)."""
+    return datetime.now(timezone.utc)
+
+
+def ensure_utc(dt):
+    """
+    Return a datetime as timezone-aware UTC, or None.
+
+    Values loaded from the database come back naive (SQLAlchemy DateTime
+    drops tzinfo on read) even though they were stored as UTC — this helper
+    re-tags them so aware/naive comparison TypeErrors are impossible.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+# ── Farmer QR payload helpers ─────────────────────────────────────────────
+# The QR payload is a signed opaque farmer identifier — it carries NO private
+# data (no Aadhaar/PAN/bank/mobile). Format: FARMER:<code>:<hmac-sha256 hex>
+# The signature proves the payload was minted by this server, so a scanned
+# QR resolves to the right farmer without enabling impersonation or forgery.
+
+_QR_VERSION = 'v1'
+
+
+def sign_farmer_qr(farmer_code):
+    """
+    Build the signed QR payload for a farmer code.
+
+    Returns None when the app's signing secret is unavailable (should not
+    happen — SECRET_KEY is always configured).
+    """
+    from flask import current_app
+    secret = current_app.config.get('SECRET_KEY') or ''
+    if not secret:
+        return None
+    body = f'FARMER:{farmer_code}:{_QR_VERSION}'.encode('utf-8')
+    sig = hmac.new(secret.encode('utf-8'), body, hashlib.sha256).hexdigest()
+    return f'{body.decode("utf-8")}:{sig}'
+
+
+def verify_farmer_qr(payload):
+    """
+    Validate a signed QR payload and return the farmer code, or None.
+
+    Recomputes the HMAC and compares in constant time; a forged or tampered
+    payload (wrong code, wrong signature, wrong version) is rejected.
+    """
+    if not payload or not isinstance(payload, str):
+        return None
+    parts = payload.split(':')
+    if len(parts) != 4 or parts[0] != 'FARMER' or parts[2] != _QR_VERSION:
+        return None
+    farmer_code, version, sig = parts[1], parts[2], parts[3]
+    from flask import current_app
+    secret = current_app.config.get('SECRET_KEY') or ''
+    if not secret:
+        return None
+    body = f'FARMER:{farmer_code}:{version}'.encode('utf-8')
+    expected = hmac.new(secret.encode('utf-8'), body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, sig):
+        return None
+    return farmer_code
 
 
 def fmt_inr(n, d=2):

@@ -1,0 +1,90 @@
+[
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\admin\\expenses.js",
+    "line": 75,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"7\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message || 'Failed to load expenses'}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\admin\\inventory.js",
+    "line": 92,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"10\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message || 'Failed to load inventory'}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\admin\\procurement.js",
+    "line": 66,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"7\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\admin\\procurement.js",
+    "line": 94,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"9\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\admin\\procurement.js",
+    "line": 122,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"9\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\admin\\procurement.js",
+    "line": 157,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"8\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\admin\\procurement.js",
+    "line": 267,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"9\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\admin\\procurement.js",
+    "line": 431,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"7\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\farmer\\farmer-profile.js",
+    "line": 218,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `headerEl.innerHTML = `Passbook for <strong>${name} (${code})</strong>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\farmer\\farmers.js",
+    "line": 73,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `tbody.innerHTML = `<tr><td colspan=\"12\" class=\"text-center\" style=\"padding:var(--space-8);color:var(--ink-muted);\">${err.message || 'Failed to load farmers'}</td></tr>`;`"
+  },
+  {
+    "category": "Security / XSS Risk",
+    "severity": "MEDIUM",
+    "file": "static\\js\\shared\\profile.js",
+    "line": 34,
+    "title": "Potential DOM XSS via innerHTML",
+    "details": "Direct interpolation into innerHTML without sanitization/escaping: `roleTag.innerHTML = `<span class=\"tag ${roleClassMap[role] || 'tag-neutral'}\">${roleMap[role] || role}</span>`;`"
+  }
+]

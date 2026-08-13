@@ -9,10 +9,30 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 # Fresh database — path is configurable via TEST_DB_PATH so the suite can
 # run against a scratch DB while a dev server holds the main smart_dairy.db.
-DB_PATH = os.getenv('TEST_DB_PATH', 'smart_dairy.db')
+# Default is an ISOLATED test database; the real smart_dairy.db is NEVER
+# touched by this suite.
+DB_PATH = os.getenv('TEST_DB_PATH', 'smart_dairy_test.db')
+
+# Safety assertion: destructive tests must never point at the production DB.
+PROD_DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'smart_dairy.db'))
+if os.path.abspath(DB_PATH) == PROD_DB_PATH:
+    raise RuntimeError(
+        "Refusing to run destructive tests against the production database "
+        f"({PROD_DB_PATH}). Set TEST_DB_PATH to an isolated test database."
+    )
+
 if os.path.exists(DB_PATH):
-    os.remove(DB_PATH)
+    try:
+        os.remove(DB_PATH)
+    except PermissionError:
+        raise SystemExit(
+            f"Cannot remove test database {DB_PATH}: file is locked by another process. "
+            "Close any process holding it and re-run."
+        )
     print(f"Removed old database ({DB_PATH})")
+
+# Point the app at the isolated database BEFORE importing the app factory.
+os.environ['DATABASE_URL'] = 'sqlite:///' + DB_PATH.replace('\\', '/')
 
 from backend.app import create_app
 from backend.app import db as _db

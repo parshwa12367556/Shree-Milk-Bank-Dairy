@@ -4,7 +4,18 @@
  * Main entry point - manages sidebar, navbar, theme,
  * notifications, and global UI interactions.
  * ============================================================
+/**
+ * Global HTML Escaping Utility for XSS Prevention
  */
+window.escapeHtml = function(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
 
 const App = {
   /**

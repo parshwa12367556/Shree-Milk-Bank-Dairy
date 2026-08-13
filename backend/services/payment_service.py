@@ -10,11 +10,12 @@ enforces the *business* invariants on top:
   * Marking PAID settles the farmer's outstanding via a ledger debit.
   * Every transition is audit-logged and notified.
 """
-from datetime import datetime, date as _date
+from datetime import date as _date
 from backend.app import db
 from backend.models import Payment
 from backend.audit import log_audit
 from backend.services import ledger_service
+from backend.utils import utcnow
 
 VALID_STATUSES = ('PENDING', 'APPROVED', 'PAID')
 
@@ -90,14 +91,14 @@ def finalize_payment(payment, new_status, user_id, reference=None,
     payment.status = new_status
 
     if new_status == 'PAID':
-        payment.paid_at = datetime.utcnow()
+        payment.paid_at = utcnow()
         payment.processed_by = user_id
         payment.paid_by = user_id
         if payment_method:
             payment.payment_method = payment_method
         if not payment.reference:
             payment.reference = reference or (
-                'UTR' + datetime.utcnow().strftime('%Y%m%d%H%M%S') + str(payment.id or 0))
+                'UTR' + utcnow().strftime('%Y%m%d%H%M%S') + str(payment.id or 0))
         else:
             payment.reference = reference or payment.reference
         # Settle the farmer's outstanding in the same transaction

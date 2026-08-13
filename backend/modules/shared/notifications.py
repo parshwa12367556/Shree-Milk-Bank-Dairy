@@ -37,9 +37,16 @@ def get_notifications():
 
     notifications = query.limit(limit).all()
 
+    # Unread count is scoped to THIS user (+ global announcements) — never a
+    # whole-database count, which would leak other users' activity volume.
+    unread_count = Notification.query.filter(
+        db.or_(Notification.user_id == user.get('uid'), Notification.user_id.is_(None)),
+        Notification.read == False  # noqa: E712
+    ).count()
+
     return jsonify({
         'notifications': [n.to_dict() for n in notifications],
-        'unread_count': Notification.query.filter_by(read=False).count(),
+        'unread_count': unread_count,
     })
 
 

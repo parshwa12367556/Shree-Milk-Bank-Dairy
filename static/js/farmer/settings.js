@@ -8,10 +8,24 @@ async function loadFarmerSettings() {
   try {
     const data = await API.getMySettings();
     const s = (data && data.settings) || {};
+    const caps = (data && data.capabilities) || {};
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
     set('pref-sms', s.notificationSms);
-    set('pref-whatsapp', s.notificationWhatsapp);
     set('pref-email', s.notificationEmail);
+
+    // WhatsApp has no provider configured — the toggle is disabled and
+    // clearly labeled, never silently "enabled".
+    const wa = document.getElementById('pref-whatsapp');
+    if (wa) {
+      if (caps.whatsapp) {
+        wa.checked = !!s.notificationWhatsapp;
+      } else {
+        wa.checked = false;
+        wa.disabled = true;
+        const note = document.getElementById('pref-whatsapp-note');
+        if (note) note.textContent = 'Unavailable — the dairy has not configured a WhatsApp provider yet.';
+      }
+    }
   } catch (err) {
     console.warn('Failed to load settings:', err);
   }
@@ -64,7 +78,7 @@ window.initFarmerSettings = function () {
       try {
         const payload = {
           notificationSms: document.getElementById('pref-sms')?.checked,
-          notificationWhatsapp: document.getElementById('pref-whatsapp')?.checked,
+          // WhatsApp is force-disabled server-side until a provider exists.
           notificationEmail: document.getElementById('pref-email')?.checked,
         };
         await API.updateMySettings(payload);

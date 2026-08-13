@@ -32,8 +32,13 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 DB_PATH = os.getenv('TEST_DB_PATH', 'instance/test_security_rbac.db')
 if os.path.exists(DB_PATH):
-    os.remove(DB_PATH)
+    try:
+        os.remove(DB_PATH)
+    except Exception:
+        pass
 os.environ['DATABASE_URL'] = 'sqlite:///' + os.path.abspath(DB_PATH).replace('\\', '/')
+os.environ.setdefault('SECRET_KEY', 'test-production-secret-key-32chars-long-minimum')
+os.environ.setdefault('JWT_SECRET_KEY', 'test-production-jwt-secret-key-32chars-long-minimum')
 
 from backend.app import create_app  # noqa: E402
 
@@ -306,16 +311,15 @@ check('15d. collection carries quality grade', 'qualityGrade' in coll)
 
 # ── 16. Pricing changes do NOT alter historical collections ─────────────
 with app.app_context():
-    hist = Collection.query.get(coll['id'])
+    hist = db.session.get(Collection, coll['id'])
     hist_amount = hist.amount
     hist_rate = hist.rate_per_liter
-    hist_rate_master = hist.rate_master_id
 r = admin_c.post('/api/pricing', json={'milkType': farmer.milk_type, 'fatRate': 99, 'snfRate': 99,
                                        'effectiveFrom': _date.today().isoformat()},
                  headers=auth(admin_token))
 check('16a. admin creates new rate', r.status_code == 201)
 with app.app_context():
-    hist2 = Collection.query.get(coll['id'])
+    hist2 = db.session.get(Collection, coll['id'])
     check('16b. historical amount unchanged after pricing change',
           hist2.amount == hist_amount and hist2.rate_per_liter == hist_rate,
           f"(amount {hist2.amount}=={hist_amount}, rate {hist2.rate_per_liter}=={hist_rate})")

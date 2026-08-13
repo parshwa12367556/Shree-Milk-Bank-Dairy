@@ -17,7 +17,8 @@ from flask_jwt_extended import jwt_required
 from backend.app import db
 from backend.models import Farmer, BankDetail, Collection, Payment, Branch, User
 from backend.auth import role_required, get_identity, hash_password, reject_farmer
-from backend.utils import generate_farmer_code, generate_farmer_email
+from backend.utils import (generate_farmer_code, generate_farmer_email, utcnow,
+                           sign_farmer_qr, verify_farmer_qr)
 from backend.audit import log_audit
 from backend.notify import notify
 
@@ -177,6 +178,9 @@ def create_farmer():
         return jsonify({'error': f'Farmer ID series exhausted for branch {prefix}. Contact Head Office.'}), 409
 
     farmer_code = generate_farmer_code(prefix, seq)
+    # Signed QR payload — minted at registration so the farmer's QR exists
+    # before it is ever scanned (contains only the farmer code + signature).
+    qr_payload = sign_farmer_qr(farmer_code)
 
     # Farmers sign in with email + mobile, so an email is required. If the
     # branch didn't provide one, generate a deterministic address from the
@@ -210,6 +214,7 @@ def create_farmer():
         # verify bank/aadhaar details before the farmer can receive payments).
         status='PENDING_VERIFICATION',
         created_by=user.get('uid'),
+        qr_code=qr_payload,
     )
     db.session.add(farmer)
     db.session.flush()  # Get farmer ID
@@ -285,7 +290,7 @@ def verify_farmer(code):
         farmer.status = 'ACTIVE'
         farmer.status_reason = None
         farmer.verified_by = user.get('uid')
-        farmer.verified_at = datetime.utcnow()
+        farmer.verified_at = utcnow()
         # Activate the farmer's login account on approval
         if farmer.user_account:
             farmer.user_account.status = 'ACTIVE'
@@ -366,7 +371,7 @@ def verify_farmer_bank(code):
     if action == 'verify':
         bank.verification_status = 'VERIFIED'
         bank.verified_by = user.get('uid')
-        bank.verified_at = datetime.utcnow()
+        bank.verified_at = utcnow()
         log_audit('VERIFY', 'BankDetail', farmer.farmer_code,
                   detail=f'Bank details verified for {farmer.farmer_code} ({bank.bank_name})')
         message = f'Bank details for {farmer.farmer_code} verified.'
@@ -430,6 +435,105 @@ def export_farmers():
         mimetype='text/csv; charset=utf-8',
         headers={'Content-Disposition': f'attachment; filename={filename}'},
     )
+
+
+def _qr_data_uri(payload):
+    """Render the QR payload as an SVG data URI (pure Python, no Pillow)."""
+    import base64
+    from io import BytesIO
+    try:
+        import qrcode
+        from qrcode.image.svg import SvgPathImage
+    except ImportError:
+        return None
+    try:
+        img = qrcode.make(payload, image_factory=SvgPathImage)
+        buf = BytesIO()
+        img.save(buf)
+        return 'data:image/svg+xml;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
+    except Exception:
+        return None
+
+
+def _scoped_farmer_or_error(code):
+    """Load a farmer and enforce the caller's branch scope (shared by QR routes)."""
+    reject_farmer()
+    farmer = Farmer.query.filter_by(farmer_code=code).first()
+    if not farmer:
+        return None, ({'error': 'Farmer not found'}, 404)
+    user = get_identity()
+    if user.get('role') not in ('ADMIN',) and user.get('branchId') != farmer.branch_id:
+        return None, ({'error': 'You can only access farmers from your own branch.'}, 403)
+    return farmer, None
+
+
+@farmer_bp.route('/api/farmers/<code>/qr', methods=['GET'])
+@jwt_required()
+def get_farmer_qr(code):
+    """Signed QR payload + rendered QR image for a farmer (branch-scoped).
+
+    The payload carries NO private data (no Aadhaar/PAN/bank/mobile) — only
+    the farmer code and an HMAC signature, so a scanned QR resolves to the
+    right farmer without enabling impersonation.
+    """
+    farmer, err = _scoped_farmer_or_error(code)
+    if err:
+        return jsonify(err[0]), err[1]
+
+    # Deterministic payload — minted at registration and stored on the row.
+    payload = farmer.qr_code or sign_farmer_qr(farmer.farmer_code)
+    if not farmer.qr_code:
+        farmer.qr_code = payload
+        db.session.commit()
+    return jsonify({
+        'farmerCode': farmer.farmer_code,
+        'farmerName': farmer.name,
+        'qrPayload': payload,
+        'qrImage': _qr_data_uri(payload),
+        'status': farmer.status,
+    })
+
+
+@farmer_bp.route('/api/farmers/<code>/qr', methods=['POST'])
+@jwt_required()
+def regenerate_farmer_qr(code):
+    """Regenerate a farmer's signed QR payload (branch-scoped, ADMIN/operator)."""
+    farmer, err = _scoped_farmer_or_error(code)
+    if err:
+        return jsonify(err[0]), err[1]
+    payload = sign_farmer_qr(farmer.farmer_code)
+    farmer.qr_code = payload
+    log_audit('UPDATE', 'Farmer', farmer.farmer_code,
+              detail=f'QR code regenerated for {farmer.farmer_code}')
+    db.session.commit()
+    return jsonify({
+        'farmerCode': farmer.farmer_code,
+        'qrPayload': payload,
+        'qrImage': _qr_data_uri(payload),
+    })
+
+
+@farmer_bp.route('/api/farmers/qr-lookup', methods=['GET'])
+@jwt_required()
+def qr_lookup():
+    """Resolve a signed QR payload to a farmer (branch-scoped).
+
+    The HMAC signature is verified first, so a forged/tampered QR is
+    rejected outright; the lookup itself cannot cross branch boundaries or
+    expose other farmers' data.
+    """
+    reject_farmer()
+    payload = request.args.get('payload', '')
+    code = verify_farmer_qr(payload)
+    if not code:
+        return jsonify({'error': 'Invalid or tampered QR code.'}), 400
+    farmer = Farmer.query.filter_by(farmer_code=code).first()
+    if not farmer:
+        return jsonify({'error': 'Farmer not found for this QR code.'}), 404
+    user = get_identity()
+    if user.get('role') not in ('ADMIN',) and user.get('branchId') != farmer.branch_id:
+        return jsonify({'error': 'Access denied. Farmer belongs to another branch.'}), 403
+    return jsonify({'farmer': farmer.to_dict(), 'status': farmer.status})
 
 
 @farmer_bp.route('/api/farmers/<code>', methods=['GET'])

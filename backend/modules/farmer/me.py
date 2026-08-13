@@ -42,6 +42,7 @@ from backend.models import (
 )
 from backend.auth import get_identity
 from backend.audit import log_audit
+from backend.utils import sign_farmer_qr
 
 farmer_me_bp = Blueprint('farmer_me', __name__)
 
@@ -130,8 +131,21 @@ def my_profile():
             'status': farmer.status,
             'joinedAt': farmer.joined_at.isoformat() if farmer.joined_at else None,
             'bankDetail': bank.to_dict() if bank else None,
+            # Signed QR payload + rendered image for the farmer's own QR card
+            # (contains only a signed identifier — no private data).
+            'qrPayload': farmer.qr_code or sign_farmer_qr(farmer.farmer_code),
+            'qrImage': _my_qr_image(farmer),
         },
     })
+
+
+def _my_qr_image(farmer):
+    """Render the farmer's own QR card image (SVG data URI), or None."""
+    try:
+        from backend.modules.farmer.farmers import _qr_data_uri
+        return _qr_data_uri(farmer.qr_code or sign_farmer_qr(farmer.farmer_code))
+    except Exception:
+        return None
 
 
 def _bank_payload(bank):
@@ -832,6 +846,8 @@ def my_settings():
     farmer, user, err, status = _auth_farmer()
     if err:
         return jsonify(err), status
+    # WhatsApp is reported as NOT available until a WhatsApp provider is
+    # configured — the UI must never show an enabled toggle for it.
     return jsonify({
         'settings': {
             'notificationSms': bool(farmer.notification_sms),
@@ -839,7 +855,8 @@ def my_settings():
             'notificationEmail': bool(farmer.notification_email),
             'email': farmer.email,
             'mobile': farmer.mobile,
-        }
+        },
+        'capabilities': {'whatsapp': False},
     })
 
 
@@ -858,6 +875,10 @@ def update_my_settings():
         ('notificationEmail', 'notification_email'),
     ]:
         if json_key in data:
+            # No WhatsApp provider is integrated — the toggle is force-disabled
+            # server-side so the preference can never be falsely "enabled".
+            if attr == 'notification_whatsapp':
+                continue
             setattr(farmer, attr, bool(data[json_key]))
 
     log_audit('UPDATE', 'Farmer', farmer.farmer_code,

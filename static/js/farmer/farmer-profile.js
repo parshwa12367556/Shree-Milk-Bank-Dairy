@@ -17,7 +17,68 @@ window.initFarmerProfile = function() {
   renderStats(data.stats || {});
   renderProfilePassbook(data.recentCollections || []);
   initProfileActions(farmer);
+  loadProfileQr(farmer);
 };
+
+/**
+ * Load + render the farmer's QR code (signed payload, no personal data).
+ */
+async function loadProfileQr(farmer) {
+  const img = document.getElementById('profile-qr-img');
+  if (!img) return;
+  const code = farmer.farmerCode || farmer.code;
+  if (!code) return;
+
+  const apply = (res) => {
+    if (res && res.qrImage) {
+      img.src = res.qrImage;
+      img.dataset.qrPayload = res.qrPayload || '';
+    }
+  };
+  try {
+    apply(await API.getFarmerQr(code));
+  } catch (err) {
+    img.style.opacity = '0.25';
+    img.alt = 'QR unavailable';
+  }
+
+  const dl = document.getElementById('btn-qr-download');
+  if (dl && !dl.hasAttribute('data-listener')) {
+    dl.setAttribute('data-listener', 'true');
+    dl.addEventListener('click', () => {
+      const src = img.src || '';
+      if (!src) return;
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = `farmer-${code}-qr.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  }
+
+  const regen = document.getElementById('btn-qr-regenerate');
+  if (regen && !regen.hasAttribute('data-listener')) {
+    regen.setAttribute('data-listener', 'true');
+    regen.addEventListener('click', async () => {
+      if (!window.Modal) return;
+      Modal.confirm({
+        title: 'Regenerate QR?',
+        message: `A new QR code will be minted for ${code}. Existing printed cards will no longer resolve.`,
+        confirmText: 'Regenerate',
+        variant: 'warning',
+        onConfirm: async () => {
+          try {
+            apply(await API.regenerateFarmerQr(code));
+            Modal.toast({ title: 'QR Regenerated', message: 'New QR code created.', type: 'success' });
+          } catch (err) {
+            Modal.toast({ title: 'Error', message: err.message || 'Could not regenerate QR.', type: 'error' });
+          }
+        },
+      });
+    });
+  }
+}
 
 /**
  * Show empty profile state when no farmer is selected
@@ -77,14 +138,14 @@ function renderFarmerHeader(farmer) {
 
   if (avatarEl) avatarEl.textContent = initials;
   if (nameEl) nameEl.textContent = farmer.name;
-  if (subEl) subEl.textContent = `${farmer.code || ''} · ${farmer.fatherName || '—'}`;
-  if (phoneEl) phoneEl.innerHTML = `<i data-lucide="phone" style="width:14px;height:14px;"></i> ${farmer.mobile || '-'}`;
-  if (locEl) locEl.innerHTML = `<i data-lucide="map-pin" style="width:14px;height:14px;"></i> ${farmer.village || '-'}`;
-  if (typeEl) typeEl.innerHTML = `<i data-lucide="milk" style="width:14px;height:14px;"></i> ${fmtMilkType(farmer.type) || '-'}`;
-  if (joinEl) joinEl.innerHTML = `<i data-lucide="calendar" style="width:14px;height:14px;"></i> Joined: ${farmer.joined || '-'}`;
+  if (subEl) subEl.textContent = `${escapeHtml(farmer.code || '')} · ${escapeHtml(farmer.fatherName || '—')}`;
+  if (phoneEl) phoneEl.innerHTML = `<i data-lucide="phone" style="width:14px;height:14px;"></i> ${escapeHtml(farmer.mobile || '-')}`;
+  if (locEl) locEl.innerHTML = `<i data-lucide="map-pin" style="width:14px;height:14px;"></i> ${escapeHtml(farmer.village || '-')}`;
+  if (typeEl) typeEl.innerHTML = `<i data-lucide="milk" style="width:14px;height:14px;"></i> ${escapeHtml(fmtMilkType(farmer.type) || '-')}`;
+  if (joinEl) joinEl.innerHTML = `<i data-lucide="calendar" style="width:14px;height:14px;"></i> Joined: ${escapeHtml(farmer.joined || '-')}`;
   if (statusEl) {
     const statusClass = statusBadge(farmer.status);
-    statusEl.innerHTML = `<span class="tag ${statusClass}">${farmer.status || 'Unknown'}</span>`;
+    statusEl.innerHTML = `<span class="tag ${statusClass}">${escapeHtml(farmer.status || 'Unknown')}</span>`;
   }
 
   if (window.lucide) lucide.createIcons();
@@ -108,8 +169,8 @@ function renderStats(stats) {
     if (!data[i]) return;
     el.className = `kpi-card kpi-${['green', 'gold', 'purple', 'teal', 'blue', 'green'][i]}`;
     el.innerHTML = `
-      <div class="kpi-value">${data[i].value}</div>
-      <div class="kpi-label">${data[i].label}</div>
+      <div class="kpi-value">${escapeHtml(data[i].value)}</div>
+      <div class="kpi-label">${escapeHtml(data[i].label)}</div>
     `;
   });
 }
@@ -131,8 +192,8 @@ function renderProfilePassbook(entries) {
   } else {
     tbody.innerHTML = entries.map(c => `
       <tr>
-        <td>${fmtDate(c.date)}</td>
-        <td><span class="font-mono" style="font-size:var(--text-xs);">${c.receiptNo || '—'}</span></td>
+        <td>${escapeHtml(fmtDate(c.date))}</td>
+        <td><span class="font-mono" style="font-size:var(--text-xs);">${escapeHtml(c.receiptNo || '—')}</span></td>
         <td>${c.shift === 'MORNING' ? 'Morning' : 'Evening'}</td>
         <td>${fmtNum(c.quantity, 2)} L</td>
         <td>${c.fat != null ? c.fat + '%' : '—'}</td>
@@ -152,8 +213,8 @@ window.initFarmerPassbook = function() {
   const farmer = data.farmer || App.selectedFarmer || null;
   const headerEl = document.getElementById('passbook-header-text');
   if (headerEl) {
-    const name = farmer ? farmer.name : 'Farmer Name';
-    const code = farmer ? farmer.code : 'Code';
+    const name = farmer ? escapeHtml(farmer.name) : 'Farmer Name';
+    const code = farmer ? escapeHtml(farmer.code) : 'Code';
     headerEl.innerHTML = `Passbook for <strong>${name} (${code})</strong>`;
   }
 

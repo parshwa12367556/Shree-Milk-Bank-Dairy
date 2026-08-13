@@ -3,11 +3,32 @@ Smart Dairy ERP — SQLAlchemy Database Models
 
 Defines all database tables as ORM models.
 """
-from datetime import datetime, date
+from datetime import datetime, date, timezone
+
+def utcnow():
+    return datetime.now(timezone.utc)
 from backend.app import db
 
 
-class User(db.Model):
+class _DeclarativeModel(db.Model):
+    """Shared declarative base for all ORM models.
+
+    SQLAlchemy generates each model's ``__init__`` dynamically from its
+    columns; static type checkers (Pyrefly/Pyright) cannot see that dynamic
+    constructor and treat the class as accepting only ``object.__init__`` —
+    producing false "Unexpected keyword argument" errors on every
+    ``Model(**kwargs)`` call. Declaring an explicit ``**kwargs`` constructor
+    here keeps runtime behavior identical (SQLAlchemy still rejects unknown
+    columns at runtime) while making the column-keyword pattern visible to
+    type checkers project-wide.
+    """
+    __abstract__ = True
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class User(_DeclarativeModel):
     """System user accounts with role-based access."""
     __tablename__ = 'users'
 
@@ -36,8 +57,8 @@ class User(db.Model):
     password_changed_at = db.Column(db.DateTime, nullable=True)
     recovery_email = db.Column(db.String(120))
     recovery_mobile = db.Column(db.String(15))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     branch = db.relationship('Branch', backref='users', lazy=True)
     # Farmer has multiple FKs to users (verified_by, created_by) — pin the
@@ -65,7 +86,7 @@ class User(db.Model):
         }
 
 
-class Branch(db.Model):
+class Branch(_DeclarativeModel):
     """Dairy branches/collection centers."""
     __tablename__ = 'branches'
 
@@ -79,7 +100,7 @@ class Branch(db.Model):
     district = db.Column(db.String(100))
     state = db.Column(db.String(100))
     status = db.Column(db.String(20), default='ACTIVE')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     farmers = db.relationship('Farmer', backref='branch', lazy='dynamic')
     collections = db.relationship('Collection', backref='branch', lazy='dynamic')
@@ -101,7 +122,7 @@ class Branch(db.Model):
         }
 
 
-class Farmer(db.Model):
+class Farmer(_DeclarativeModel):
     """Registered milk producers/farmers."""
     __tablename__ = 'farmers'
 
@@ -150,7 +171,7 @@ class Farmer(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     joined_at = db.Column(db.Date, default=date.today)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     bank_detail = db.relationship('BankDetail', uselist=False, backref='farmer')
     collections = db.relationship('Collection', backref='farmer', lazy='dynamic')
@@ -182,7 +203,7 @@ class Farmer(db.Model):
         }
 
 
-class FarmerLedgerEntry(db.Model):
+class FarmerLedgerEntry(_DeclarativeModel):
     """
     Farmer passbook / ledger — one row per financial transaction.
 
@@ -207,7 +228,7 @@ class FarmerLedgerEntry(db.Model):
     credit_amount = db.Column(db.Float, default=0)   # milk earnings (amount payable to farmer)
     debit_amount = db.Column(db.Float, default=0)    # payments settled to the farmer
     running_balance = db.Column(db.Float, default=0) # credits - debits up to this row
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     farmer = db.relationship('Farmer', backref=db.backref('ledger_entries', lazy='dynamic'),
                              lazy=True)
@@ -236,7 +257,7 @@ class FarmerLedgerEntry(db.Model):
         }
 
 
-class BankDetail(db.Model):
+class BankDetail(_DeclarativeModel):
     """Farmer bank account details."""
     __tablename__ = 'bank_details'
 
@@ -267,7 +288,7 @@ class BankDetail(db.Model):
         }
 
 
-class RateMaster(db.Model):
+class RateMaster(_DeclarativeModel):
     """Versioned milk pricing rates."""
     __tablename__ = 'rate_masters'
 
@@ -280,7 +301,7 @@ class RateMaster(db.Model):
     version = db.Column(db.Integer, default=1)
     status = db.Column(db.String(20), default='ACTIVE')  # ACTIVE, INACTIVE
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -295,7 +316,7 @@ class RateMaster(db.Model):
         }
 
 
-class Collection(db.Model):
+class Collection(_DeclarativeModel):
     """Daily milk collection records (immutable after creation)."""
     __tablename__ = 'collections'
 
@@ -326,7 +347,7 @@ class Collection(db.Model):
     quality_grade = db.Column(db.String(20))  # PASS, BORDERLINE, REJECTED
     status = db.Column(db.String(20), default='ACCEPTED', index=True)  # ACCEPTED, REJECTED, CORRECTED
     remarks = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     quality_tests = db.relationship('QualityTest', backref='collection', lazy='dynamic')
     rejections = db.relationship('MilkRejection', backref='collection', lazy='dynamic')
@@ -360,7 +381,7 @@ class Collection(db.Model):
         }
 
 
-class Payment(db.Model):
+class Payment(_DeclarativeModel):
     """Farmer payment records."""
     __tablename__ = 'payments'
 
@@ -382,8 +403,8 @@ class Payment(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     processed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     reference = db.Column(db.String(100))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     farmer = db.relationship('Farmer', backref='payments', lazy=True)
     collections = db.relationship('Collection', backref='payment', lazy='dynamic')
@@ -412,7 +433,7 @@ class Payment(db.Model):
         }
 
 
-class QualityTest(db.Model):
+class QualityTest(_DeclarativeModel):
     """Milk quality test records."""
     __tablename__ = 'quality_tests'
 
@@ -441,7 +462,7 @@ class QualityTest(db.Model):
     # Results
     overall_result = db.Column(db.String(20))  # PASS, BORDERLINE, FAIL
     result_summary = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     farmer = db.relationship('Farmer', backref='quality_tests')
 
@@ -472,7 +493,7 @@ class QualityTest(db.Model):
         }
 
 
-class MilkRejection(db.Model):
+class MilkRejection(_DeclarativeModel):
     """Records of rejected milk."""
     __tablename__ = 'milk_rejections'
 
@@ -495,7 +516,7 @@ class MilkRejection(db.Model):
     remark = db.Column(db.Text)
     photo_url = db.Column(db.String(500))
     status = db.Column(db.String(20), default='CONFIRMED')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     farmer = db.relationship('Farmer', backref='milk_rejections')
 
@@ -520,7 +541,7 @@ class MilkRejection(db.Model):
         }
 
 
-class CollectionCenter(db.Model):
+class CollectionCenter(_DeclarativeModel):
     """Procurement collection centers."""
     __tablename__ = 'collection_centers'
 
@@ -543,7 +564,7 @@ class CollectionCenter(db.Model):
     evening_start = db.Column(db.String(5))
     evening_end = db.Column(db.String(5))
     status = db.Column(db.String(20), default='ACTIVE')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -561,7 +582,7 @@ class CollectionCenter(db.Model):
         }
 
 
-class CollectionRoute(db.Model):
+class CollectionRoute(_DeclarativeModel):
     """Milk collection routes."""
     __tablename__ = 'collection_routes'
 
@@ -576,7 +597,7 @@ class CollectionRoute(db.Model):
     vehicle_number = db.Column(db.String(20))
     farmer_count = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), default='ACTIVE')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -593,7 +614,7 @@ class CollectionRoute(db.Model):
         }
 
 
-class ChillingCenter(db.Model):
+class ChillingCenter(_DeclarativeModel):
     """Chilling/cooling centers for milk storage."""
     __tablename__ = 'chilling_centers'
 
@@ -611,7 +632,7 @@ class ChillingCenter(db.Model):
     phone = db.Column(db.String(15))
     incharge_name = db.Column(db.String(120))
     status = db.Column(db.String(20), default='ACTIVE')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -630,7 +651,7 @@ class ChillingCenter(db.Model):
         }
 
 
-class InventoryItem(db.Model):
+class InventoryItem(_DeclarativeModel):
     """Inventory/stock items."""
     __tablename__ = 'inventory_items'
 
@@ -646,8 +667,8 @@ class InventoryItem(db.Model):
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
     branch = db.relationship('Branch', backref='inventory_items', lazy=True)
     status = db.Column(db.String(20), default='IN_STOCK')
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         reserved = self.reserved or 0
@@ -670,7 +691,7 @@ class InventoryItem(db.Model):
         }
 
 
-class Employee(db.Model):
+class Employee(_DeclarativeModel):
     """Employee records."""
     __tablename__ = 'employees'
 
@@ -688,7 +709,7 @@ class Employee(db.Model):
     salary = db.Column(db.Float)
     status = db.Column(db.String(20), default='ACTIVE')
     joined_at = db.Column(db.Date, default=date.today)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -705,7 +726,7 @@ class Employee(db.Model):
         }
 
 
-class Vehicle(db.Model):
+class Vehicle(_DeclarativeModel):
     """Vehicle registry."""
     __tablename__ = 'vehicles'
 
@@ -726,7 +747,7 @@ class Vehicle(db.Model):
     next_service_date = db.Column(db.Date)
     gps_status = db.Column(db.String(20), default='NOT_TRACKED')  # ACTIVE, NOT_TRACKED, OFFLINE
     status = db.Column(db.String(20), default='ACTIVE')  # ACTIVE, MAINTENANCE, INACTIVE
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -749,7 +770,7 @@ class Vehicle(db.Model):
         }
 
 
-class AuditLog(db.Model):
+class AuditLog(_DeclarativeModel):
     """System audit trail for all CRUD operations."""
     __tablename__ = 'audit_logs'
 
@@ -768,7 +789,7 @@ class AuditLog(db.Model):
     ip = db.Column(db.String(45))
     user_agent = db.Column(db.String(255))
     detail = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -786,7 +807,7 @@ class AuditLog(db.Model):
         }
 
 
-class Notification(db.Model):
+class Notification(_DeclarativeModel):
     """System notifications for users."""
     __tablename__ = 'notifications'
 
@@ -802,7 +823,7 @@ class Notification(db.Model):
     related_id = db.Column(db.Integer)
     read = db.Column(db.Boolean, default=False, index=True)
     read_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)
 
     def to_dict(self):
         return {
@@ -821,7 +842,7 @@ class Notification(db.Model):
         }
 
 
-class Supplier(db.Model):
+class Supplier(_DeclarativeModel):
     """Procurement suppliers/vendors."""
     __tablename__ = 'suppliers'
 
@@ -836,7 +857,7 @@ class Supplier(db.Model):
     # EQUIPMENT, PACKAGING, CHEMICALS, FEED, DAIRY, OTHER
     gstin = db.Column(db.String(20))
     status = db.Column(db.String(20), default='ACTIVE')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -853,7 +874,7 @@ class Supplier(db.Model):
         }
 
 
-class PurchaseOrder(db.Model):
+class PurchaseOrder(_DeclarativeModel):
     """Purchase orders raised against suppliers."""
     __tablename__ = 'purchase_orders'
 
@@ -872,7 +893,7 @@ class PurchaseOrder(db.Model):
     paid_amount = db.Column(db.Float, default=0)
     remarks = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     supplier = db.relationship('Supplier', backref='purchase_orders', lazy=True)
     branch = db.relationship('Branch', backref='purchase_orders', lazy=True)
@@ -900,7 +921,7 @@ class PurchaseOrder(db.Model):
         }
 
 
-class PurchaseOrderItem(db.Model):
+class PurchaseOrderItem(_DeclarativeModel):
     """Line items on a purchase order."""
     __tablename__ = 'purchase_order_items'
 
@@ -924,7 +945,7 @@ class PurchaseOrderItem(db.Model):
         }
 
 
-class VendorPayment(db.Model):
+class VendorPayment(_DeclarativeModel):
     """Payments made to suppliers against purchase orders."""
     __tablename__ = 'vendor_payments'
 
@@ -938,7 +959,7 @@ class VendorPayment(db.Model):
     reference = db.Column(db.String(100))
     status = db.Column(db.String(20), default='COMPLETED')
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     po = db.relationship('PurchaseOrder', backref='vendor_payments', lazy=True)
 
@@ -957,7 +978,7 @@ class VendorPayment(db.Model):
         }
 
 
-class StockMovement(db.Model):
+class StockMovement(_DeclarativeModel):
     """Inventory stock in/out/allocate ledger entries."""
     __tablename__ = 'stock_movements'
 
@@ -969,7 +990,7 @@ class StockMovement(db.Model):
     reference = db.Column(db.String(100))
     note = db.Column(db.String(255))
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     item = db.relationship('InventoryItem', backref='movements', lazy=True)
     branch = db.relationship('Branch', backref='stock_movements', lazy=True)
@@ -989,7 +1010,7 @@ class StockMovement(db.Model):
         }
 
 
-class InventoryAllocation(db.Model):
+class InventoryAllocation(_DeclarativeModel):
     """Per-branch allocation of a central inventory item."""
     __tablename__ = 'inventory_allocations'
 
@@ -998,7 +1019,7 @@ class InventoryAllocation(db.Model):
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=False)
     quantity = db.Column(db.Float, nullable=False, default=0)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     item = db.relationship('InventoryItem', backref='allocations', lazy=True)
     branch = db.relationship('Branch', backref='inventory_allocations', lazy=True)
@@ -1015,7 +1036,7 @@ class InventoryAllocation(db.Model):
         }
 
 
-class VehicleServiceRecord(db.Model):
+class VehicleServiceRecord(_DeclarativeModel):
     """Service/maintenance history for vehicles."""
     __tablename__ = 'vehicle_service_records'
 
@@ -1027,7 +1048,7 @@ class VehicleServiceRecord(db.Model):
     odometer = db.Column(db.Float, nullable=True)
     vendor = db.Column(db.String(120))
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     vehicle = db.relationship('Vehicle', backref='service_records', lazy=True)
 
@@ -1044,7 +1065,7 @@ class VehicleServiceRecord(db.Model):
         }
 
 
-class EmployeeAttendance(db.Model):
+class EmployeeAttendance(_DeclarativeModel):
     """Daily employee attendance records."""
     __tablename__ = 'employee_attendance'
 
@@ -1055,7 +1076,7 @@ class EmployeeAttendance(db.Model):
     shift = db.Column(db.String(20))
     notes = db.Column(db.String(255))
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     employee = db.relationship('Employee', backref='attendance', lazy=True)
 
@@ -1071,7 +1092,7 @@ class EmployeeAttendance(db.Model):
         }
 
 
-class FarmerDocument(db.Model):
+class FarmerDocument(_DeclarativeModel):
     """Documents submitted by a farmer (identity, address, bank, other)."""
     __tablename__ = 'farmer_documents'
 
@@ -1084,7 +1105,7 @@ class FarmerDocument(db.Model):
     mime_type = db.Column(db.String(100))
     status = db.Column(db.String(20), default='PENDING')  # PENDING, APPROVED, REJECTED
     remarks = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     farmer = db.relationship('Farmer', backref='documents')
 
@@ -1101,7 +1122,7 @@ class FarmerDocument(db.Model):
         }
 
 
-class Grievance(db.Model):
+class Grievance(_DeclarativeModel):
     """Farmer complaints/requests raised through the farmer portal."""
     __tablename__ = 'grievances'
 
@@ -1120,7 +1141,7 @@ class Grievance(db.Model):
     response = db.Column(db.Text)
     responded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     responded_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     farmer = db.relationship('Farmer', backref='grievances', lazy=True)
     branch = db.relationship('Branch', lazy=True)
@@ -1144,7 +1165,7 @@ class Grievance(db.Model):
         }
 
 
-class Expense(db.Model):
+class Expense(_DeclarativeModel):
     """Operational expenses for profit/loss accounting."""
     __tablename__ = 'expenses'
 
@@ -1157,7 +1178,7 @@ class Expense(db.Model):
     amount = db.Column(db.Float, nullable=False)
     expense_date = db.Column(db.Date, nullable=False, default=date.today)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     branch = db.relationship('Branch', backref='expenses', lazy=True)
 
@@ -1171,4 +1192,87 @@ class Expense(db.Model):
             'description': self.description,
             'amount': self.amount,
             'expenseDate': self.expense_date.isoformat() if self.expense_date else None,
+        }
+
+
+class PasswordResetOTP(_DeclarativeModel):
+    """
+    Persistent password-reset OTP tokens (database-backed).
+
+    Replaces the in-memory OTP_STORE so tokens survive application restarts
+    and work correctly across multiple workers (gunicorn -w 4): the OTP is
+    created on one worker and validated from any other, because it lives in
+    the shared database — never in process memory.
+
+    Only a SHA-256 hash of the OTP is stored — never the plaintext value.
+    A token is single-use (used_at) and expires after OTP_TTL_SECONDS.
+    """
+    __tablename__ = 'password_reset_otps'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    otp_hash = db.Column(db.String(64), nullable=False)      # sha256 hex digest
+    purpose = db.Column(db.String(30), default='PASSWORD_RESET', index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    attempt_count = db.Column(db.Integer, default=0)
+    max_attempts = db.Column(db.Integer, default=5)
+    used_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    user = db.relationship('User', backref=db.backref('reset_otps', lazy='dynamic'))
+
+    def is_expired(self):
+        from backend.utils import ensure_utc
+        return ensure_utc(self.expires_at) < utcnow() if self.expires_at else True
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'userId': self.user_id,
+            'purpose': self.purpose,
+            'expiresAt': self.expires_at.isoformat() if self.expires_at else None,
+            'attemptCount': self.attempt_count,
+            'maxAttempts': self.max_attempts,
+            'usedAt': self.used_at.isoformat() if self.used_at else None,
+        }
+
+
+class NotificationLog(_DeclarativeModel):
+    """
+    Delivery log for every outbound notification attempt (email / SMS /
+    WhatsApp). Written AFTER the business transaction commits, so a failed
+    provider never rolls back the collection/payment it accompanies.
+
+    Records provider, recipient, notification type, outcome, provider
+    response id (when available) and error — for auditability and retries.
+    Sensitive payloads (OTP values, passwords) are never stored here.
+    """
+    __tablename__ = 'notification_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    channel = db.Column(db.String(20), nullable=False)   # EMAIL, SMS, WHATSAPP
+    recipient = db.Column(db.String(120), nullable=False)
+    notification_type = db.Column(db.String(50), default='GENERAL')
+    status = db.Column(db.String(20), default='SENT')    # SENT, SKIPPED, FAILED
+    provider = db.Column(db.String(50))
+    provider_response_id = db.Column(db.String(120))
+    error = db.Column(db.String(500))
+    related_type = db.Column(db.String(30))              # Collection, Payment, ...
+    related_id = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=utcnow, index=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'channel': self.channel,
+            'recipient': self.recipient,
+            'notificationType': self.notification_type,
+            'status': self.status,
+            'provider': self.provider,
+            'providerResponseId': self.provider_response_id,
+            'error': self.error,
+            'relatedType': self.related_type,
+            'relatedId': self.related_id,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
         }

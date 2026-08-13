@@ -25,6 +25,7 @@ async function loadMyProfile() {
     renderLivestock(f);
     renderBankTab(f.bankDetail);
     fillEditForm(f);
+    renderMyQr(f);
   } catch (err) {
     console.warn('Failed to load profile:', err);
   }
@@ -39,8 +40,8 @@ function renderProfileHeader(f) {
   container.querySelector('h3').textContent = f.name || 'Farmer';
   const sub = container.querySelector('p[style*="font-size:var(--text-sm)"]');
   if (sub) {
-    sub.innerHTML = `ID: <span class="font-mono">${f.farmerCode || '—'}</span>` +
-      (f.branchName ? ` · ${f.branchName}` : '') +
+    sub.innerHTML = `ID: <span class="font-mono">${escapeHtml(f.farmerCode || '—')}</span>` +
+      (f.branchName ? ` · ${escapeHtml(f.branchName)}` : '') +
       ` · Status: <span class="tag ${status ? 'tag-green' : 'tag-amber'}">${status ? 'Active' : 'Pending / Inactive'}</span>`;
   }
   if (window.lucide) lucide.createIcons();
@@ -65,6 +66,31 @@ function renderLivestock(f) {
     f.breed || '—', f.preferredShift || '—',
   ];
   grid.querySelectorAll('.info-value').forEach((el, i) => { el.textContent = vals[i] || '—'; });
+}
+
+/** Render the farmer's own QR card image + download button. */
+function renderMyQr(f) {
+  const img = document.getElementById('my-qr-img');
+  if (!img) return;
+  if (f.qrImage) {
+    img.src = f.qrImage;
+  } else {
+    img.style.display = 'none';
+  }
+  const dl = document.getElementById('btn-my-qr-download');
+  if (dl && !dl.hasAttribute('data-listener')) {
+    dl.setAttribute('data-listener', 'true');
+    dl.addEventListener('click', () => {
+      const src = img.src || '';
+      if (!src) return;
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = `farmer-${f.farmerCode || 'me'}-qr.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  }
 }
 
 function renderBankTab(b) {

@@ -9,7 +9,6 @@ GET   /api/admin/grievances           — List (filters: branchId, status, q)
 GET   /api/admin/grievances/<id>      — Detail
 PATCH /api/admin/grievances/<id>      — Respond / update status
 """
-from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from backend.app import db
@@ -17,6 +16,7 @@ from backend.models import Grievance, Farmer, User
 from backend.auth import role_required, get_identity
 from backend.audit import log_audit
 from backend.notify import notify
+from backend.utils import utcnow
 
 grievance_admin_bp = Blueprint('admin_grievances', __name__)
 
@@ -110,14 +110,14 @@ def respond_grievance(grievance_id):
     if response:
         grievance.response = response
         grievance.responded_by = user.get('uid')
-        grievance.responded_at = datetime.utcnow()
+        grievance.responded_at = utcnow()
         changes.append('responded')
     if new_status and new_status != grievance.status:
         changes.append(f'status {grievance.status}→{new_status}')
         grievance.status = new_status
         if not grievance.responded_at:
             grievance.responded_by = user.get('uid')
-            grievance.responded_at = datetime.utcnow()
+            grievance.responded_at = utcnow()
 
     log_audit('UPDATE', 'Grievance', grievance.grievance_code,
               detail=f'Grievance {grievance.grievance_code} updated by Admin: {", ".join(changes)}'
@@ -156,7 +156,12 @@ def respond_grievance(grievance_id):
         except Exception as exc:  # email must never break the response flow
             current_app.logger.warning('Grievance email failed: %s', exc)
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to update grievance: {str(e)}'}), 500
+
     return jsonify({
         'grievance': grievance.to_dict(),
         'message': f'Grievance {grievance.grievance_code} updated.',

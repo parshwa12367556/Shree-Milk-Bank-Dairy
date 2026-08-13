@@ -23,6 +23,7 @@ if os.path.exists(DB_PATH):
 os.environ['DATABASE_URL'] = 'sqlite:///' + os.path.abspath(DB_PATH).replace('\\', '/')
 
 from backend.app import create_app  # noqa: E402
+from backend.app import db as _db  # noqa: E402
 
 os.environ.setdefault('SECRET_KEY', 'test-secret-key-for-prod-mode-checks')
 os.environ.setdefault('JWT_SECRET_KEY', 'test-jwt-secret-key-for-prod-mode-checks')
@@ -163,10 +164,9 @@ _system_settings['email_smtp_host'] = 'smtp.test.local'  # restore
 FakeSMTP.reset()
 from backend.models import Farmer  # noqa: E402
 with app.app_context():
-    f = Farmer.query.get(farmer_id)
+    f = _db.session.get(Farmer, farmer_id)
     orig_email = f.email
     f.email = None
-    from backend.app import db as _db
     _db.session.commit()
 with patch('backend.mailer.smtplib.SMTP', FakeSMTP):
     r = br_c.post('/api/collections', json={
@@ -175,9 +175,8 @@ with patch('backend.mailer.smtplib.SMTP', FakeSMTP):
     check('collection still created without farmer email', r.status_code == 201)
     check('no email sent when farmer has no email', len(FakeSMTP.sent) == 0)
 with app.app_context():
-    f = Farmer.query.get(farmer_id)
+    f = _db.session.get(Farmer, farmer_id)
     f.email = orig_email
-    from backend.app import db as _db
     _db.session.commit()
 
 # ══════════ 4. Mailer unit checks ══════════

@@ -43,6 +43,28 @@
           <div class="kpi-card kpi-blue" id="profile-stat-5"></div>
           <div class="kpi-card kpi-green" id="profile-stat-6"></div>
         </div>
+
+        <!-- Farmer QR Code -->
+        <div class="card" style="padding:var(--space-5);margin:var(--space-5) 0;">
+          <div class="card-header" style="margin-bottom:var(--space-3);">
+            <h5 class="section-title"><i data-lucide="qrcode" style="width:18px;height:18px;vertical-align:middle;margin-right:6px;"></i> Farmer QR Code</h5>
+          </div>
+          <div class="card-body" style="display:flex;align-items:center;gap:var(--space-5);flex-wrap:wrap;">
+            <div style="background:#fff;padding:var(--space-3);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);">
+              <img id="profile-qr-img" src="" alt="Farmer QR code" style="width:150px;height:150px;display:block;">
+            </div>
+            <div style="flex:1;min-width:220px;">
+              <p style="font-size:var(--text-sm);color:var(--ink-secondary);margin-bottom:var(--space-3);">
+                Scan this code at the collection desk to instantly identify the farmer.
+                It contains only a signed identifier — no personal data.
+              </p>
+              <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
+                <button class="btn btn-sm btn-secondary" id="btn-qr-download"><i data-lucide="download" style="width:14px;height:14px;"></i> Download</button>
+                <button class="btn btn-sm btn-ghost" id="btn-qr-regenerate"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Regenerate</button>
+              </div>
+            </div>
+          </div>
+        </div>
           <div class="card">
             <div class="card-header">
               <h5 class="section-title">Weekly Earnings</h5>

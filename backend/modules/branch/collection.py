@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from backend.app import db
 from backend.models import Collection, Farmer, User
 from backend.auth import can_collect, get_identity, get_branch_scope, reject_farmer
-from backend.utils import generate_receipt_no
+from backend.utils import generate_receipt_no, utcnow
 from backend.services.pricing_service import calculate_collection_price
 from backend.services import ledger_service
 from backend.audit import log_audit
@@ -160,7 +160,7 @@ def create_collection():
                 'receipt': existing.receipt_no,
             }), 409
 
-    farmer = Farmer.query.get(farmer_id)
+    farmer = db.session.get(Farmer, farmer_id)
     if not farmer:
         return jsonify({'error': 'Farmer not found'}), 404
 
@@ -209,7 +209,7 @@ def create_collection():
         status = 'ACCEPTED'
 
     user = get_identity()
-    now = datetime.utcnow()
+    now = utcnow()
 
     # Quality grade derived server-side from the recorded parameters.
     quality_grade = None
@@ -291,6 +291,22 @@ def create_collection():
     except Exception as exc:  # noqa: BLE001 — email must never break collection
         current_app.logger.warning('Milk collection email failed: %s', exc)
 
+    # SMS the farmer when SMS is configured and the farmer opted in.
+    # Post-commit + best-effort: a gateway failure never fails the collection.
+    try:
+        from backend.sms import is_sms_configured, send_sms_async
+        if is_sms_configured() and farmer.notification_sms:
+            mobile = (farmer.mobile or '').strip()
+            if mobile:
+                send_sms_async(
+                    mobile,
+                    f'Shree Milk Bank: {quantity:g}L {farmer.milk_type.title()} milk recorded. '
+                    f'Fat {fat}% · SNF {snf}% · Amount ₹{price["amount"]:,.2f} · Receipt {receipt_no}',
+                    notification_type='COLLECTION', related_type='Collection',
+                    related_id=collection.id)
+    except Exception as exc:  # noqa: BLE001 — SMS must never break collection
+        current_app.logger.warning('Milk collection SMS failed: %s', exc)
+
     return jsonify({
         'collection': collection.to_dict(),
         'message': f'Collection recorded. Receipt #{receipt_no}',
@@ -308,7 +324,7 @@ def update_collection(collection_id):
     The farmer's portal picks up the corrected values automatically on its
     next refresh — no duplicate record is created.
     """
-    collection = Collection.query.get(collection_id)
+    collection = db.session.get(Collection, collection_id)
     if not collection:
         return jsonify({'error': 'Collection not found'}), 404
 

@@ -107,20 +107,27 @@ def create_expense():
     last = Expense.query.order_by(Expense.id.desc()).first()
     seq = (last.id + 1) if last else 1
 
-    expense = Expense(
-        code=f'EXP{seq:06d}',
-        branch_id=branch_id,
-        category=category,
-        description=data.get('description', ''),
-        amount=float(amount),
-        expense_date=date.fromisoformat(data.get('expenseDate', '')[:10]) if data.get('expenseDate') else date.today(),
-        created_by=user.get('uid'),
-    )
-    db.session.add(expense)
-    db.session.flush()
-    log_audit('CREATE', 'Expense', expense.code,
-              detail=f'Added expense of {expense.amount} ({category})')
-    db.session.commit()
+    # Attribute assignment (instead of constructor kwargs) keeps static type
+    # checkers happy — SQLAlchemy generates the Model __init__ dynamically,
+    # so tools like Pyrefly cannot see column keyword arguments.
+    expense = Expense()
+    expense.code = f'EXP{seq:06d}'
+    expense.branch_id = branch_id
+    expense.category = category
+    expense.description = data.get('description', '')
+    expense.amount = float(amount)
+    expense.expense_date = (date.fromisoformat(data.get('expenseDate', '')[:10])
+                            if data.get('expenseDate') else date.today())
+    expense.created_by = user.get('uid')
+    try:
+        db.session.add(expense)
+        db.session.flush()
+        log_audit('CREATE', 'Expense', expense.code,
+                  detail=f'Added expense of {expense.amount} ({category})')
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to create expense: {str(e)}'}), 500
 
     return jsonify({'expense': expense.to_dict(), 'message': 'Expense added successfully'}), 201
 
@@ -155,9 +162,14 @@ def update_expense(expense_id):
     if 'branchId' in data:
         expense.branch_id = data['branchId']
 
-    log_audit('UPDATE', 'Expense', expense.code,
-              detail=f'Updated expense from {old_amount} to {expense.amount}')
-    db.session.commit()
+    try:
+        log_audit('UPDATE', 'Expense', expense.code,
+                  detail=f'Updated expense from {old_amount} to {expense.amount}')
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to update expense: {str(e)}'}), 500
+
     return jsonify({'expense': expense.to_dict(), 'message': 'Expense updated successfully'})
 
 
@@ -168,7 +180,12 @@ def delete_expense(expense_id):
     """Delete an expense (Head Office only)."""
     expense = Expense.query.get_or_404(expense_id)
     code = expense.code
-    db.session.delete(expense)
-    log_audit('DELETE', 'Expense', code, detail=f'Deleted expense {code}')
-    db.session.commit()
+    try:
+        db.session.delete(expense)
+        log_audit('DELETE', 'Expense', code, detail=f'Deleted expense {code}')
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to delete expense: {str(e)}'}), 500
+
     return jsonify({'message': f'Expense {code} deleted successfully'})

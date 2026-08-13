@@ -14,14 +14,15 @@ import json
 import random
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
+from datetime import timedelta
 from flask import Blueprint, request, jsonify, current_app, render_template
 from flask_jwt_extended import create_access_token, jwt_required
 from backend.app import db
-from backend.models import User, Branch
+from backend.models import User, Branch, PasswordResetOTP
 from backend.auth import (check_password, hash_password, get_identity,
                           normalize_login_id, validate_password_policy)
 from backend.audit import log_audit
+from backend.utils import utcnow, ensure_utc
 
 OTP_TTL_SECONDS = 600  # 10 minutes
 
@@ -42,10 +43,29 @@ def _ip_throttled(ip):
         return True
     q.append(now)
     return False
-# In-memory OTP store: username -> {'hash': sha256(otp), 'expires': epoch_seconds}
-# Note: single-process only — lost on restart. Replace with a DB table if the
-# app is ever run across multiple workers.
-OTP_STORE = {}
+def _hash_otp(otp):
+    """SHA-256 hex digest of an OTP — the DB stores hashes, never plaintext."""
+    return hashlib.sha256(str(otp).encode('utf-8')).hexdigest()
+
+
+def _issue_otp(user):
+    """
+    Create a persistent password-reset OTP for a user (database-backed).
+
+    Survives restarts and multi-worker deployments because the token lives in
+    the shared database, not in process memory. Returns the plaintext OTP,
+    which is only ever delivered via email/SMS/DEV response — never logged.
+    """
+    otp = f'{random.randint(0, 999999):06d}'
+    db.session.add(PasswordResetOTP(
+        user_id=user.id,
+        otp_hash=_hash_otp(otp),
+        purpose='PASSWORD_RESET',
+        expires_at=utcnow() + timedelta(seconds=OTP_TTL_SECONDS),
+        max_attempts=5,
+    ))
+    db.session.flush()
+    return otp
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -102,8 +122,8 @@ def login():
         return jsonify({'error': 'Invalid Login ID or Password.'}), 401
 
     # Brute-force lockout — reject while locked (safe message, no timing info).
-    now = datetime.utcnow()
-    if user.locked_until and user.locked_until > now:
+    now = utcnow()
+    if user.locked_until and ensure_utc(user.locked_until) > now:
         return jsonify({
             'error': 'Your account is temporarily locked. Please try again later or reset your password.'
         }), 429
@@ -131,7 +151,7 @@ def login():
         return jsonify({'error': 'Your account is currently inactive. Please contact the administrator.'}), 403
 
     # ── Success ──
-    user.last_login_at = datetime.utcnow()
+    user.last_login_at = utcnow()
     user.failed_attempts = 0
     user.locked_until = None
     log_audit('LOGIN_SUCCESS', 'Session', user.login_id, user_id=user.id, username=user.username,
@@ -268,7 +288,7 @@ def change_password():
         return jsonify({'error': ' '.join(policy_errors)}), 400
 
     user.password_hash = hash_password(new_password)
-    user.password_changed_at = datetime.utcnow()
+    user.password_changed_at = utcnow()
     # First-login enforcement: once the password is changed, the flag clears.
     user.must_change_password = False
     user.failed_attempts = 0
@@ -307,46 +327,78 @@ def forgot_password():
             or User.query.filter(User.email.ilike(identifier)).first())
 
     if not user:
-        # Don't reveal whether the account exists for security
-        return jsonify({'message': 'If the account is registered and has a valid email address, password reset instructions have been sent.'})
+        # Don't reveal whether the account exists for security — this message
+        # must stay byte-identical to the one returned for a known account.
+        return jsonify({'message': 'If the account is registered and has a valid email address or mobile number, password reset instructions have been sent.'})
 
-    otp = f'{random.randint(0, 999999):06d}'
-    OTP_STORE[user.login_id] = {
-        'hash': hashlib.sha256(otp.encode('utf-8')).hexdigest(),
-        'expires': time.time() + OTP_TTL_SECONDS,
-        'attempts': 0,
-    }
+    otp = _issue_otp(user)
     log_audit('PASSWORD_RESET_REQUESTED', 'PasswordReset', user.login_id,
               user_id=user.id, username=user.username, detail='Password reset OTP requested')
     db.session.commit()
 
-    # Render the reset email and deliver via SMTP when configured.
-    try:
-        html_body = render_template(
-            'emails/password_reset.html',
-            name=user.name or user.username,
-            username=user.login_id,
-            otp=otp,
-            expiry_minutes=OTP_TTL_SECONDS // 60,
-        )
-        from backend.mailer import send_email, is_email_configured
-        if user.email and is_email_configured():
-            sent, reason = send_email(
-                user.email, 'Password Reset OTP - Shree Milk Bank', html_body)
-            current_app.logger.info(
-                'Password reset email for %s: %s',
-                user.login_id, 'sent' if sent else f'skipped ({reason})')
-        else:
-            current_app.logger.info(
-                'Password reset email prepared for %s (%d chars) — SMTP not configured, delivery skipped',
-                user.login_id, len(html_body))
-    except Exception as exc:  # never break the OTP flow if the template fails
-        current_app.logger.warning('Could not render password reset email: %s', exc)
+    # ── Delivery, in priority order: real email → mobile SMS ───────────────
+    # The same generic message is returned regardless of whether a channel
+    # could be used, and OTP values are never written to logs.
+    delivered = False
 
-    # DEV: return the OTP in the response until real SMS/email delivery is
-    # configured. NEVER returned in production (DEV_LOGIN_ENABLED off).
+    # 1) Email — only when SMTP is configured and the address looks usable.
+    email = (user.email or '').strip()
+    if email:
+        try:
+            html_body = render_template(
+                'emails/password_reset.html',
+                name=user.name or user.username,
+                username=user.login_id,
+                otp=otp,
+                expiry_minutes=OTP_TTL_SECONDS // 60,
+            )
+            from backend.mailer import send_email, is_email_configured
+            if is_email_configured():
+                sent, reason = send_email(
+                    email, 'Password Reset OTP - Shree Milk Bank', html_body)
+                if sent:
+                    delivered = True
+                    current_app.logger.info('Password reset email sent to %s', user.login_id)
+                else:
+                    current_app.logger.info(
+                        'Password reset email skipped for %s: %s', user.login_id, reason)
+            else:
+                current_app.logger.info(
+                    'Password reset email prepared for %s — SMTP not configured, delivery skipped',
+                    user.login_id)
+        except Exception as exc:  # never break the OTP flow if the template fails
+            current_app.logger.warning('Could not render password reset email: %s', exc)
+
+    # 2) SMS — when a provider is configured and the user has a mobile number.
+    if not delivered:
+        mobile = (user.phone or '').strip() or (
+            user.farmer.mobile if getattr(user, 'farmer', None) else '')
+        if mobile:
+            try:
+                from backend.sms import is_sms_configured, send_sms
+                if is_sms_configured():
+                    ok, reason = send_sms(
+                        mobile,
+                        f'Your Shree Milk Bank password reset OTP is {otp}. '
+                        f'It expires in {OTP_TTL_SECONDS // 60} minutes.',
+                        notification_type='OTP', related_type='PasswordReset',
+                        related_id=user.id)
+                    if ok:
+                        delivered = True
+                    else:
+                        current_app.logger.info(
+                            'Password reset SMS skipped for %s: %s', user.login_id, reason)
+                else:
+                    current_app.logger.info(
+                        'Password reset SMS prepared for %s — SMS provider not configured',
+                        user.login_id)
+            except Exception as exc:
+                current_app.logger.warning('Password reset SMS failed: %s', exc)
+
+    # DEV: return the OTP in the response so local/demo flows stay usable.
+    # NEVER returned in production (DEV_LOGIN_ENABLED is always off there).
     is_dev = current_app.config.get('DEV_LOGIN_ENABLED', False)
-    response = {'message': 'If the account is registered and has a valid email address, password reset instructions have been sent.'}
+    response = {'message': 'If the account is registered and has a valid email address or mobile number, password reset instructions have been sent.'}
     if is_dev:
         response['dev_otp'] = otp
     return jsonify(response)
@@ -374,18 +426,30 @@ def reset_password():
     if not user:
         return jsonify({'error': 'Account not found.'}), 404
 
-    # OTP is single-use — but a wrong guess does NOT consume it; it only
-    # burns an attempt so a single mistake can't DoS the reset flow.
-    entry = OTP_STORE.get(user.login_id)
-    if not entry or entry['expires'] < time.time():
-        OTP_STORE.pop(user.login_id, None)
+    # Persistent, database-backed OTP: survives restarts and multi-worker
+    # deployments (the token lives in the shared DB, not in process memory).
+    # The most recent unused token wins; a wrong guess burns an attempt but
+    # does NOT consume the token; a successful reset invalidates every other
+    # outstanding token for this user.
+    now = utcnow()
+    tokens = PasswordResetOTP.query.filter_by(
+        user_id=user.id, purpose='PASSWORD_RESET', used_at=None,
+    ).order_by(PasswordResetOTP.id.desc()).all()
+    token = next((t for t in tokens if ensure_utc(t.expires_at) > now), None)
+    if not token:
         return jsonify({'error': 'Invalid or expired OTP. Request a new one.'}), 400
-    if hashlib.sha256(otp.encode('utf-8')).hexdigest() != entry['hash']:
-        entry['attempts'] = entry.get('attempts', 0) + 1
-        if entry['attempts'] >= 5:
-            OTP_STORE.pop(user.login_id, None)  # exhausted after repeated failures
+    if (token.attempt_count or 0) >= (token.max_attempts or 5):
+        return jsonify({'error': 'Invalid or expired OTP. Request a new one.'}), 400
+    if token.otp_hash != _hash_otp(otp):
+        token.attempt_count = (token.attempt_count or 0) + 1
+        db.session.commit()
         return jsonify({'error': 'Invalid OTP.'}), 400
-    OTP_STORE.pop(user.login_id, None)  # consumed on success
+    token.used_at = now
+    token.attempt_count = (token.attempt_count or 0) + 1
+    # Superseded/old OTPs become invalid as soon as one reset succeeds.
+    for t in tokens:
+        if t.id != token.id and t.used_at is None:
+            t.used_at = now
 
     # Enforce the configured password policy (spec §21).
     policy_errors = validate_password_policy(new_password)
@@ -393,7 +457,7 @@ def reset_password():
         return jsonify({'error': ' '.join(policy_errors)}), 400
 
     user.password_hash = hash_password(new_password)
-    user.password_changed_at = datetime.utcnow()
+    user.password_changed_at = utcnow()
     user.must_change_password = False
     user.failed_attempts = 0
     user.locked_until = None

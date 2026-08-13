@@ -36,10 +36,14 @@
                 <button class="tab-btn">Phone</button>
                 <button class="tab-btn">Name</button>
               </div>
-              <div class="input-group" style="margin-bottom:var(--space-3);">
+              <div class="input-group" style="margin-bottom:var(--space-2);">
                 <span class="input-icon"><i data-lucide="search"></i></span>
                 <input type="text" class="input-premium input-with-icon" id="farmer-search-input" placeholder="Scan QR or enter code...">
               </div>
+              <button type="button" class="btn btn-secondary w-full" id="btn-open-scanner" style="margin-bottom:var(--space-3);">
+                <i data-lucide="scan-line" style="width:16px;height:16px;"></i>
+                Scan Farmer QR (Camera)
+              </button>
               <div id="farmer-suggestions"></div>
 
               <div id="current-farmer" style="margin-bottom:var(--space-3);">
@@ -91,27 +95,27 @@
                 </div>
                 <div class="analyzer-field">
                   <label>CLR</label>
-                  <input type="number" class="input-premium" placeholder="0.0" step="0.5">
+                  <input type="number" class="input-premium" id="collection-clr" placeholder="0.0" step="0.5">
                 </div>
                 <div class="analyzer-field">
                   <label>Temperature °C</label>
-                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                  <input type="number" class="input-premium" id="collection-temperature" placeholder="0.0" step="0.1">
                 </div>
                 <div class="analyzer-field">
                   <label>Density</label>
-                  <input type="number" class="input-premium" placeholder="0.000">
+                  <input type="number" class="input-premium" id="collection-density" placeholder="0.000" step="0.001">
                 </div>
                 <div class="analyzer-field">
                   <label>Water %</label>
-                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                  <input type="number" class="input-premium" id="collection-water" placeholder="0.0" step="0.1">
                 </div>
                 <div class="analyzer-field">
                   <label>Protein %</label>
-                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                  <input type="number" class="input-premium" id="collection-protein" placeholder="0.0" step="0.1">
                 </div>
                 <div class="analyzer-field">
                   <label>Lactose %</label>
-                  <input type="number" class="input-premium" placeholder="0.0" step="0.1">
+                  <input type="number" class="input-premium" id="collection-lactose" placeholder="0.0" step="0.1">
                 </div>
               </div>
 
@@ -198,7 +202,7 @@
             </table>
           </div>
           <div class="table-footer">
-            <div class="table-info">Showing 4 of 124 entries</div>
+            <div class="table-info" id="collections-info"></div>
             <div class="pagination">
               <button class="page-btn prev-btn" disabled><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>
               <button class="page-btn active">1</button>
@@ -207,6 +211,30 @@
               <span class="page-ellipsis">...</span>
               <button class="page-btn">12</button>
               <button class="page-btn next-btn"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- QR Scanner Modal -->
+        <div class="modal" id="modal-qr-scanner">
+          <div class="modal-backdrop"></div>
+          <div class="modal-content" style="max-width:480px;">
+            <div class="modal-header">
+              <h5><i data-lucide="scan-line" style="width:16px;height:16px;"></i> Scan Farmer QR</h5>
+              <button class="modal-close" onclick="stopQrScanner()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+              <p class="modal-subtitle" style="font-size:var(--text-sm);color:var(--ink-secondary);margin-bottom:var(--space-3);">
+                Point the camera at the farmer's QR card. The farmer is loaded automatically.
+              </p>
+              <div id="qr-scanner-view" style="position:relative;border-radius:var(--radius-lg);overflow:hidden;background:#000;">
+                <video id="qr-video" playsinline muted style="width:100%;height:280px;object-fit:cover;transform:scaleX(-1);"></video>
+                <div id="qr-scan-frame" style="position:absolute;inset:18%;border:2px solid rgba(255,255,255,0.85);border-radius:var(--radius-md);box-shadow:0 0 0 9999px rgba(0,0,0,0.35);pointer-events:none;"></div>
+              </div>
+              <p id="qr-scanner-status" style="font-size:var(--text-sm);color:var(--ink-muted);margin-top:var(--space-3);text-align:center;">Starting camera…</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary w-full" onclick="stopQrScanner()"><i data-lucide="x" style="width:16px;height:16px;"></i> Close Scanner</button>
             </div>
           </div>
         </div>

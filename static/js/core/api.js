@@ -171,6 +171,19 @@ const API = {
     return this.post('/api/collections', data);
   },
 
+  // ── Farmer QR ──
+  getFarmerQr(code) {
+    return this.get(`/api/farmers/${encodeURIComponent(code)}/qr`);
+  },
+
+  regenerateFarmerQr(code) {
+    return this.post(`/api/farmers/${encodeURIComponent(code)}/qr`);
+  },
+
+  qrLookup(payload) {
+    return this.get(`/api/farmers/qr-lookup?payload=${encodeURIComponent(payload)}`);
+  },
+
   // ── Payments ──
   getPayments(params = {}) {
     const query = new URLSearchParams(params).toString();

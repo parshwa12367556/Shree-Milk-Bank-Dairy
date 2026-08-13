@@ -17,6 +17,7 @@ from flask_jwt_extended import jwt_required
 from backend.auth import role_required, get_identity
 from backend.audit import log_audit
 from backend.app import db
+from backend.utils import utcnow
 
 BACKUP_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backups')
 os.makedirs(BACKUP_DIR, exist_ok=True)
@@ -75,12 +76,23 @@ def _list_backups():
 @role_required('ADMIN')
 def get_settings():
     """Get system settings."""
+    # Capabilities reflect what can ACTUALLY be delivered right now, so the
+    # UI never shows an "enabled" toggle for a provider that is not wired.
+    capabilities = {
+        'email': bool((_system_settings.get('email_smtp_host') or '').strip()),
+        'sms': bool((_system_settings.get('sms_provider') or '').strip()
+                    and (_system_settings.get('sms_api_url') or '').strip()),
+        # No WhatsApp Business provider is integrated yet — the toggle stays
+        # disabled/hidden until one is configured.
+        'whatsapp': False,
+    }
     return jsonify({
         'settings': {
             **_system_settings,
             'api_key_preview': _api_key[:10] + '••••••••••••••••' + _api_key[-6:],
             'backup_history': _list_backups()[:5],
-        }
+        },
+        'capabilities': capabilities,
     })
 
 
@@ -121,11 +133,11 @@ def update_settings():
 def create_backup():
     """Create a system backup (snapshot of the SQLite database + settings)."""
     from config import Config
-    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    timestamp = utcnow().strftime('%Y%m%d_%H%M%S')
     db_path = Config.SQLALCHEMY_DATABASE_URI.replace('sqlite:///', '')
     backup_data = {
         'id': timestamp,
-        'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+        'timestamp': utcnow().strftime('%Y-%m-%d %H:%M:%S'),
         'status': 'completed',
         'settings': _system_settings,
     }
@@ -202,7 +214,7 @@ def restore_backup(filename):
 
     db_path = Config.SQLALCHEMY_DATABASE_URI.replace('sqlite:///', '')
     # Safety copy of the current DB before overwriting
-    safety = os.path.join(BACKUP_DIR, 'pre_restore_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S') + '.db')
+    safety = os.path.join(BACKUP_DIR, 'pre_restore_' + utcnow().strftime('%Y%m%d_%H%M%S') + '.db')
     if os.path.exists(db_path):
         shutil.copy2(db_path, safety)
 

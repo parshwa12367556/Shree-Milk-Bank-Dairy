@@ -24,8 +24,8 @@ def _env_bool(name, default='0'):
 
 class Config:
     """Base configuration."""
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-me')
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'dev-jwt-secret-change-me')
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-shree-milk-bank-secure-change-me-32bytes-min')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'dev-jwt-secret-shree-milk-bank-secure-key-32bytes-minimum-length-2026')
     JWT_ACCESS_TOKEN_EXPIRES = 24 * 60 * 60  # 24 hours
 
     # Database (SQLite by default; set DATABASE_URL for PostgreSQL in production)
@@ -90,10 +90,18 @@ def validate_production():
     Called by create_app() only when FLASK_ENV=production, so development and
     test runs never trip over missing environment variables.
     """
-    if not os.getenv('SECRET_KEY'):
+    secret_key = os.getenv('SECRET_KEY')
+    if not secret_key:
         raise RuntimeError('SECRET_KEY must be set in production. See .env.example.')
-    if not os.getenv('JWT_SECRET_KEY'):
+    if len(secret_key) < 32:
+        raise RuntimeError('SECRET_KEY must be at least 32 characters long in production for cryptographic safety.')
+
+    jwt_secret = os.getenv('JWT_SECRET_KEY')
+    if not jwt_secret:
         raise RuntimeError('JWT_SECRET_KEY must be set in production. See .env.example.')
+    if len(jwt_secret) < 32:
+        raise RuntimeError('JWT_SECRET_KEY must be at least 32 characters long in production for HMAC SHA256 safety.')
+
     if os.getenv('DATABASE_URL', '').startswith('sqlite'):
         import warnings
         warnings.warn(

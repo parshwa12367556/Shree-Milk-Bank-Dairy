@@ -6,6 +6,8 @@
  * ============================================================
  */
 
+let _liveRates = { COW: { fat: 5.0, snf: 2.5 }, BUFFALO: { fat: 5.0, snf: 2.5 } };
+
 window.initCollection = function() {
   console.log('Collection page initialized');
   autoDetectShift();
@@ -15,7 +17,30 @@ window.initCollection = function() {
   initQuantityPills();
   initFarmerSearch();
   initCollectionForm();
+  initQrScanner();
+  loadLiveRates();
 };
+
+/** Fetch the ACTIVE rate card from the backend so the live price preview is real. */
+async function loadLiveRates() {
+  try {
+    const result = await API.getPricing();
+    const current = (result && (result.current || result.currentRates)) || {};
+    const pick = (r) => ({
+      fat: parseFloat((r && (r.fatRate ?? r.ratePerFat)) || 0) || 0,
+      snf: parseFloat((r && (r.snfRate ?? r.ratePerSnf)) || 0) || 0,
+    });
+    if (current.COW) _liveRates.COW = pick(current.COW);
+    if (current.BUFFALO) _liveRates.BUFFALO = pick(current.BUFFALO);
+  } catch (err) {
+    console.warn('Could not load live rates — using fallback values:', err);
+  }
+}
+
+function _rateFor(farmer) {
+  const type = (farmer && farmer.milkType) || 'COW';
+  return _liveRates[type] || _liveRates.COW;
+}
 
 function autoDetectShift() {
   const hour = new Date().getHours();
@@ -133,9 +158,8 @@ function calculateCollectionAmount() {
   const qty = parseFloat(document.getElementById('collection-qty')?.value) || 0;
   const fat = parseFloat(document.getElementById('collection-fat')?.value) || 0;
   const snf = parseFloat(document.getElementById('collection-snf')?.value) || 0;
-  const fatRate = 5.0;
-  const snfRate = 2.5;
-  const result = computePrice(fat, snf, qty, fatRate, snfRate);
+  const rates = _rateFor(_selectedCollectionFarmer);
+  const result = computePrice(fat, snf, qty, rates.fat, rates.snf);
   document.getElementById('rate-per-liter').textContent = fmtINR(result.ratePerLiter);
   document.getElementById('total-amount').textContent = fmtINR(result.amount);
   document.getElementById('calc-fat').textContent = `${fat.toFixed(1)}%`;
@@ -163,7 +187,7 @@ function initFarmerSearch() {
           </div>
         `).join('');
       } else {
-        container.innerHTML = `<div class="card" style="margin-top:var(--space-2);padding:var(--space-3);text-align:center;color:var(--ink-muted);font-size:var(--text-sm);">No farmers found matching "${query}"</div>`;
+        container.innerHTML = `<div class="card" style="margin-top:var(--space-2);padding:var(--space-3);text-align:center;color:var(--ink-muted);font-size:var(--text-sm);">No farmers found matching "${escapeHtml(query)}"</div>`;
       }
     } catch (err) {
       container.innerHTML = `<div class="card" style="margin-top:var(--space-2);padding:var(--space-3);text-align:center;color:var(--ink-muted);font-size:var(--text-sm);">Search error. Try again.</div>`;
@@ -188,16 +212,24 @@ function initCollectionForm() {
 
     const fat = parseFloat(document.getElementById('collection-fat')?.value) || 0;
     const snf = parseFloat(document.getElementById('collection-snf')?.value) || 0;
+    const num = (id) => { const v = document.getElementById(id)?.value; return v !== undefined && v !== '' ? parseFloat(v) : undefined; };
 
     try {
       await API.createCollection({
-        farmer_id: _selectedCollectionFarmer.id,
+        farmerId: _selectedCollectionFarmer.id,
         quantity: qty,
         fat: fat,
         snf: snf,
-        shift: getCurrentShift(),
-        branch_id: _selectedCollectionFarmer.branchId || 1,
-        milk_type: _selectedCollectionFarmer.milkType || 'COW',
+        shift: _currentShift(),
+        clr: num('collection-clr'),
+        temperature: num('collection-temperature'),
+        density: num('collection-density'),
+        water: num('collection-water'),
+        protein: num('collection-protein'),
+        lactose: num('collection-lactose'),
+        remarks: document.querySelector('#page-collection textarea')?.value || '',
+        // Idempotency key makes the save safe to retry on network hiccups.
+        idempotencyKey: `ui-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       });
       Modal.toast({ title: 'Success', message: `Collection of ${qty}L recorded for ${_selectedCollectionFarmer.name}`, type: 'success' });
       _selectedCollectionFarmer = null;
@@ -211,3 +243,136 @@ function initCollectionForm() {
     }
   });
 }
+
+// ══════════════════════════════════════════════════════════════════
+// QR SCANNER (camera) — identifies a farmer from a signed QR payload
+// ══════════════════════════════════════════════════════════════════
+let _qrStream = null;
+let _qrRaf = null;
+let _qrLastResult = '';
+
+function loadJsQR() {
+  return new Promise((resolve) => {
+    if (window.jsQR) return resolve(true);
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+}
+
+function initQrScanner() {
+  const btn = document.getElementById('btn-open-scanner');
+  if (btn && !btn.hasAttribute('data-listener')) {
+    btn.setAttribute('data-listener', 'true');
+    btn.addEventListener('click', openQrScanner);
+  }
+}
+
+async function openQrScanner() {
+  if (!document.getElementById('modal-qr-scanner')) {
+    Modal.toast({ title: 'QR Scanner', message: 'Scanner is not available on this page.', type: 'error' });
+    return;
+  }
+  const status = document.getElementById('qr-scanner-status');
+  if (status) status.textContent = 'Loading scanner library…';
+
+  const loaded = await loadJsQR();
+  if (!loaded) {
+    if (status) status.textContent = 'Scanner library could not be loaded — check connectivity.';
+    Modal.toast({ title: 'QR Scanner', message: 'The scanner library could not be loaded. Use code/name search instead.', type: 'error' });
+    return;
+  }
+
+  Modal.open('modal-qr-scanner');
+  if (status) status.textContent = 'Requesting camera access…';
+
+  try {
+    _qrStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+      audio: false,
+    });
+    const video = document.getElementById('qr-video');
+    video.srcObject = _qrStream;
+    await video.play();
+    if (status) status.textContent = 'Scanning — point at the farmer QR card.';
+    _qrLastResult = '';
+    _qrScanLoop();
+  } catch (err) {
+    stopQrScanner();
+    if (status) status.textContent = 'Camera unavailable or permission denied.';
+    Modal.toast({
+      title: 'Camera Error',
+      message: 'Could not start the camera. Grant camera permission or use code/name search instead.',
+      type: 'error',
+    });
+  }
+}
+
+function _qrScanLoop() {
+  const video = document.getElementById('qr-video');
+  if (!video || !video.videoWidth) {
+    _qrRaf = requestAnimationFrame(_qrScanLoop);
+    return;
+  }
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: 'dontInvert',
+    });
+    if (code && code.data && code.data !== _qrLastResult) {
+      _qrLastResult = code.data;
+      _handleScannedQr(code.data);
+      return; // stop the loop — the handler either selects a farmer or the user re-opens
+    }
+  } catch (err) {
+    /* a single bad frame must not kill the scanner */
+  }
+  _qrRaf = requestAnimationFrame(_qrScanLoop);
+}
+
+async function _handleScannedQr(payload) {
+  stopQrScanner();
+  try {
+    const result = await API.qrLookup(payload);
+    const farmer = result.farmer;
+    if (!farmer) throw new Error('Farmer not found for this QR code.');
+    if (['INACTIVE', 'BLOCKED', 'REJECTED'].includes((farmer.status || '').toUpperCase())) {
+      Modal.toast({
+        title: 'Farmer Not Collectable',
+        message: `${farmer.name} (${farmer.farmerCode}) is ${farmer.status}. Contact Head Office.`,
+        type: 'warning',
+      });
+      return;
+    }
+    selectFarmer(farmer);
+    Modal.toast({
+      title: 'Farmer Selected',
+      message: `${farmer.name} (${farmer.farmerCode}) loaded from QR.`,
+      type: 'success',
+    });
+  } catch (err) {
+    Modal.toast({ title: 'Invalid QR', message: err.message || 'Could not resolve this QR code.', type: 'error' });
+  }
+}
+
+function stopQrScanner() {
+  if (_qrRaf) { cancelAnimationFrame(_qrRaf); _qrRaf = null; }
+  if (_qrStream) {
+    _qrStream.getTracks().forEach((t) => t.stop());
+    _qrStream = null;
+  }
+  const video = document.getElementById('qr-video');
+  if (video) video.srcObject = null;
+  _qrLastResult = '';
+  if (document.getElementById('modal-qr-scanner')) Modal.close('modal-qr-scanner');
+}
+
+window.openQrScanner = openQrScanner;
+window.stopQrScanner = stopQrScanner;

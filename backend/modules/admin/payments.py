@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from backend.app import db
 from backend.models import Payment, Collection, Farmer, User
 from backend.auth import can_pay, get_identity, reject_farmer
-from backend.utils import generate_pay_code
+from backend.utils import generate_pay_code, utcnow
 from backend.audit import log_audit
 from backend.notify import notify
 from backend.services import payment_service, ledger_service
@@ -65,7 +65,7 @@ def get_payments():
     if user.get('role') not in ('ADMIN',) and user_branch_id:
         summary_query = summary_query.filter_by(branch_id=user_branch_id)
 
-    now = datetime.utcnow()
+    now = utcnow()
     month_start = datetime(now.year, now.month, 1)
 
     paid_this_month = summary_query.filter(
@@ -236,19 +236,25 @@ def update_payment(payment_id):
     if err:
         return jsonify({'error': err}), 400
 
+    outbound = None
     if new_status == 'PAID':
         notify('payment', 'Payment Paid',
                f'₹{payment.total_amount} transferred to {payment.farmer.name if payment.farmer else "farmer"} ({payment.pay_code}). Ref: {payment.reference}',
                link='payments')
-        # Farmer-specific notification + email (best-effort, never blocks)
-        _notify_farmer_payment(payment, paid=True)
+        # Farmer-specific in-app notification (same transaction)
+        outbound = _notify_farmer_payment(payment, paid=True)
     elif new_status == 'APPROVED':
         notify('payment', 'Payment Approved',
                f'Payment {payment.pay_code} of ₹{payment.total_amount} approved.',
                link='payments')
-        _notify_farmer_payment(payment, paid=False)
+        outbound = _notify_farmer_payment(payment, paid=False)
 
     db.session.commit()
+
+    # Outbound channels (email/SMS) run strictly AFTER the commit — a
+    # gateway failure can never roll back or block the payment transition.
+    if outbound:
+        _dispatch_farmer_payment_outbound(payment, outbound)
 
     return jsonify({
         'payment': payment.to_dict(),
@@ -257,13 +263,13 @@ def update_payment(payment_id):
 
 
 def _notify_farmer_payment(payment, paid=False):
-    """In-app notification + email to the farmer for payment events."""
+    """In-app notification to the farmer (committed with the payment)."""
     farmer = payment.farmer if payment else None
     if not farmer:
-        return
+        return None
     acct = User.query.filter_by(farmer_id=farmer.id, role='FARMER').first()
     if not acct:
-        return
+        return None
     title = 'Payment Received' if paid else 'Payment Approved'
     message = (
         f'₹{payment.total_amount:,.2f} has been credited for period '
@@ -274,6 +280,16 @@ def _notify_farmer_payment(payment, paid=False):
     notify('payment', title, message, link='/farmer/payment-history',
            user_id=acct.id, farmer_id=farmer.id,
            related_type='Payment', related_id=payment.id)
+    return {'farmer': farmer, 'paid': paid}
+
+
+def _dispatch_farmer_payment_outbound(payment, outbound):
+    """Post-commit, best-effort email + SMS for a farmer payment event."""
+    farmer = outbound.get('farmer')
+    paid = outbound.get('paid')
+    if not farmer:
+        return
+    # Email
     try:
         from backend.mailer import send_payment_email
         sent, reason = send_payment_email(payment)
@@ -281,3 +297,19 @@ def _notify_farmer_payment(payment, paid=False):
             current_app.logger.info('Payment email to %s skipped: %s', farmer.email, reason)
     except Exception as exc:  # email must never break the payment flow
         current_app.logger.warning('Payment email failed: %s', exc)
+    # SMS
+    try:
+        from backend.sms import is_sms_configured, send_sms_async
+        if is_sms_configured() and farmer.notification_sms:
+            mobile = (farmer.mobile or '').strip()
+            if mobile:
+                verb = 'credited' if paid else 'approved'
+                send_sms_async(
+                    mobile,
+                    f'Shree Milk Bank: payment {payment.pay_code} of '
+                    f'₹{payment.total_amount:,.2f} has been {verb} '
+                    f'({payment.period_start} to {payment.period_end}).',
+                    notification_type='PAYMENT', related_type='Payment',
+                    related_id=payment.id)
+    except Exception as exc:  # SMS must never break the payment flow
+        current_app.logger.warning('Payment SMS failed: %s', exc)
