@@ -49,7 +49,7 @@ def gated(path, label):
 results = []
 
 # ── Branch Operator pages → SPA shell with branch containers ──
-auth('BRANCH_OPERATOR', 'BR01', branch_id=1)
+auth('BRANCH_MANAGER', 'BR01', branch_id=1)
 results.append(check('/branch/dashboard', [SPA_MARKER, 'id="page-dashboard"'], 'branch dashboard'))
 results.append(check('/branch/collection/morning', [SPA_MARKER, 'id="page-collection"'], 'morning collection'))
 results.append(check('/branch/collection/evening', [SPA_MARKER, 'id="page-collection"'], 'evening collection'))

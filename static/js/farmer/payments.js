@@ -14,7 +14,7 @@ function _payParams() {
   };
 }
 
-function _payStatusBadge(status) {
+function _paymentsPayStatusBadge(status) {
   const map = { PAID: 'tag-green', APPROVED: 'tag-blue', PENDING: 'tag-gold' };
   return `<span class="tag ${map[status] || 'tag-neutral'}" style="font-size:10px;">${status ? status.charAt(0) + status.slice(1).toLowerCase() : '—'}</span>`;
 }
@@ -71,7 +71,7 @@ async function loadFarmerPayments() {
           <td>${fmtNum(p.totalQuantity, 2)} L</td>
           ${isStatusPage ? '' : `<td>${p.collectionCount || 0}</td>`}
           <td style="font-weight:600;">${fmtINR(p.totalAmount)}</td>
-          <td>${_payStatusBadge(p.status)}</td>
+          <td>${_paymentsPayStatusBadge(p.status)}</td>
           <td>${p.reference ? '<span class="font-mono" style="font-size:var(--text-xs);">' + p.reference + '</span>' : '—'}</td>
           <td>${p.paidAt ? fmtDate(p.paidAt) : '—'}</td>
         </tr>`).join('');

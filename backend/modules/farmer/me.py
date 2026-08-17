@@ -180,7 +180,7 @@ def update_my_profile():
     """Update permitted personal fields of the authenticated farmer.
 
     Immutable fields (farmer ID, branch, milk type, status, role) are never
-    accepted — they can only be changed by ADMIN / BRANCH_OPERATOR.
+    accepted — they can only be changed by ADMIN / BRANCH_MANAGER.
     """
     farmer, user, err, status = _auth_farmer()
     if err:
@@ -890,4 +890,3 @@ def update_my_settings():
                         'notificationWhatsapp': bool(farmer.notification_whatsapp),
                         'notificationEmail': bool(farmer.notification_email),
                     }})
-

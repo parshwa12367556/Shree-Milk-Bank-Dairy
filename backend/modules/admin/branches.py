@@ -60,14 +60,14 @@ def create_branch():
     if User.query.filter_by(username=code).first():
         return jsonify({'error': 'Branch code conflicts with an existing login username. Choose a different code.'}), 409
 
-    # Generate the Branch Operator Login ID (spec §3): {BRANCH_CODE}OP{serial}
-    existing_ops = User.query.filter(User.role == 'BRANCH_OPERATOR',
+    # Generate the Branch Manager Login ID: {BRANCH_CODE}MG{serial}
+    existing_ops = User.query.filter(User.role == 'BRANCH_MANAGER',
                                      User.username.like(f'{code}%')).count()
-    login_id = generate_login_id('BRANCH_OPERATOR', branch_code=code,
+    login_id = generate_login_id('BRANCH_MANAGER', branch_code=code,
                                  existing_count=existing_ops)
     while User.query.filter_by(login_id=login_id).first():
         existing_ops += 1
-        login_id = generate_login_id('BRANCH_OPERATOR', branch_code=code,
+        login_id = generate_login_id('BRANCH_MANAGER', branch_code=code,
                                      existing_count=existing_ops)
 
     branch = Branch(
@@ -84,7 +84,7 @@ def create_branch():
     db.session.add(branch)
     db.session.flush()
 
-    # Auto-create the branch login: login_id = {code}OP{serial} (e.g. BR01OP001),
+    # Auto-create the branch login: login_id = {code}MG{serial} (e.g. BR01MG001),
     # password = branch phone; first login forces a password change.
     if not User.query.filter_by(username=code).first():
         branch_user = User(
@@ -92,7 +92,7 @@ def create_branch():
             username=code,
             password_hash=hash_password(phone),
             name=data.get('managerName', '') or f'{name} Manager',
-            role='BRANCH_OPERATOR',
+            role='BRANCH_MANAGER',
             branch_id=branch.id,
             phone=phone,
             status='ACTIVE',
@@ -151,11 +151,11 @@ def update_branch(branch_id):
             if User.query.filter(User.username == branch.code, User.id != branch_user.id).first():
                 return jsonify({'error': 'Branch login username already in use'}), 409
             branch_user.username = branch.code
-            # Reflect the branch code change in the Login ID too (BR01OP001 → BR02OP001)
-            if branch_user.login_id and branch_user.login_id.endswith('OP') is False:
-                _parts = branch_user.login_id.rsplit('OP', 1)
+            # Reflect the branch code change in the Login ID too (BR01MG001 → BR02MG001).
+            if branch_user.login_id and branch_user.login_id.endswith('MG') is False:
+                _parts = branch_user.login_id.rsplit('MG', 1)
                 if len(_parts) == 2:
-                    branch_user.login_id = f'{branch.code}OP{_parts[1]}'
+                    branch_user.login_id = f'{branch.code}MG{_parts[1]}'
         if branch.phone and branch.phone != old_phone:
             branch_user.password_hash = hash_password(branch.phone)
             branch_user.phone = branch.phone
@@ -178,20 +178,20 @@ def reset_branch_password(branch_id):
 
     branch_user = User.query.filter_by(username=branch.code).first()
     if not branch_user:
-        existing_ops = User.query.filter(User.role == 'BRANCH_OPERATOR',
+        existing_ops = User.query.filter(User.role == 'BRANCH_MANAGER',
                                          User.username.like(f'{branch.code}%')).count()
-        login_id = generate_login_id('BRANCH_OPERATOR', branch_code=branch.code,
+        login_id = generate_login_id('BRANCH_MANAGER', branch_code=branch.code,
                                      existing_count=existing_ops)
         while User.query.filter_by(login_id=login_id).first():
             existing_ops += 1
-            login_id = generate_login_id('BRANCH_OPERATOR', branch_code=branch.code,
+            login_id = generate_login_id('BRANCH_MANAGER', branch_code=branch.code,
                                          existing_count=existing_ops)
         branch_user = User(
             login_id=login_id,
             username=branch.code,
             password_hash=hash_password(branch.phone),
             name=branch.manager_name or f'{branch.name} Manager',
-            role='BRANCH_OPERATOR',
+            role='BRANCH_MANAGER',
             branch_id=branch.id,
             phone=branch.phone,
             status='ACTIVE',
@@ -228,7 +228,7 @@ def delete_branch(branch_id):
     # branch can reuse it later; the renamed row is never shown.
     branch.code = f"{branch.code}-DEL-{branch.id}"
     # Deactivate the auto-created branch login so it can no longer sign in
-    branch_user = User.query.filter_by(branch_id=branch.id, role='BRANCH_OPERATOR').first()
+    branch_user = User.query.filter_by(branch_id=branch.id, role='BRANCH_MANAGER').first()
     if branch_user:
         branch_user.status = 'INACTIVE'
     log_audit('DELETE', 'Branch', branch.code, detail=f'Branch {branch.name} deleted')

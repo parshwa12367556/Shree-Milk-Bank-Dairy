@@ -17,7 +17,7 @@
       <input type="text" placeholder="Search menu..." onkeyup="filterSidebar(this.value)">
     </div>
 
-    <nav class="sidebar-nav" id="sidebar-nav" data-role="ADMIN,BRANCH_OPERATOR">
+    <nav class="sidebar-nav" id="sidebar-nav" data-role="ADMIN,BRANCH_MANAGER">
       <!-- Dashboard -->
       <a class="nav-item active" data-route="dashboard" onclick="Router.navigate('dashboard')">
         <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
@@ -41,7 +41,7 @@
           <span class="nav-icon"><i data-lucide="list"></i></span>
           <span class="nav-label">All Farmers</span>
         </a>
-        <a class="nav-item" data-route="farmer-form" data-role="ADMIN,BRANCH_OPERATOR" onclick="Router.navigate('farmer-form')">
+        <a class="nav-item" data-route="farmer-form" data-role="ADMIN,BRANCH_MANAGER" onclick="Router.navigate('farmer-form')">
           <span class="nav-icon"><i data-lucide="user-plus"></i></span>
           <span class="nav-label">Register Farmer</span>
         </a>

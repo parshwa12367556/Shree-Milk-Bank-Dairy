@@ -20,7 +20,7 @@ window.initFarmerForm = function() {
   } else {
     // Only Branch Managers can register new farmers (architecture spec)
     const user = Auth.getUser();
-    if (!user || !['ADMIN', 'BRANCH_OPERATOR'].includes(user.role)) {
+    if (!user || !['ADMIN', 'BRANCH_MANAGER'].includes(user.role)) {
       const card = document.getElementById('farmer-form-card');
       const notice = document.getElementById('farmer-form-access-notice');
       if (card) card.style.display = 'none';
@@ -127,7 +127,7 @@ function buildFarmerPayload(data) {
 
 /**
  * Branch select handling.
- * BRANCH_OPERATOR: locked to their own assigned branch.
+ * BRANCH_MANAGER: locked to their own assigned branch.
  * ADMIN: free to pick any ACTIVE branch (spec 5.3 — Admin selects the branch).
  */
 function initBranchLock() {

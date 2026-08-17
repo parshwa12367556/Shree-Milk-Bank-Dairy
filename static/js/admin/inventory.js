@@ -14,7 +14,7 @@ window.initInventory = function() {
   loadBranchesForMovement();
 };
 
-function _isGlobalRole() {
+function _inventoryIsGlobalRole() {
   const user = window.Auth ? Auth.getUser() : null;
   return !!user && ['ADMIN'].includes(user.role);
 }
@@ -61,7 +61,7 @@ async function loadInventoryTable() {
       return;
     }
 
-    const isGlobal = _isGlobalRole();
+    const isGlobal = _inventoryIsGlobalRole();
     tbody.innerHTML = items.map((it, idx) => {
       const low = it.status === 'Low Stock';
       const actions = [];

@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * SMART DAIRY ERP — Profile Page (ADMIN / BRANCH_OPERATOR)
+ * SMART DAIRY ERP — Profile Page (ADMIN / BRANCH_MANAGER)
  * Loads the real logged-in user from GET /api/auth/me and
  * wires the profile update + change-password forms.
  * ============================================================
@@ -8,7 +8,7 @@
 
 window.initProfile = function () {
   loadProfile();
-  initProfileForm();
+  initSharedProfileForm();
   initPasswordForm();
 };
 
@@ -23,8 +23,8 @@ async function loadProfile() {
     const branchEl = document.getElementById('profile-branch');
     const lastLoginEl = document.getElementById('profile-last-login');
 
-    const roleMap = { ADMIN: 'Admin', BRANCH_OPERATOR: 'Branch Operator', FARMER: 'Farmer' };
-    const roleClassMap = { ADMIN: 'tag-green', BRANCH_OPERATOR: 'tag-blue', FARMER: 'tag-gold' };
+    const roleMap = { ADMIN: 'Admin', BRANCH_MANAGER: 'Branch Manager', FARMER: 'Farmer' };
+    const roleClassMap = { ADMIN: 'tag-green', BRANCH_MANAGER: 'tag-blue', FARMER: 'tag-gold' };
 
     if (nameEl) nameEl.textContent = user.name || user.username || '—';
     if (avatarEl) avatarEl.textContent = getInitials(user.name || user.username || 'U');
@@ -55,7 +55,7 @@ async function loadProfile() {
   }
 }
 
-function initProfileForm() {
+function initSharedProfileForm() {
   const form = document.getElementById('form-profile-update');
   if (!form || form.hasAttribute('data-listener')) return;
   form.setAttribute('data-listener', 'true');

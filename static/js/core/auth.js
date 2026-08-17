@@ -45,7 +45,7 @@ const Auth = {
    */
   canCollect() {
     const role = this.getRole();
-    return ['ADMIN', 'BRANCH_OPERATOR'].includes(role);
+    return ['ADMIN', 'BRANCH_MANAGER'].includes(role);
   },
 
   /**
@@ -59,11 +59,11 @@ const Auth = {
   },
 
   /**
-   * Check if user is a Branch Operator (registers farmers for own branch)
+   * Check if user is a Branch Manager (registers farmers for own branch)
    * @returns {boolean}
    */
-  isBranchOperator() {
-    return this.getRole() === 'BRANCH_OPERATOR';
+  isBranchManager() {
+    return this.getRole() === 'BRANCH_MANAGER';
   },
 
   /**
@@ -80,9 +80,9 @@ const Auth = {
    * The backend detects the role and returns redirect_url; the frontend
    * never sends (or trusts) a role from the browser.
    */
-  async handleLogin(loginId, password, rememberMe = false) {
+  async handleLogin(loginId, password, rememberMe = false, portalRole = null) {
     try {
-      const result = await API.login(loginId, password, rememberMe);
+      const result = await API.login(loginId, password, rememberMe, portalRole);
       
       // Store token and user
       Storage.setToken(result.token);
@@ -155,9 +155,14 @@ const Auth = {
       const loginId = document.getElementById('login-username')?.value.trim();
       const password = document.getElementById('login-password')?.value;
       const rememberMe = document.getElementById('remember-me')?.checked || false;
+      const portalRole = loginForm.dataset.portalRole || '';
 
+      if (!portalRole) {
+        this._showError('Please select the portal you want to sign in to');
+        return;
+      }
       if (!loginId || !password) {
-        this._showError('Please enter your Login ID and password');
+        this._showError('Please enter your ID and password');
         return;
       }
 
@@ -165,7 +170,7 @@ const Auth = {
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="anim-spin" style="display:inline-flex;width:20px;height:20px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;margin-right:8px;"></span> Signing in...';
 
-      const result = await this.handleLogin(loginId, password, rememberMe);
+      const result = await this.handleLogin(loginId, password, rememberMe, portalRole);
 
       if (!result.success) {
         this._showError(result.error);
@@ -173,6 +178,32 @@ const Auth = {
         submitBtn.innerHTML = '<i data-lucide="log-in"></i> Sign In';
         if (window.lucide) lucide.createIcons();
       }
+    });
+
+    const portals = {
+      ADMIN: { label: 'Administrator', idLabel: 'Admin Login ID', placeholder: 'e.g. ADMIN001', icon: 'shield-check' },
+      BRANCH_MANAGER: { label: 'Branch Manager', idLabel: 'Manager Login ID', placeholder: 'e.g. BR01MG001', icon: 'building-2' },
+      FARMER: { label: 'Farmer', idLabel: 'Farmer Code', placeholder: 'e.g. BR01001', icon: 'tractor' },
+    };
+    document.querySelectorAll('[data-portal-role]').forEach(button => {
+      button.addEventListener('click', () => {
+        const role = button.dataset.portalRole;
+        const portal = portals[role];
+        if (!portal) return;
+        loginForm.dataset.portalRole = role;
+        document.querySelectorAll('[data-portal-role]').forEach(item => {
+          item.classList.toggle('active', item === button);
+          item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
+        });
+        document.getElementById('login-username-label').textContent = portal.idLabel;
+        document.getElementById('login-username').placeholder = portal.placeholder;
+        document.getElementById('login-portal-title').textContent = `${portal.label} Sign In`;
+        document.getElementById('login-portal-description').textContent = `Sign in to your ${portal.label.toLowerCase()} portal.`;
+        const icon = document.getElementById('login-username-icon');
+        if (icon) icon.innerHTML = `<i data-lucide="${portal.icon}"></i>`;
+        if (window.lucide) lucide.createIcons();
+        document.getElementById('login-username')?.focus();
+      });
     });
 
     // Password visibility toggle
@@ -432,7 +463,7 @@ const Auth = {
     userRoleEls.forEach(el => { 
       const roleMap = {
         ADMIN: 'Admin',
-        BRANCH_OPERATOR: 'Branch Operator',
+        BRANCH_MANAGER: 'Branch Manager',
         FARMER: 'Farmer'
       };
       el.textContent = roleMap[user.role] || user.role;

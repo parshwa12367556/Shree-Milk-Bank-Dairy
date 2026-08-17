@@ -86,8 +86,10 @@ const API = {
   },
 
   // ── Auth (common login: Login ID + password; role is detected by the backend) ──
-  login(loginId, password, rememberMe = false) {
-    return this.post('/api/auth/login', { login_id: loginId, password, remember_me: rememberMe });
+  login(loginId, password, rememberMe = false, portalRole = null) {
+    return this.post('/api/auth/login', {
+      login_id: loginId, password, remember_me: rememberMe, portal_role: portalRole,
+    });
   },
 
   logout() {

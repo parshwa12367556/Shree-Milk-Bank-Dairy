@@ -53,7 +53,7 @@ with app.app_context():
 admin_c, br_c, farmer_c = app.test_client(), app.test_client(), app.test_client()
 
 admin_token, _ = login(admin_c, 'admin', 'admin123')
-br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_OPERATOR')
+br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_MANAGER')
 check('logins ok', bool(admin_token and br_token))
 
 # Pick a BR01 ACTIVE farmer

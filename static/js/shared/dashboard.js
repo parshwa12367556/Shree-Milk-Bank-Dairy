@@ -7,7 +7,7 @@
  */
 
 /** Format a number with Indian digit grouping */
-function fmtNum(v) {
+function fmtNumDashboard(v) {
   if (v === null || v === undefined) return '—';
   return Number(v).toLocaleString('en-IN', { maximumFractionDigits: 1 });
 }
@@ -66,18 +66,18 @@ async function loadDashboard(days) {
 /** ── KPI cards ── */
 function renderKPIs(k) {
   const items = [
-    { id: 'kpi-collection', value: k.todayCollection != null ? fmtNum(k.todayCollection) + ' L' : '—', label: 'Today Collection', icon: 'milk' },
+    { id: 'kpi-collection', value: k.todayCollection != null ? fmtNumDashboard(k.todayCollection) + ' L' : '—', label: 'Today Collection', icon: 'milk' },
     { id: 'kpi-revenue', value: k.revenue != null ? fmtINR(k.revenue) : '—', label: 'Revenue', icon: 'indian-rupee' },
-    { id: 'kpi-cow', value: k.todayCow != null ? fmtNum(k.todayCow) + ' L' : '—', label: "Today Cow Milk", icon: 'milk' },
-    { id: 'kpi-buffalo', value: k.todayBuffalo != null ? fmtNum(k.todayBuffalo) + ' L' : '—', label: 'Today Buffalo Milk', icon: 'beaker' },
-    { id: 'kpi-mixed', value: k.todayMixed != null ? fmtNum(k.todayMixed) + ' L' : '—', label: 'Today Mixed Milk', icon: 'droplets' },
+    { id: 'kpi-cow', value: k.todayCow != null ? fmtNumDashboard(k.todayCow) + ' L' : '—', label: "Today Cow Milk", icon: 'milk' },
+    { id: 'kpi-buffalo', value: k.todayBuffalo != null ? fmtNumDashboard(k.todayBuffalo) + ' L' : '—', label: 'Today Buffalo Milk', icon: 'beaker' },
+    { id: 'kpi-mixed', value: k.todayMixed != null ? fmtNumDashboard(k.todayMixed) + ' L' : '—', label: 'Today Mixed Milk', icon: 'droplets' },
     { id: 'kpi-farmers', value: k.activeFarmers != null ? String(k.activeFarmers) : '—', label: 'Active Farmers', icon: 'users' },
     { id: 'kpi-fat', value: k.avgFat != null ? String(k.avgFat) + '%' : '—', label: 'Avg Fat', icon: 'droplets' },
     { id: 'kpi-snf', value: k.avgSnf != null ? String(k.avgSnf) + '%' : '—', label: 'Avg SNF', icon: 'beaker' },
     { id: 'kpi-pending', value: k.pendingPayments != null ? fmtINR(k.pendingPayments) : '—', label: 'Pending Payments', icon: 'clock' },
     { id: 'kpi-rejected', value: k.rejectedToday != null ? String(k.rejectedToday) : '—', label: 'Rejected Today', icon: 'x-circle' },
     { id: 'kpi-profit', value: k.profit30d != null ? fmtINR(k.profit30d) : '—', label: 'Profit (30d)', icon: 'trending-up' },
-    { id: 'kpi-efficiency', value: k.efficiency != null ? fmtNum(k.efficiency) + '%' : '—', label: 'Efficiency', icon: 'gauge' },
+    { id: 'kpi-efficiency', value: k.efficiency != null ? fmtNumDashboard(k.efficiency) + '%' : '—', label: 'Efficiency', icon: 'gauge' },
   ];
 
   const colors = ['green', 'gold', 'blue', 'purple', 'teal', 'blue', 'green', 'purple', 'amber', 'red', 'cyan', 'cyan'];
@@ -113,11 +113,11 @@ function renderCollectionProgress(p) {
   }
 
   const pct = Math.min(p.percent, 100);
-  if (pctEl) pctEl.textContent = fmtNum(pct) + '%';
+  if (pctEl) pctEl.textContent = fmtNumDashboard(pct) + '%';
   if (circle) circle.style.strokeDashoffset = 326.73 * (1 - pct / 100);
-  if (targetEl) targetEl.textContent = fmtNum(p.target) + ' L';
-  if (collectedEl) collectedEl.textContent = fmtNum(p.collected) + ' L';
-  if (remainingEl) remainingEl.textContent = fmtNum(p.remaining) + ' L';
+  if (targetEl) targetEl.textContent = fmtNumDashboard(p.target) + ' L';
+  if (collectedEl) collectedEl.textContent = fmtNumDashboard(p.collected) + ' L';
+  if (remainingEl) remainingEl.textContent = fmtNumDashboard(p.remaining) + ' L';
 }
 
 /** ── Collection trend + revenue charts ── */
@@ -154,7 +154,7 @@ function renderRevenueGrowth(growth) {
     return;
   }
   const up = growth >= 0;
-  tag.textContent = (up ? '+' : '') + fmtNum(growth) + '%';
+  tag.textContent = (up ? '+' : '') + fmtNumDashboard(growth) + '%';
   tag.className = up ? 'tag tag-green' : 'tag tag-red';
 }
 
@@ -173,9 +173,9 @@ function renderBranchPerformance(branches) {
       <td><span class="font-mono">${b.code || '-'}</span></td>
       <td>${b.name || '-'}</td>
       <td>${b.farmerCount || 0}</td>
-      <td>${b.collection != null ? fmtNum(b.collection) + ' L' : '—'}</td>
+      <td>${b.collection != null ? fmtNumDashboard(b.collection) + ' L' : '—'}</td>
       <td>${b.revenue != null ? fmtINR(b.revenue) : '—'}</td>
-      <td>${b.efficiency != null ? '₹' + fmtNum(b.efficiency) + '/L' : '—'}</td>
+      <td>${b.efficiency != null ? '₹' + fmtNumDashboard(b.efficiency) + '/L' : '—'}</td>
     </tr>
   `).join('');
 }
@@ -203,7 +203,7 @@ function renderTodayEntries(entries, count) {
         <div style="font-weight:600;">${e.farmerName}</div>
         <div style="color:var(--ink-muted);font-size:var(--text-xs);">${e.receiptNo || ''} · ${e.shift || ''} ${e.time || ''}</div>
       </div>
-      <div style="font-weight:700;">${e.quantity != null ? fmtNum(e.quantity) + ' L' : '—'}</div>
+      <div style="font-weight:700;">${e.quantity != null ? fmtNumDashboard(e.quantity) + ' L' : '—'}</div>
     </div>
   `).join('');
 }
@@ -288,7 +288,7 @@ function renderTopFarmers(farmers) {
         </div>
       </div>
       <div style="text-align:right;">
-        <div style="font-weight:700;">${f.quantity != null ? fmtNum(f.quantity) + ' L' : '—'}</div>
+        <div style="font-weight:700;">${f.quantity != null ? fmtNumDashboard(f.quantity) + ' L' : '—'}</div>
         <div style="color:var(--ink-muted);font-size:var(--text-xs);">${f.amount != null ? fmtINR(f.amount) : '—'}</div>
       </div>
     </div>

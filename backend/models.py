@@ -33,7 +33,7 @@ class User(_DeclarativeModel):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    # Canonical login identifier (ADMIN001, BR01OP001, BR01001...). Unique
+    # Canonical login identifier (ADMIN001, BR01MG001, BR01001...). Unique
     # per account — this is what users type on the common login screen.
     login_id = db.Column(db.String(80), unique=True, nullable=False, index=True)
     # Legacy username kept for backward compatibility (branch code, farmer
@@ -41,8 +41,8 @@ class User(_DeclarativeModel):
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(30), nullable=False, default='BRANCH_OPERATOR')
-    # Roles: ADMIN, BRANCH_OPERATOR, FARMER
+    role = db.Column(db.String(30), nullable=False, default='BRANCH_MANAGER')
+    # Roles: ADMIN, BRANCH_MANAGER, FARMER
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True, index=True)
     # Farmers get a login account linked to their Farmer record (role=FARMER).
     farmer_id = db.Column(db.Integer, db.ForeignKey('farmers.id'), nullable=True, index=True)
@@ -700,7 +700,7 @@ class Employee(_DeclarativeModel):
     name = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(50), nullable=False)
     # HR role labels only (Operator, Accountant, Driver, ...) — independent of
-    # the auth roles (ADMIN / BRANCH_OPERATOR / FARMER) used for login access.
+    # the auth roles (ADMIN / BRANCH_MANAGER / FARMER) used for login access.
     branch_id = db.Column(db.Integer, db.ForeignKey('branches.id'), nullable=True)
     branch = db.relationship('Branch', backref='employees', lazy=True)
     mobile = db.Column(db.String(15))

@@ -15,13 +15,13 @@ function _pbParams() {
   };
 }
 
-function _shiftBadge(shift) {
+function _passbookShiftBadge(shift) {
   return shift === 'MORNING'
     ? '<span class="tag tag-blue">Morning</span>'
     : '<span class="tag tag-gold">Evening</span>';
 }
 
-function _payStatusBadge(status) {
+function _passbookPayStatusBadge(status) {
   const map = { PAID: 'tag-green', APPROVED: 'tag-blue', PENDING: 'tag-gold' };
   if (!status) return '<span class="tag tag-neutral" style="font-size:10px;">Unpaid</span>';
   return `<span class="tag ${map[status] || 'tag-neutral'}" style="font-size:10px;">${status.charAt(0) + status.slice(1).toLowerCase()}</span>`;
@@ -77,20 +77,20 @@ async function loadFarmerPassbook() {
           </td>
           <td style="font-weight:600;color:var(--danger, #b3413d);">-${fmtINR(Math.abs(e.debit != null ? e.debit : e.amount))}</td>
           <td>${fmtINR(e.balance)}</td>
-          <td>${_payStatusBadge(e.paymentStatus || 'PAID')}</td>
+          <td>${_passbookPayStatusBadge(e.paymentStatus || 'PAID')}</td>
         </tr>`;
         }
         return `
         <tr>
           <td>${fmtDate(e.date)}</td>
-          <td>${_shiftBadge(e.shift)}</td>
+          <td>${_passbookShiftBadge(e.shift)}</td>
           <td>${fmtNum(e.quantity, 2)} L</td>
           <td>${e.fat != null ? e.fat + '%' : '—'}</td>
           <td>${e.snf != null ? e.snf + '%' : '—'}</td>
           <td>${e.ratePerLiter != null ? '₹' + fmtNum(e.ratePerLiter, 2) + '/L' : '—'}</td>
           <td style="font-weight:600;color:var(--forest);">${fmtINR(e.amount)}</td>
           <td>${fmtINR(e.balance)}</td>
-          <td>${_payStatusBadge(e.paymentStatus)}${e.paymentCode ? `<div style="font-size:10px;color:var(--ink-muted);">${e.paymentCode}</div>` : ''}</td>
+          <td>${_passbookPayStatusBadge(e.paymentStatus)}${e.paymentCode ? `<div style="font-size:10px;color:var(--ink-muted);">${e.paymentCode}</div>` : ''}</td>
         </tr>`;
       }).join('');
     }

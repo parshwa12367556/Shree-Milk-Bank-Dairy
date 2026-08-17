@@ -13,7 +13,7 @@ Covers the production-readiness work added across the hardening pass:
       return the plaintext in production.
   H4. SMS failure is non-fatal — a broken gateway never fails the milk
       collection; every attempt is recorded in notification_logs.
-  H5. Password change (ADMIN / BRANCH_OPERATOR / FARMER) — current password
+  H5. Password change (ADMIN / BRANCH_MANAGER / FARMER) — current password
       verified, policy enforced, session stays usable.
   H6. QR generation / validation / authorization — signed opaque payloads,
       no PII, branch-scoped lookup, regeneration invalidates old payloads.
@@ -95,7 +95,7 @@ farmer_c = app.test_client()
 
 admin_token, _ = login(admin_c, 'admin', 'admin123')
 check('H0a. admin login', bool(admin_token))
-br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_OPERATOR')
+br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_MANAGER')
 check('H0b. BR01 operator login', bool(br_token))
 
 # ══════════ H1. Isolated test DB ═════════════════════════════════════════
@@ -310,17 +310,17 @@ r = admin_c.post('/api/auth/change-password', json={
     headers=auth(admin_token))
 check('H5f. admin: password restored', r.status_code == 200)
 
-# BRANCH_OPERATOR
+# BRANCH_MANAGER
 r = br_c.post('/api/auth/change-password', json={
     'current_password': '9876543210', 'new_password': 'BR01@New2026'},
     headers=auth(br_token))
-check('H5g. branch operator: password changed', r.status_code == 200)
-new_br_token, _ = login(br_c, 'BR01', 'BR01@New2026', 'BRANCH_OPERATOR')
-check('H5h. branch operator: login with new password works', bool(new_br_token))
+check('H5g. branch manager: password changed', r.status_code == 200)
+new_br_token, _ = login(br_c, 'BR01', 'BR01@New2026', 'BRANCH_MANAGER')
+check('H5h. branch manager: login with new password works', bool(new_br_token))
 r = br_c.post('/api/auth/change-password', json={
     'current_password': 'BR01@New2026', 'new_password': 'BR01@Restored2026'},
     headers=auth(br_token))
-check('H5i. branch operator: password restored', r.status_code == 200)
+check('H5i. branch manager: password restored', r.status_code == 200)
 
 # FARMER
 f_token, _ = login(farmer_c, f1_email, f1_mobile, 'FARMER')
@@ -364,10 +364,10 @@ with app.app_context():
 
 # QR lookup (the scanner's backend): resolves to the correct farmer.
 r = br_c.get(f'/api/farmers/qr-lookup?payload={qr_payload}', headers=auth(br_token))
-check('H6i. branch operator QR lookup resolves farmer',
+check('H6i. branch manager QR lookup resolves farmer',
       r.status_code == 200 and r.get_json().get('farmer', {}).get('farmerCode') == f1_code)
 
-# QR authorization: branch operator cannot resolve another branch's QR.
+# QR authorization: branch manager cannot resolve another branch's QR.
 with app.app_context():
     br2_farmer = next(f for f in Farmer.query.filter_by(branch_id=2).all()
                       if f.status == 'ACTIVE')

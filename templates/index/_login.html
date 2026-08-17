@@ -1,6 +1,6 @@
 <!-- ══════════════════════════════════════════════════════
      COMMON LOGIN PAGE (shown when not authenticated)
-     One login for ADMIN / BRANCH_OPERATOR / FARMER.
+     One login for ADMIN / BRANCH_MANAGER / FARMER.
      Login ID + Password — the backend detects the role.
      ══════════════════════════════════════════════════════ -->
 <div class="login-page" id="page-login">
@@ -34,19 +34,31 @@
           <div class="login-logo login-logo-mobile anim-float">
             <i data-lucide="milk"></i>
           </div>
-          <h2>Welcome Back</h2>
-          <p>Sign in to access your dairy account.</p>
+          <h2 id="login-portal-title">Choose Your Portal</h2>
+          <p id="login-portal-description">Select your role to continue securely.</p>
         </div>
 
         <form class="login-form" id="login-form" novalidate>
           <div class="login-error" id="login-error"></div>
 
+          <div class="role-portals" aria-label="Select your portal">
+            <button type="button" class="role-portal" data-portal-role="ADMIN" aria-pressed="false">
+              <i data-lucide="shield-check"></i><span>Admin</span>
+            </button>
+            <button type="button" class="role-portal" data-portal-role="BRANCH_MANAGER" aria-pressed="false">
+              <i data-lucide="building-2"></i><span>Branch Manager</span>
+            </button>
+            <button type="button" class="role-portal" data-portal-role="FARMER" aria-pressed="false">
+              <i data-lucide="tractor"></i><span>Farmer</span>
+            </button>
+          </div>
+
           <div class="form-group">
-            <label class="form-label" for="login-username">Login ID</label>
+            <label class="form-label" id="login-username-label" for="login-username">Your Login ID</label>
             <div class="input-group">
-              <span class="input-icon"><i data-lucide="user"></i></span>
+              <span class="input-icon" id="login-username-icon"><i data-lucide="user"></i></span>
               <input type="text" class="input-premium input-with-icon input-premium-lg"
-                     id="login-username" placeholder="Enter your Login ID"
+                     id="login-username" placeholder="Select a portal first"
                      autocomplete="username" autocapitalize="characters" required>
             </div>
           </div>

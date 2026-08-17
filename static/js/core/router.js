@@ -27,19 +27,19 @@ const Router = {
     settings: ['ADMIN'],
     inventory: ['ADMIN'],
     employees: ['ADMIN'],
-    // Farmer registry & operational pages — ADMIN + BRANCH_OPERATOR
-    'farmer-form': ['ADMIN', 'BRANCH_OPERATOR'],
-    'farmer-profile': ['ADMIN', 'BRANCH_OPERATOR'],
-    'farmer-passbook': ['ADMIN', 'BRANCH_OPERATOR'],
-    farmers: ['ADMIN', 'BRANCH_OPERATOR'],
-    collection: ['ADMIN', 'BRANCH_OPERATOR'],
-    quality: ['ADMIN', 'BRANCH_OPERATOR'],
-    rejections: ['ADMIN', 'BRANCH_OPERATOR'],
-    reports: ['ADMIN', 'BRANCH_OPERATOR'],
-    notifications: ['ADMIN', 'BRANCH_OPERATOR'],
-    profile: ['ADMIN', 'BRANCH_OPERATOR'],
+    // Farmer registry & operational pages — ADMIN + BRANCH_MANAGER
+    'farmer-form': ['ADMIN', 'BRANCH_MANAGER'],
+    'farmer-profile': ['ADMIN', 'BRANCH_MANAGER'],
+    'farmer-passbook': ['ADMIN', 'BRANCH_MANAGER'],
+    farmers: ['ADMIN', 'BRANCH_MANAGER'],
+    collection: ['ADMIN', 'BRANCH_MANAGER'],
+    quality: ['ADMIN', 'BRANCH_MANAGER'],
+    rejections: ['ADMIN', 'BRANCH_MANAGER'],
+    reports: ['ADMIN', 'BRANCH_MANAGER'],
+    notifications: ['ADMIN', 'BRANCH_MANAGER'],
+    profile: ['ADMIN', 'BRANCH_MANAGER'],
     // Shared workspace — every authenticated user except farmers
-    dashboard: ['ADMIN', 'BRANCH_OPERATOR'],
+    dashboard: ['ADMIN', 'BRANCH_MANAGER'],
     // Farmer portal — FARMER only
     'farmer-dashboard': ['FARMER'],
     'farmer-collections': ['FARMER'],
@@ -69,12 +69,12 @@ const Router = {
    * @returns {boolean}
    */
   canAccess(page) {
-    // Farmer form: ADMIN and BRANCH_OPERATOR may REGISTER new farmers, but any
+    // Farmer form: ADMIN and BRANCH_MANAGER may REGISTER new farmers, but any
     // authenticated user may open it to EDIT an existing farmer.
     if (page === 'farmer-form') {
       const user = window.Auth ? Auth.getUser() : null;
       if (!user) return false;
-      if (['ADMIN', 'BRANCH_OPERATOR'].includes(user.role)) return true;
+      if (['ADMIN', 'BRANCH_MANAGER'].includes(user.role)) return true;
       return !!(window.App && window.App.editFarmer);
     }
     const allowed = this.roleAccess[page];
@@ -276,7 +276,7 @@ Router.register('farmer-passbook', { title: 'Farmer Passbook', icon: 'book-open'
 Router.register('branches', { title: 'Branches', icon: 'building-2', init: 'initBranches', owner: 'admin' });
 Router.register('payments', { title: 'Payments', icon: 'wallet', init: 'initPayments', owner: 'admin' });
 Router.register('pricing', { title: 'Rate Engine', icon: 'dollar-sign', init: 'initPricing', owner: 'admin' });
-Router.register('quality', { title: 'Quality Control', icon: 'flask', init: 'initQuality', owner: 'branch' });
+Router.register('quality', { title: 'Quality Control', icon: 'flask-conical', init: 'initQuality', owner: 'branch' });
 Router.register('rejections', { title: 'Rejections', icon: 'x-circle', init: 'initRejections', owner: 'branch' });
 Router.register('procurement', { title: 'Procurement', icon: 'truck', init: 'initProcurement', owner: 'admin' });
 Router.register('inventory', { title: 'Inventory', icon: 'package', init: 'initInventory', owner: 'admin' });

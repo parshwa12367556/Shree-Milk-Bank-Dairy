@@ -43,7 +43,7 @@ results.append(('uppercase email login 200', r.status_code == 200, str(r.status_
 # 1d) The role sent by the client is NEVER trusted — the backend detects it
 # from the database. Logging in with a farmer email returns the FARMER role.
 r = c.post('/api/auth/login', json={
-    'username': email, 'password': phone, 'role': 'BRANCH_OPERATOR'})
+    'username': email, 'password': phone, 'role': 'BRANCH_MANAGER'})
 role_body = r.get_json() or {}
 results.append(('client role ignored (login succeeds)', r.status_code == 200, str(r.status_code)))
 results.append(('role detected from DB = FARMER',

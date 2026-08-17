@@ -293,7 +293,7 @@ with app.test_client() as c:
     check('audit: role captured', admin_login and admin_login.get('role') == 'ADMIN')
     br_login = next((l for l in logs if l['action'] == 'LOGIN_SUCCESS' and l.get('username') == 'BR01'), None)
     check('audit: branch role + code captured',
-          br_login and br_login.get('role') == 'BRANCH_OPERATOR' and br_login.get('branchCode') == 'BR01')
+          br_login and br_login.get('role') == 'BRANCH_MANAGER' and br_login.get('branchCode') == 'BR01')
 
     # ── Supplier GSTIN ──
     r = c.post('/api/procurement/suppliers', json={'name': 'GST Vendor', 'gstin': '27ABCDE1234F1Z5'},
@@ -503,8 +503,8 @@ with app.test_client() as c:
     body = r.get_json() or {}
     check('role sent by client is ignored (login succeeds)', r.status_code == 200,
           f'(status={r.status_code})')
-    check('role detected from DB (BRANCH_OPERATOR, not client role)',
-          body.get('user', {}).get('role') == 'BRANCH_OPERATOR',
+    check('role detected from DB (BRANCH_MANAGER, not client role)',
+          body.get('user', {}).get('role') == 'BRANCH_MANAGER',
           f"(role={body.get('user', {}).get('role')})")
     check('login response has redirect_url', '/branch/dashboard' == body.get('redirect_url'),
           f"(redirect={body.get('redirect_url')})")
@@ -530,16 +530,16 @@ with app.test_client() as c:
     r = c.post('/api/auth/forgot-password', json={'username': 'BR01'})
     otp = r.get_json().get('dev_otp')
     check('forgot-password returns dev OTP', bool(otp), f"(otp={otp})")
-    r = c.post('/api/auth/reset-password', json={'login_id': 'BR01OP001', 'otp': '000000', 'new_password': 'Br01newpass9'})
+    r = c.post('/api/auth/reset-password', json={'login_id': 'BR01MG001', 'otp': '000000', 'new_password': 'Br01newpass9'})
     check('reset rejects wrong OTP', r.status_code == 400)
-    r = c.post('/api/auth/reset-password', json={'login_id': 'BR01OP001', 'otp': otp, 'new_password': 'Br01newpass9'})
+    r = c.post('/api/auth/reset-password', json={'login_id': 'BR01MG001', 'otp': otp, 'new_password': 'Br01newpass9'})
     check('correct OTP still valid after wrong guess', r.status_code == 200)
     check('reset password via OTP', r.status_code == 200)
-    r = c.post('/api/auth/login', json={'login_id': 'BR01OP001', 'password': 'Br01newpass9'})
+    r = c.post('/api/auth/login', json={'login_id': 'BR01MG001', 'password': 'Br01newpass9'})
     check('login with new password works (login_id)', r.status_code == 200)
     r = c.post('/api/auth/login', json={'login_id': 'br01op001', 'password': 'Br01newpass9'})
     check('login_id is case-insensitive', r.status_code == 200)
-    r = c.post('/api/auth/login', json={'login_id': 'BR01OP001', 'password': '9876543210'})
+    r = c.post('/api/auth/login', json={'login_id': 'BR01MG001', 'password': '9876543210'})
     check('old phone password no longer works', r.status_code == 401)
 
     # ── First-login must-change-password flow (new branch manager) ──

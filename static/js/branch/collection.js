@@ -15,7 +15,7 @@ window.initCollection = function() {
   loadCollectionQueue();
   loadTodaySummary();
   initQuantityPills();
-  initFarmerSearch();
+  initCollectionFarmerSearch();
   initCollectionForm();
   initQrScanner();
   loadLiveRates();
@@ -167,7 +167,7 @@ function calculateCollectionAmount() {
   document.getElementById('calc-qty').textContent = `${qty.toFixed(1)} L`;
 }
 
-function initFarmerSearch() {
+function initCollectionFarmerSearch() {
   const searchInput = document.getElementById('farmer-search-input');
   if (!searchInput) return;
 

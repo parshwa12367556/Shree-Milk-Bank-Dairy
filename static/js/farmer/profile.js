@@ -11,7 +11,7 @@
 window.initFarmerProfilePage = function () {
   loadMyProfile();
   initProfileTabs();
-  initProfileForm();
+  initFarmerProfileForm();
 };
 
 /** Load + render the farmer's own profile */
@@ -134,7 +134,7 @@ function initProfileTabs() {
   });
 }
 
-function initProfileForm() {
+function initFarmerProfileForm() {
   const form = document.getElementById('form-profile-edit');
   if (!form || form.hasAttribute('data-listener')) return;
   form.setAttribute('data-listener', 'true');

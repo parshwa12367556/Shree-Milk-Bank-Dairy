@@ -76,9 +76,9 @@ farmer_c = app.test_client()
 # ══════════ Logins ══════════
 admin_token, _ = login(admin_c, 'admin', 'admin123')
 check('admin login', bool(admin_token))
-br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_OPERATOR')
+br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_MANAGER')
 check('branch BR01 login', bool(br_token))
-br2_token, _ = login(br2_c, 'BR02', '9123456780', 'BRANCH_OPERATOR')
+br2_token, _ = login(br2_c, 'BR02', '9123456780', 'BRANCH_MANAGER')
 check('branch BR02 login', bool(br2_token))
 
 # Find a BR01 ACTIVE farmer with a priced milk type (COW/BUFFALO — MIXED

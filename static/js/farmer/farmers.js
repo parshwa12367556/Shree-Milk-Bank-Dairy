@@ -17,10 +17,10 @@ window.initFarmers = function() {
   loadFarmerStats();
   loadFarmersTable();
   initFarmerFilters();
-  initFarmerSearch();
+  initFarmersSearch();
 };
 
-function _isGlobalRole() {
+function _farmersIsGlobalRole() {
   const user = window.Auth ? Auth.getUser() : null;
   return !!user && ['ADMIN'].includes(user.role);
 }
@@ -102,7 +102,7 @@ function renderFarmersTable(farmers, total, pages) {
     return;
   }
 
-  const isGlobal = _isGlobalRole();
+  const isGlobal = _farmersIsGlobalRole();
   const milkIcons = { COW: '🐄', BUFFALO: '🐃', MIXED: '🥛' };
 
   tbody.innerHTML = farmers.map(f => {
@@ -234,7 +234,7 @@ function initFarmerFilters() {
 }
 
 /** Search farmers via API (debounced) */
-function initFarmerSearch() {
+function initFarmersSearch() {
   const searchInput = document.getElementById('farmer-search-input');
   if (!searchInput) return;
 

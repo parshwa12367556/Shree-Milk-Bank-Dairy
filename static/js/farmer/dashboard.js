@@ -51,7 +51,7 @@ function shiftBadge(shift) {
     : '<span class="tag tag-gold">Evening</span>';
 }
 
-function statusBadge(status) {
+function _collectionStatusPill(status) {
   const map = {
     ACCEPTED: 'tag-green', RECORDED: 'tag-green', VERIFIED: 'tag-blue',
     CORRECTED: 'tag-amber', REJECTED: 'tag-red',
@@ -169,7 +169,7 @@ function renderDashboard(data) {
           <span>Fat: <strong>${c.fat != null ? c.fat + '%' : '—'}</strong></span>
           <span>SNF: <strong>${c.snf != null ? c.snf + '%' : '—'}</strong></span>
           <span>Rate: <strong>${c.ratePerLiter != null ? '₹' + fmtNum(c.ratePerLiter, 2) + '/L' : '—'}</strong></span>
-          <span>${statusBadge(c.status)}</span>
+          <span>${_collectionStatusPill(c.status)}</span>
         </div>
         <div style="margin-top:var(--space-3);color:var(--ink-muted);font-size:var(--text-xs);">Receipt ${c.receiptNo || '—'}</div>`;
     }
@@ -190,7 +190,7 @@ function renderDashboard(data) {
           <td>${c.snf != null ? c.snf + '%' : '—'}</td>
           <td>${c.ratePerLiter != null ? '₹' + fmtNum(c.ratePerLiter, 2) : '—'}</td>
           <td style="font-weight:600;">${fmtINR(c.amount)}</td>
-          <td>${statusBadge(c.status)}</td>
+          <td>${_collectionStatusPill(c.status)}</td>
         </tr>`).join('');
     }
   }

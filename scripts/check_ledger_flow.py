@@ -55,7 +55,7 @@ with app.app_context():
 r = c.post('/api/auth/login', json={'username': 'admin', 'password': 'admin123'})
 at = r.get_json()['token']
 r = c.post('/api/auth/login', json={'username': 'BR01', 'password': '9876543210',
-                                    'role': 'BRANCH_OPERATOR'})
+                                    'role': 'BRANCH_MANAGER'})
 bt = r.get_json()['token']
 
 # Fresh farmer through the API (proves the whole chain from registration)

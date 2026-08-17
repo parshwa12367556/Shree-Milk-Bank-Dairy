@@ -117,13 +117,13 @@ def get_farmer_stats():
 
 @farmer_bp.route('/api/farmers', methods=['POST'])
 @jwt_required()
-@role_required('ADMIN', 'BRANCH_OPERATOR')
+@role_required('ADMIN', 'BRANCH_MANAGER')
 def create_farmer():
-    """Register a new farmer — ADMIN or BRANCH_OPERATOR (per architecture spec).
+    """Register a new farmer — ADMIN or BRANCH_MANAGER.
 
     Branch resolution (never trusted blindly):
       - ADMIN: the branch is taken from the request (branchId) and validated.
-      - BRANCH_OPERATOR: the branch is ALWAYS the operator's own assigned
+      - BRANCH_MANAGER: the branch is ALWAYS the manager's own assigned
         branch — a client-supplied branchId is ignored.
     The farmer ID is auto-generated as <branch_code><3-digit serial> (e.g. BR01001).
     """
@@ -323,7 +323,7 @@ def verify_farmer(code):
 
 @farmer_bp.route('/api/farmers/<code>/resubmit', methods=['POST'])
 @jwt_required()
-@role_required('ADMIN', 'BRANCH_OPERATOR')
+@role_required('ADMIN', 'BRANCH_MANAGER')
 def resubmit_farmer(code):
     """Re-submit a REJECTED farmer for verification (Branch Manager)."""
     farmer = Farmer.query.filter_by(farmer_code=code).first()

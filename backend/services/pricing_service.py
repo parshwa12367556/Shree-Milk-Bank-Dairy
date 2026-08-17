@@ -6,7 +6,7 @@ Single source of truth for milk pricing.
 Rules enforced here:
   * Only the ADMIN creates/activates/deactivates rate rules (handled in the
     admin route module). This service is read-only for pricing rules.
-  * BRANCH_OPERATOR collections use the CURRENTLY ACTIVE rate for the milk
+  * BRANCH_MANAGER collections use the CURRENTLY ACTIVE rate for the milk
     type on the collection date (effective_from <= date <= effective_to).
   * FARMER views are derived from the stored rate/amount on their
     collections — historical collections keep their original applied rate

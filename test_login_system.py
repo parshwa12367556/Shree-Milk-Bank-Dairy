@@ -2,7 +2,7 @@
 
 Covers all 28 required login scenarios:
   1.  Admin login using valid Login ID
-  2.  Branch Operator login using valid Login ID
+  2.  Branch Manager login using valid Login ID
   3.  Farmer login using valid Farmer Code
   4.  Invalid Login ID
   5.  Invalid password
@@ -13,12 +13,12 @@ Covers all 28 required login scenarios:
   10. Account lock after configured failures
   11. Successful login resets failed attempts
   12. Correct ADMIN redirect
-  13. Correct BRANCH_OPERATOR redirect
+  13. Correct BRANCH_MANAGER redirect
   14. Correct FARMER redirect
   15. Farmer cannot access Admin APIs
   16. Farmer cannot access another farmer's data
-  17. Branch Operator cannot access another branch's data
-  18. Branch Operator cannot access Admin payment processing
+  17. Branch Manager cannot access another branch's data
+  18. Branch Manager cannot access Admin payment processing
   19. Password is never returned in API
   20. Password hash is never returned in API
   21. Login ID uniqueness works
@@ -136,11 +136,16 @@ check('12. admin redirect_url', b.get('redirect_url') == '/admin/dashboard', f"(
 check('1b. admin user role from DB', b.get('user', {}).get('role') == 'ADMIN')
 admin_token = b.get('token')
 
+# A selected portal is verified after credential validation; it does not allow
+# an account to enter a different role's workspace.
+r = login(admin_c, {'login_id': ADMIN_ID, 'password': ADMIN_PW, 'portal_role': 'FARMER'})
+check('1c. wrong role portal is rejected', r.status_code == 403)
+
 r = login(br_c, {'login_id': BR01_ID, 'password': BR01_PW})
 b = r.get_json() or {}
-check('2. branch operator login with Login ID', r.status_code == 200 and b.get('token'))
+check('2. branch manager login with Login ID', r.status_code == 200 and b.get('token'))
 check('13. branch redirect_url', b.get('redirect_url') == '/branch/dashboard', f"({b.get('redirect_url')})")
-check('2b. branch user role + scope', b.get('user', {}).get('role') == 'BRANCH_OPERATOR'
+check('2b. branch user role + scope', b.get('user', {}).get('role') == 'BRANCH_MANAGER'
       and b.get('user', {}).get('branchId') == br01.branch_id)
 br_token = b.get('token')
 
@@ -222,10 +227,10 @@ r = br2_c.get('/api/farmers?per_page=100', headers=auth(br2_token))
 check('17. BR02 sees own branch farmers only',
       all(f['branchId'] == 2 for f in r.get_json()['farmers']))
 
-# ══════════ 18. Branch Operator cannot process payments ══════════
+# ══════════ 18. Branch Manager cannot process payments ══════════
 r = br_c.post('/api/payments', json={'periodStart': '2026-07-01', 'periodEnd': '2026-08-01'},
               headers=auth(br_token))
-check('18. branch operator cannot process payments (403)', r.status_code == 403, f"({r.status_code})")
+check('18. branch manager cannot process payments (403)', r.status_code == 403, f"({r.status_code})")
 
 # ══════════ 19-20. No password / hash leakage ══════════
 r = login(admin_c, {'login_id': ADMIN_ID, 'password': ADMIN_PW})
@@ -269,12 +274,12 @@ check('24. expired token rejected (401)', r.status_code == 401, f"({r.status_cod
 
 # ══════════ 25. Deactivated user token rejected ══════════
 with app.app_context():
-    deact_user = User.query.filter_by(role='BRANCH_OPERATOR').first()
+    deact_user = User.query.filter_by(role='BRANCH_MANAGER').first()
     deact_user.status = 'INACTIVE'
     db.session.commit()
     from flask_jwt_extended import create_access_token
     deact_token = create_access_token(
-        identity=json.dumps({'uid': deact_user.id, 'role': 'BRANCH_OPERATOR',
+        identity=json.dumps({'uid': deact_user.id, 'role': 'BRANCH_MANAGER',
                              'loginId': deact_user.login_id, 'branchId': deact_user.branch_id}))
 r = br_c.get('/api/farmers', headers=auth(deact_token))
 check('25. deactivated user token rejected (403)', r.status_code == 403, f"({r.status_code})")
@@ -298,8 +303,8 @@ check('27. production response has no dev_otp', 'dev_otp' not in (r.get_json() o
 # ══════════ 28. must_change_password enforced for new accounts ══════════
 r = admin_c.post('/api/branches', json={'name': 'Login Test', 'code': 'BR77', 'phone': '9777777777'},
                  headers=auth(admin_token))
-check('28a. create branch (new operator account)', r.status_code == 201)
-r = login(admin_c, {'login_id': 'BR77OP001', 'password': '9777777777'})
+check('28a. create branch (new manager account)', r.status_code == 201)
+r = login(admin_c, {'login_id': 'BR77MG001', 'password': '9777777777'})
 b = r.get_json() or {}
 check('28b. first login forces password change', r.status_code == 200 and b.get('mustChangePassword') is True)
 # Non-auth APIs blocked while must_change_password
@@ -310,7 +315,7 @@ r = admin_c.post('/api/auth/change-password',
                  json={'current_password': '9777777777', 'new_password': 'NewPass123'},
                  headers=auth(b.get('token')))
 check('28d. change password succeeds', r.status_code == 200)
-r = login(admin_c, {'login_id': 'BR77OP001', 'password': 'NewPass123'})
+r = login(admin_c, {'login_id': 'BR77MG001', 'password': 'NewPass123'})
 b = r.get_json() or {}
 check('28e. flag cleared after change', r.status_code == 200 and b.get('mustChangePassword') is False)
 # Dashboard now accessible

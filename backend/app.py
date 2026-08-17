@@ -296,7 +296,7 @@ def backfill_login_ids():
     login_id column (spec §2/§3/§26):
 
       ADMIN           → ADMIN001, ADMIN002, ...
-      BRANCH_OPERATOR → {branch_code}OP{serial:03d}  (BR01OP001, BR02OP002, ...)
+      BRANCH_MANAGER  → {branch_code}MG{serial:03d}  (BR01MG001, BR02MG002, ...)
       FARMER          → the farmer's farmer code (BR01001)
 
     Runs after migrate_legacy_roles() so legacy roles are already canonical.
@@ -319,17 +319,17 @@ def backfill_login_ids():
             if u.role == 'ADMIN':
                 admin_serial += 1
                 u.login_id = f'ADMIN{admin_serial:03d}'
-            elif u.role == 'BRANCH_OPERATOR':
+            elif u.role == 'BRANCH_MANAGER':
                 code = u.branch.code if u.branch else (Branch.query.get(u.branch_id).code if u.branch_id else 'BR')
                 code = code or 'BR'
                 nxt = operator_serial.get(code, 0) + 1
                 operator_serial[code] = nxt
-                candidate = f'{code}OP{nxt:03d}'
+                candidate = f'{code}MG{nxt:03d}'
                 # never collide with an existing login_id
                 while User.query.filter_by(login_id=candidate).first():
                     nxt += 1
                     operator_serial[code] = nxt
-                    candidate = f'{code}OP{nxt:03d}'
+                    candidate = f'{code}MG{nxt:03d}'
                 u.login_id = candidate
             elif u.role == 'FARMER':
                 fcode = u.farmer.farmer_code if u.farmer else None
@@ -352,19 +352,19 @@ def migrate_legacy_roles():
     """
     Consolidate legacy role names onto the canonical three-role model.
 
-    The system uses exactly three auth roles: ADMIN, BRANCH_OPERATOR, FARMER.
+    The system uses exactly three auth roles: ADMIN, BRANCH_MANAGER, FARMER.
     Accounts created by older builds may still carry legacy role strings;
     remap them here so the whole codebase (RBAC decorators, page routing,
     data scoping) stays consistent without a manual DB migration:
 
       SUPER_ADMIN / HEAD_OFFICE / ACCOUNTANT  →  ADMIN
-      BRANCH_MANAGER / OPERATOR               →  BRANCH_OPERATOR
+      BRANCH_OPERATOR / OPERATOR              →  BRANCH_MANAGER
       FARMER                                  →  FARMER (unchanged)
     """
     from sqlalchemy import text
     mapping = {
         ('SUPER_ADMIN', 'HEAD_OFFICE', 'ACCOUNTANT'): 'ADMIN',
-        ('BRANCH_MANAGER', 'OPERATOR'): 'BRANCH_OPERATOR',
+        ('BRANCH_OPERATOR', 'OPERATOR'): 'BRANCH_MANAGER',
     }
     # One UPDATE per legacy name: text() bind params do NOT auto-expand
     # tuples for ``IN``, so iterating keeps the migration explicit and safe.

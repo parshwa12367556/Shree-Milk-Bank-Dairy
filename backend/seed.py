@@ -63,8 +63,8 @@ def seed_database():
     print('[SEED] Database seeded successfully!')
     print('[SEED] Login credentials (Login ID / temporary password):')
     print(f'  Admin: ADMIN001 / admin123 (ADMIN)')
-    for u in User.query.filter_by(role='BRANCH_OPERATOR').order_by(User.id).all():
-        print(f'  Branch {u.branch.code}: {u.login_id} / {u.phone} (BRANCH_OPERATOR)')
+    for u in User.query.filter_by(role='BRANCH_MANAGER').order_by(User.id).all():
+        print(f'  Branch {u.branch.code}: {u.login_id} / {u.phone} (BRANCH_MANAGER)')
     sample = Farmer.query.filter_by(status='ACTIVE').order_by(Farmer.id).first()
     if sample:
         print(f'  Farmer: {sample.farmer_code} / {sample.mobile} (FARMER) — password is the mobile number, change on first login')
@@ -108,7 +108,7 @@ def _seed_branches():
 
 
 def _seed_users():
-    """One login per branch: login_id = {code}OP001, username = branch code,
+    """One login per branch: login_id = {code}MG001, username = branch code,
     password = branch phone (temporary — must_change_password)."""
     branches = Branch.query.order_by(Branch.id).all()
     users = [
@@ -121,11 +121,11 @@ def _seed_users():
         nxt = serial.get(b.code, 0) + 1
         serial[b.code] = nxt
         users.append(User(
-            login_id=f'{b.code}OP{nxt:03d}',
+            login_id=f'{b.code}MG{nxt:03d}',
             username=b.code,
             password_hash=hash_password(b.phone),
             name=b.manager_name or f'{b.name} Manager',
-            role='BRANCH_OPERATOR',
+            role='BRANCH_MANAGER',
             branch_id=b.id,
             phone=b.phone,
             email=f'manager{b.code.lower()}@dairy.com',
@@ -275,7 +275,7 @@ def _seed_collections():
     farmers = Farmer.query.filter_by(status='ACTIVE').all()
     rate_cow = RateMaster.query.filter_by(milk_type='COW', status='ACTIVE').first()
     rate_buffalo = RateMaster.query.filter_by(milk_type='BUFFALO', status='ACTIVE').first()
-    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_OPERATOR').all()}
+    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_MANAGER').all()}
 
     collections = []
     seq = 1240
@@ -406,7 +406,7 @@ def _seed_quality_tests():
 
 
 def _seed_rejections():
-    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_OPERATOR').all()}
+    branch_users = {u.branch_id: u.id for u in User.query.filter_by(role='BRANCH_MANAGER').all()}
     farmers = Farmer.query.order_by(Farmer.id).all()
     rejections = [
         MilkRejection(farmer_id=farmers[0].id, branch_id=farmers[0].branch_id,

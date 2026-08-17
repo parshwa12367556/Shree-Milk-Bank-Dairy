@@ -102,7 +102,7 @@ admin_c = app.test_client()
 br_c = app.test_client()
 
 admin_token = login(admin_c, 'admin', 'admin123')
-br_token = login(br_c, 'BR01', '9876543210', 'BRANCH_OPERATOR')
+br_token = login(br_c, 'BR01', '9876543210', 'BRANCH_MANAGER')
 check('logins ok', bool(admin_token and br_token))
 
 # Pick a BR01 ACTIVE farmer with a known email

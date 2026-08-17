@@ -21,10 +21,8 @@ from jinja2 import Environment, FileSystemLoader  # noqa: E402
 env = Environment(loader=FileSystemLoader('templates'), autoescape=True)
 problems = []
 
-# 1) Parse every template (templates/_legacy/ is the archived pre-SPA tree —
-#    it is NOT served, so its internal references are not checked).
-files = [f for f in glob.glob('templates/**/*.html', recursive=True)
-         if os.sep + '_legacy' + os.sep not in f.replace('/', os.sep)]
+# 1) Parse every template (the SPA shell + auth/error/email pages).
+files = glob.glob('templates/**/*.html', recursive=True)
 for f in files:
     name = f.replace('\\', '/').replace('templates/', '')
     try:
@@ -40,19 +38,14 @@ for f in files:
         if not os.path.exists(os.path.join('templates', partial)):
             problems.append(f'MISSING PARTIAL {partial} (referenced by {name})')
 
-# 3) Verify manifest routes map to existing files. The manifest's `template`
-#    fields are legacy metadata from the pre-SPA multi-page system (the SPA
-#    shell serves every route now) — the referenced file may live in
-#    templates/_legacy/ (archived, recoverable) or the SPA page partial.
+# 3) Verify the manifest is valid and every route maps to a layout the SPA
+#    can gate. The manifest's `template` fields are legacy metadata from the
+#    pre-SPA multi-page system (removed); the SPA shell serves every route now,
+#    so no per-route template file is required on disk.
 manifest = json.load(open('backend/pages_manifest.json', encoding='utf-8'))
 for route, meta in manifest.items():
-    tpl = meta.get('template') or ''
-    if not tpl:
-        continue
-    live = os.path.join('templates', tpl)
-    legacy = os.path.join('templates', '_legacy', tpl)
-    if not (os.path.exists(live) or os.path.exists(legacy)):
-        problems.append(f'MISSING TEMPLATE {tpl} (route {route})')
+    if not route.startswith('/') or not meta.get('layout'):
+        problems.append(f'INVALID MANIFEST ROUTE {route} ({meta})')
 
 # 4) Verify the SPA shell includes every page partial it references and that
 #    every JS page-init function referenced by the partials exists.

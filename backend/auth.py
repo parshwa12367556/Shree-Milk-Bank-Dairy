@@ -14,12 +14,12 @@ import bcrypt
 # ── Canonical roles ────────────────────────────────────────────────────────
 # The system uses exactly three roles:
 #   ADMIN            — full system scope (no branch restriction)
-#   BRANCH_OPERATOR  — strictly restricted to their assigned branch
+#   BRANCH_MANAGER   — strictly restricted to their assigned branch
 #   FARMER           — strictly restricted to their own farmer record
 # Roles not in BRANCH_SCOPED_ROLES are treated as unrestricted/global.
-ALL_ROLES = ('ADMIN', 'BRANCH_OPERATOR', 'FARMER')
+ALL_ROLES = ('ADMIN', 'BRANCH_MANAGER', 'FARMER')
 ADMIN_ROLES = ('ADMIN',)
-BRANCH_SCOPED_ROLES = ('BRANCH_OPERATOR',)
+BRANCH_SCOPED_ROLES = ('BRANCH_MANAGER',)
 
 
 def _deny(message):
@@ -61,15 +61,15 @@ def generate_login_id(role, branch_code=None, farmer_code=None, existing_count=0
 
     Formats (spec §3):
       ADMIN           → ADMIN001, ADMIN002, ...
-      BRANCH_OPERATOR → {BRANCH_CODE}OP{serial:03d}  (BR01OP001, BR02OP002, ...)
+      BRANCH_MANAGER  → {BRANCH_CODE}MG{serial:03d}  (BR01MG001, BR02MG002, ...)
       FARMER          → the farmer's farmer code (BR01001)
 
     The caller supplies the number of already-existing accounts of the same
     kind so the serial is sequential and collision-free.
 
     Args:
-        role: One of ADMIN / BRANCH_OPERATOR / FARMER
-        branch_code: Branch code (required for BRANCH_OPERATOR)
+        role: One of ADMIN / BRANCH_MANAGER / FARMER
+        branch_code: Branch code (required for BRANCH_MANAGER)
         farmer_code: Farmer code (required for FARMER)
         existing_count: Count of existing accounts of the same kind
 
@@ -78,10 +78,10 @@ def generate_login_id(role, branch_code=None, farmer_code=None, existing_count=0
     """
     if role == 'ADMIN':
         return f'ADMIN{existing_count + 1:03d}'
-    if role == 'BRANCH_OPERATOR':
+    if role == 'BRANCH_MANAGER':
         if not branch_code:
-            raise ValueError('branch_code is required for BRANCH_OPERATOR login ID')
-        return f'{branch_code}OP{existing_count + 1:03d}'
+            raise ValueError('branch_code is required for BRANCH_MANAGER login ID')
+        return f'{branch_code}MG{existing_count + 1:03d}'
     if role == 'FARMER':
         if not farmer_code:
             raise ValueError('farmer_code is required for FARMER login ID')
@@ -184,9 +184,9 @@ def role_required(*roles):
 def can_collect():
     """
     Decorator for collection access.
-    Allowed roles: ADMIN, BRANCH_OPERATOR
+    Allowed roles: ADMIN, BRANCH_MANAGER
     """
-    return role_required('ADMIN', 'BRANCH_OPERATOR')
+    return role_required('ADMIN', 'BRANCH_MANAGER')
 
 
 def can_pay():
@@ -271,7 +271,7 @@ def get_branch_scope():
     Return the branch_id a branch-scoped user is restricted to, or None.
 
     This is the single source of truth for branch-level data isolation and
-    fails CLOSED: branch-scoped roles (BRANCH_OPERATOR) are always
+    fails CLOSED: branch-scoped roles (BRANCH_MANAGER) are always
     forced to their assigned branch, and if no branch is assigned the request
     is denied (403) instead of silently granting unrestricted access.
     Unrestricted roles (ADMIN) return None.

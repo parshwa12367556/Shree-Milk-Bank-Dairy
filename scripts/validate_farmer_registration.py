@@ -28,7 +28,7 @@ def H():
 
 
 # 1) Branch Manager registers a farmer
-login_as('BRANCH_OPERATOR', 'BR01', branch_id=1)
+login_as('BRANCH_MANAGER', 'BR01', branch_id=1)
 r = c.post('/api/farmers', headers=H(), json={
     'name': 'Flow Test Farmer', 'mobile': '9012345678', 'milkType': 'COW'})
 body = r.get_json() or {}
@@ -73,7 +73,7 @@ r = c.post('/api/auth/login', json={'username': femail, 'password': phone, 'role
 results.append(('farmer logs in with EMAIL (200)', r.status_code == 200, f'{r.status_code} {r.get_json().get("error")}'))
 
 # 5) Reject flow: reject a farmer -> account stays locked
-login_as('BRANCH_OPERATOR', 'BR01', branch_id=1)
+login_as('BRANCH_MANAGER', 'BR01', branch_id=1)
 r = c.post('/api/farmers', headers=H(), json={'name': 'Reject Flow', 'mobile': '9098765432', 'milkType': 'BUFFALO'})
 code2 = r.get_json().get('farmer', {}).get('farmerCode')
 login_as('ADMIN', 'admin')

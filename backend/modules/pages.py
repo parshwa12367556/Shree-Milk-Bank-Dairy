@@ -9,7 +9,7 @@ template tree. Access is gated by JWT:
 
   * Auth pages (/login, /forgot-password, ...)   — public
   * Admin pages (layout=admin)                   — ADMIN only
-  * Branch pages (layout=branch)                 — BRANCH_OPERATOR (and ADMIN
+  * Branch pages (layout=branch)                 — BRANCH_MANAGER (and ADMIN
                                                    where explicitly required)
   * Farmer pages (layout=farmer)                 — FARMER only
   * Shared pages (layout=shared)                 — any authenticated user
@@ -46,10 +46,10 @@ AUTH_PAGES = {
 }
 
 # Layout → allowed roles. The system uses exactly three roles:
-#   ADMIN, BRANCH_OPERATOR, FARMER.
+#   ADMIN, BRANCH_MANAGER, FARMER.
 ROLE_MAP = {
     'admin': ('ADMIN',),
-    'branch': ('ADMIN', 'BRANCH_OPERATOR'),
+    'branch': ('ADMIN', 'BRANCH_MANAGER'),
     'farmer': ('FARMER',),
     'shared': None,  # any authenticated user
 }

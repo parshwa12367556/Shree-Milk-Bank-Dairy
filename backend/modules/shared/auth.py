@@ -94,6 +94,10 @@ def login():
     login_id = normalize_login_id(login_id)
     password = data.get('password', '')
     remember_me = bool(data.get('remember_me'))
+    # The selected portal improves the login experience, but it never grants
+    # authority: the authenticated database account remains the sole source of
+    # truth for the user's role and scope.
+    portal_role = (data.get('portal_role') or '').strip().upper()
 
     if not login_id or not password:
         return jsonify({'error': 'Login ID and password are required'}), 400
@@ -150,6 +154,9 @@ def login():
     if user.status != 'ACTIVE':
         return jsonify({'error': 'Your account is currently inactive. Please contact the administrator.'}), 403
 
+    if portal_role and portal_role in ('ADMIN', 'BRANCH_MANAGER', 'FARMER') and user.role != portal_role:
+        return jsonify({'error': 'This account does not belong to the selected portal.'}), 403
+
     # ── Success ──
     user.last_login_at = utcnow()
     user.failed_attempts = 0
@@ -193,7 +200,7 @@ def login():
         'user': identity,
         'mustChangePassword': bool(user.must_change_password),
         'redirect_url': {'ADMIN': '/admin/dashboard',
-                         'BRANCH_OPERATOR': '/branch/dashboard',
+                         'BRANCH_MANAGER': '/branch/dashboard',
                          'FARMER': '/farmer/dashboard'}.get(user.role, '/dashboard'),
     })
     response.set_cookie(

@@ -374,7 +374,7 @@ const App = {
     const iconMap = {
       payment: { icon: 'wallet', bg: 'var(--success-light)', color: 'var(--success)' },
       collection: { icon: 'milk', bg: 'var(--info-light)', color: 'var(--info)' },
-      quality: { icon: 'flask', bg: 'var(--purple-light)', color: 'var(--purple)' },
+      quality: { icon: 'flask-conical', bg: 'var(--purple-light)', color: 'var(--purple)' },
       system: { icon: 'settings', bg: 'var(--warning-light)', color: 'var(--warning-dark)' },
       farmer: { icon: 'user-plus', bg: 'var(--teal-light)', color: 'var(--teal)' },
     };

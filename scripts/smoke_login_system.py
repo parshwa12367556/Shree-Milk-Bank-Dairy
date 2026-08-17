@@ -20,7 +20,7 @@ with app.app_context():
     seed_database()
     from backend.models import User
     print('admin login_id:', User.query.filter_by(role='ADMIN').first().login_id)
-    for u in User.query.filter_by(role='BRANCH_OPERATOR').limit(2):
+    for u in User.query.filter_by(role='BRANCH_MANAGER').limit(2):
         print('branch login_id:', u.login_id, u.username)
     f = User.query.filter_by(role='FARMER').first()
     FARMER_MOBILE = f.phone

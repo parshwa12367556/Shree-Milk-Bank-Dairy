@@ -2,12 +2,12 @@
 
 Proves the 17 required security scenarios:
   1.  ADMIN can access authorized system-wide data
-  2.  BRANCH_OPERATOR BR01 cannot access BR02 data
-  3.  BRANCH_OPERATOR cannot create collections for another branch
+  2.  BRANCH_MANAGER BR01 cannot access BR02 data
+  3.  BRANCH_MANAGER cannot create collections for another branch
   4.  FARMER A cannot access FARMER B's data
   5.  FARMER cannot modify payment status
-  6.  BRANCH_OPERATOR cannot process payments
-  7.  BRANCH_OPERATOR cannot modify pricing
+  6.  BRANCH_MANAGER cannot process payments
+  7.  BRANCH_MANAGER cannot modify pricing
   8.  FARMER cannot access Admin APIs
   9.  Invalid JWT is rejected
   10. Expired JWT is rejected
@@ -86,9 +86,9 @@ farmer2_c = app.test_client()
 
 admin_token, _ = login(admin_c, 'admin', 'admin123')
 check('1a. admin login', bool(admin_token))
-br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_OPERATOR')
+br_token, _ = login(br_c, 'BR01', '9876543210', 'BRANCH_MANAGER')
 check('2a. BR01 login', bool(br_token))
-br2_token, _ = login(br2_c, 'BR02', '9123456780', 'BRANCH_OPERATOR')
+br2_token, _ = login(br2_c, 'BR02', '9123456780', 'BRANCH_MANAGER')
 check('2b. BR02 login', bool(br2_token))
 
 # Active BR01 farmer + a second farmer (isolation pair)
@@ -220,18 +220,18 @@ check('11. inactive farmer cannot log in', t is None and r.status_code == 403,
 
 # ── 12. Locked user cannot log in ───────────────────────────────────────
 with app.app_context():
-    lock_user = User.query.filter_by(role='BRANCH_OPERATOR').first()
+    lock_user = User.query.filter_by(role='BRANCH_MANAGER').first()
     lock_user.failed_attempts = 6
     lock_user.locked_until = datetime.utcnow() + timedelta(minutes=30)
     lock_username = lock_user.username
     lock_phone = lock_user.phone
     db.session.commit()
-t, r = login(br_c, lock_username, lock_phone, 'BRANCH_OPERATOR')
+t, r = login(br_c, lock_username, lock_phone, 'BRANCH_MANAGER')
 check('12. locked user cannot log in', t is None and r.status_code == 429,
       f"(status={r.status_code})")
 # unlock for later tests
 with app.app_context():
-    lock_user = User.query.filter_by(role='BRANCH_OPERATOR').first()
+    lock_user = User.query.filter_by(role='BRANCH_MANAGER').first()
     lock_user.locked_until = None
     lock_user.failed_attempts = 0
     db.session.commit()
@@ -347,7 +347,7 @@ with app.app_context():
 r = admin_c.get('/api/admin/grievances', headers=auth(admin_token))
 check('G1. admin lists grievances', r.status_code == 200 and 'summary' in r.get_json())
 r = br_c.get('/api/admin/grievances', headers=auth(br_token))
-check('G2. branch operator blocked from admin grievances → 403', r.status_code == 403)
+check('G2. branch manager blocked from admin grievances → 403', r.status_code == 403)
 
 print(f"\n=== RESULT: {PASS} passed, {FAIL} failed ===")
 sys.exit(1 if FAIL else 0)
